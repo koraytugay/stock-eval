@@ -17,6 +17,7 @@
     "Information Technology": 0.09
   },
   "excluded_sectors": ["Financials"],
+  "fcf_normalization_years": 3,
   "growth": {
     "default": 0.04,
     "floor": 0.0,

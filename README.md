@@ -8,19 +8,20 @@ An automated, serverless equity valuation and look-through ETF engine powered by
   * Prices and FX rates: Yahoo Finance chart endpoint.
   * Fundamentals: SEC EDGAR XBRL `companyfacts` (trailing-twelve-month FCF from 10-K + 10-Q where available); Yahoo Finance fundamentals for non-SEC listings such as `.TO` tickers.
 * **Valuation Models:**
-  * Multi-Stage Free Cash Flow to Firm (FCFF) Discounted Cash Flow (DCF), with sector WACC and growth estimated from historical FCF CAGR (clamped).
+  * Multi-Stage Free Cash Flow to Firm (FCFF) Discounted Cash Flow (DCF), with sector WACC, normalized (multi-year average) FCF, and growth from a robust (Theil-Sen) fit of historical FCF (clamped).
   * Reverse DCF (solving for the market-implied growth rate).
   * Look-through valuation for custom ETFs (intrinsic value per $1 invested).
 * **Storage:** Flat historical JSON snapshots (`data/snapshots/YYYY-MM-DD.json`). No external databases or servers needed.
-* **Frontend:** Static HTML/JS/CSS hosted on GitHub Pages with historical backtesting and ETF breakdown.
+* **Frontend:** Static HTML/JS/CSS hosted on GitHub Pages: filterable equity table (click a row to see every input behind its valuation), ETF breakdown, and a backtest comparing the cheapest and most expensive stocks against the equal-weight average.
 
-Stocks that cannot be valued (negative FCF, missing share count, no fundamentals) are shown with a reason instead of a number. An FCFF DCF is not meaningful for banks and insurers, so the Financials sector is excluded by default (`excluded_sectors`).
+Stocks that cannot be valued (negative FCF, missing share count, no fundamentals) are shown with a reason instead of a number. When debt exceeds the modelled enterprise value, the equity value is floored at zero. An FCFF DCF is not meaningful for banks and insurers, so the Financials sector is excluded by default (`excluded_sectors`).
 
 ## Configuration
 
 ### Model assumptions — [`config/model_params.json`](config/model_params.json)
 * `default_wacc` and `sector_wacc` (keyed by GICS sector)
 * `excluded_sectors`: sectors that are not valued (default: Financials)
+* `fcf_normalization_years`: the DCF uses the average of the latest FCF and the preceding fiscal years (1 = latest only)
 * `terminal_growth`, `forecast_years`
 * `growth`: `default` (used when history is too short or not positive), `floor`, `cap`, `min_history_years`
 * `fundamentals_cache`: entries older than `stale_after_days` are refetched, at most `max_refresh_per_run` per run
@@ -72,6 +73,6 @@ The SEC asks automated clients to identify themselves. Set the `SEC_USER_AGENT` 
    ```
 
 ## Automated GitHub Workflow
-* Scheduled via [`.github/workflows/daily_eval.yml`](.github/workflows/daily_eval.yml) to run daily at 16:00 UTC (12:00 PM EDT / 11:00 AM EST).
+* Scheduled via [`.github/workflows/daily_eval.yml`](.github/workflows/daily_eval.yml) to run on weekdays at 16:00 UTC (12:00 PM EDT / 11:00 AM EST).
 * Runs the unit tests, refreshes the universe, collects prices and fundamentals, and commits new snapshot JSONs to `main`.
 * GitHub Pages serves the `main` branch root; `index.html` redirects to the dashboard in `docs/`, which reads `data/` directly.

@@ -13,9 +13,10 @@ import sys
 import json
 import datetime
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
 
 from data_sources import SCHEMA_VERSION, fetch_market_price, fetch_fx_rate, fetch_fundamentals
-from valuation_models import compute_dcf, compute_reverse_dcf, estimate_growth, etf_look_through
+from valuation_models import compute_dcf, compute_reverse_dcf, estimate_growth, normalized_fcf, etf_look_through
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
@@ -23,6 +24,9 @@ SNAPSHOTS_DIR = DATA_DIR / "snapshots"
 UNIVERSE_FILE = DATA_DIR / "universe" / "universe.json"
 CACHE_FILE = DATA_DIR / "fundamentals_cache.json"
 PARAMS_FILE = BASE_DIR / "config" / "model_params.json"
+
+# Dated snapshots accumulate in git, so they keep only the raw fields the table and backtest use
+SNAPSHOT_RAW_FIELDS = ("source", "currency", "filed", "fetched_at", "fcf_basis", "free_cash_flow", "net_debt")
 
 
 def load_json(path, default):
@@ -32,9 +36,13 @@ def load_json(path, default):
     return default
 
 
-def save_json(path, obj):
+def save_json(path, obj, compact=False):
+    # Snapshots are written daily and kept in git, so they are stored without whitespace
     with open(path, "w") as f:
-        json.dump(obj, f, indent=2)
+        if compact:
+            json.dump(obj, f, separators=(",", ":"))
+        else:
+            json.dump(obj, f, indent=2)
 
 
 def is_stale(entry, today, stale_after_days):
@@ -68,7 +76,8 @@ def value_stock(price, price_ccy, fund, sector, params):
         return None, "no_fundamentals"
     if not fund.get("shares_outstanding"):
         return None, "no_shares"
-    fcf = fund.get("free_cash_flow")
+    fcf = normalized_fcf(fund.get("free_cash_flow"), fund.get("fcf_history"), fund.get("fcf_basis", "FY"),
+                         params.get("fcf_normalization_years", 1))
     if fcf is None or fcf <= 0:
         return None, "negative_fcf"
 
@@ -92,16 +101,20 @@ def value_stock(price, price_ccy, fund, sector, params):
     reverse = compute_reverse_dcf(market_price=price / fx, fcf=fcf, shares=shares, net_debt=net_debt, wacc=wacc,
                                   terminal_growth=params["terminal_growth"], forecast_years=params["forecast_years"])
 
+    # Debt exceeding enterprise value leaves nothing for shareholders; equity cannot be worth less than zero
+    status = "ok" if intrinsic > 0 else "debt_exceeds_value"
     return {
-        "intrinsic_dcf": intrinsic,
+        "intrinsic_dcf": max(intrinsic, 0.0),
         "market_premium_pct": round((price - intrinsic) / intrinsic * 100.0, 2) if intrinsic > 0 else None,
+        "fcf_used": fcf,
+        "enterprise_value": round(dcf["enterprise_value"], 3),
         "implied_growth_reverse_dcf": reverse["growth"] if reverse else None,
         "implied_growth_status": reverse["status"] if reverse else None,
         "wacc": wacc,
         "growth_rate_assumed": growth,
         "growth_source": growth_source,
         "fx_rate": fx
-    }, "ok"
+    }, status
 
 
 def run_daily_evaluation():
@@ -130,11 +143,9 @@ def run_daily_evaluation():
     print(f"Total unique constituents in universe: {len(all_tickers)}")
 
     # Prices first, so fundamentals are only fetched for tradable tickers
-    prices = {}
-    for ticker in all_tickers:
-        price, currency = fetch_market_price(ticker)
-        if price is not None:
-            prices[ticker] = (price, currency or "USD")
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        quotes = dict(zip(all_tickers, pool.map(fetch_market_price, all_tickers)))
+    prices = {t: (p, c or "USD") for t, (p, c) in quotes.items() if p is not None}
 
     min_priced = int(len(all_tickers) * params["min_priced_fraction"])
     if len(prices) < min_priced:
@@ -153,7 +164,8 @@ def run_daily_evaluation():
     today_snapshot = {
         "date": today_str,
         "timestamp": now.isoformat(),
-        "model": {k: params[k] for k in ("forecast_years", "terminal_growth", "default_wacc", "growth")},
+        "model": {k: params.get(k) for k in ("forecast_years", "terminal_growth", "default_wacc", "growth",
+                                             "fcf_normalization_years", "excluded_sectors")},
         "stocks": {},
         "etfs": {}
     }
@@ -172,7 +184,8 @@ def run_daily_evaluation():
             "sector": sectors.get(ticker),
             "indices": [name for name, members in index_members.items() if ticker in members],
             "valuation_status": status,
-            "raw": {k: v for k, v in fund.items() if k not in ("schema", "fcf_history")} if has_data else {}
+            "raw": {**{k: v for k, v in fund.items() if k != "schema"},
+                    "fcf_history": fund.get("fcf_history", [])[-6:]} if has_data else {}
         }
         if valuation:
             entry["valuation"] = valuation
@@ -191,8 +204,11 @@ def run_daily_evaluation():
 
     SNAPSHOTS_DIR.mkdir(parents=True, exist_ok=True)
     snapshot_path = SNAPSHOTS_DIR / f"{today_str}.json"
-    save_json(snapshot_path, today_snapshot)
-    save_json(DATA_DIR / "latest.json", today_snapshot)
+    slim = {**today_snapshot, "stocks": {
+        t: {**e, "raw": {k: e["raw"][k] for k in SNAPSHOT_RAW_FIELDS if k in e["raw"]}}
+        for t, e in today_snapshot["stocks"].items()}}
+    save_json(snapshot_path, slim, compact=True)
+    save_json(DATA_DIR / "latest.json", today_snapshot, compact=True)
 
     index_path = DATA_DIR / "history_index.json"
     history = load_json(index_path, [])

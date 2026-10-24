@@ -6,6 +6,7 @@ Valuation Models:
 4. ETF look-through valuation
 """
 
+import math
 import datetime
 
 REVERSE_DCF_LOW_G = -0.50
@@ -88,23 +89,43 @@ def compute_reverse_dcf(market_price, fcf, shares, net_debt, wacc=0.08, terminal
 
 def estimate_growth(fcf_history, default=0.04, floor=0.0, cap=0.15, min_years=3):
     """
-    Estimates forecast growth from historical annual FCF as a CAGR over up to the last 5 years,
-    clamped to [floor, cap]. Falls back to `default` when history is too short or not positive.
+    Estimates forecast growth from up to the last 6 annual FCF values as the median of pairwise log-growth
+    rates (Theil-Sen), which ignores a single unusual year instead of letting it set the growth rate the way
+    a point-to-point CAGR does.
+    The result is clamped to [floor, cap]. Falls back to `default` when history is too short or any
+    year has non-positive FCF (growth is not meaningful through a loss year).
 
     fcf_history: list of [period_end_iso, fcf] sorted ascending.
     Returns (growth_rate, source) where source is "historical" or "default".
     """
     points = (fcf_history or [])[-6:]
-    if len(points) < 2:
+    if len(points) < 3 or any(v is None or v <= 0 for _, v in points):
         return default, "default"
-    years = (datetime.date.fromisoformat(points[-1][0]) - datetime.date.fromisoformat(points[0][0])).days / 365.25
-    if years < min_years - 0.1:
+    t0 = datetime.date.fromisoformat(points[0][0])
+    xs = [(datetime.date.fromisoformat(d) - t0).days / 365.25 for d, _ in points]
+    if xs[-1] < min_years - 0.1:
         return default, "default"
-    first, last = points[0][1], points[-1][1]
-    if first is None or last is None or first <= 0 or last <= 0:
-        return default, "default"
-    cagr = (last / first) ** (1.0 / years) - 1.0
-    return round(min(max(cagr, floor), cap), 4), "historical"
+    ys = [math.log(v) for _, v in points]
+    slopes = sorted((ys[j] - ys[i]) / (xs[j] - xs[i])
+                    for i in range(len(xs)) for j in range(i + 1, len(xs)) if xs[j] > xs[i])
+    mid = len(slopes) // 2
+    slope = slopes[mid] if len(slopes) % 2 else (slopes[mid - 1] + slopes[mid]) / 2
+    growth = math.exp(slope) - 1.0
+    return round(min(max(growth, floor), cap), 4), "historical"
+
+
+def normalized_fcf(latest_fcf, fcf_history, basis="FY", years=3):
+    """
+    Averages the latest FCF (TTM or FY) with the preceding fiscal years so one unusually strong or weak
+    year (common for cyclicals) does not drive the whole valuation. years=1 disables normalization.
+    """
+    if latest_fcf is None:
+        return None
+    history = [v for _, v in (fcf_history or []) if v is not None]
+    # With an FY basis the latest value is already the last history point
+    prior = history[:-1] if basis == "FY" else history
+    values = [latest_fcf] + prior[::-1][:max(years - 1, 0)]
+    return round(sum(values) / len(values), 3)
 
 
 def etf_look_through(holdings, stocks):
@@ -113,7 +134,8 @@ def etf_look_through(holdings, stocks):
     w_i * (intrinsic_i / price_i) of intrinsic value, so the ratio is currency-agnostic as long as each
     stock's intrinsic value is expressed in its own price currency.
 
-    Only holdings with a valid valuation count toward coverage and the aggregate.
+    Only holdings with a valid valuation count toward coverage and the aggregate. A negative DCF value
+    (debt exceeding enterprise value) counts as zero: shareholders cannot lose more than the share price.
     """
     total_weight = sum(h.get("weight", 0) for h in holdings)
     valued_weight = 0.0
@@ -126,7 +148,7 @@ def etf_look_through(holdings, stocks):
         intrinsic = (stock.get("valuation") or {}).get("intrinsic_dcf")
         if not price or price <= 0 or intrinsic is None:
             continue
-        intrinsic_per_dollar += w * (intrinsic / price)
+        intrinsic_per_dollar += w * (max(intrinsic, 0.0) / price)
         valued_weight += w
 
     result = {

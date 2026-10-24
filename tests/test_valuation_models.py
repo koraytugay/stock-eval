@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
-from valuation_models import compute_dcf, compute_reverse_dcf, estimate_growth, etf_look_through
+from valuation_models import compute_dcf, compute_reverse_dcf, estimate_growth, normalized_fcf, etf_look_through
 
 
 class ComputeDcfTest(unittest.TestCase):
@@ -46,16 +46,44 @@ class EstimateGrowthTest(unittest.TestCase):
         self.assertEqual(src, "historical")
         self.assertAlmostEqual(g, 0.10, places=2)
 
+    def test_robust_to_one_outlier_year(self):
+        # A spike in the final year would dominate a point-to-point CAGR
+        hist = [["2019-12-31", 100.0], ["2020-12-31", 105.0], ["2021-12-31", 110.0],
+                ["2022-12-31", 116.0], ["2023-12-31", 300.0]]
+        g, _ = estimate_growth(hist, cap=1.0)
+        cagr = (300.0 / 100.0) ** 0.25 - 1
+        self.assertLess(g, cagr - 0.1)
+
     def test_clamped(self):
-        hist = [["2020-12-31", 1.0], ["2023-12-31", 100.0]]
+        hist = [["2020-12-31", 1.0], ["2021-12-31", 10.0], ["2023-12-31", 100.0]]
         self.assertEqual(estimate_growth(hist, cap=0.15), (0.15, "historical"))
-        hist = [["2020-12-31", 100.0], ["2023-12-31", 50.0]]
+        hist = [["2020-12-31", 100.0], ["2021-12-31", 80.0], ["2023-12-31", 50.0]]
         self.assertEqual(estimate_growth(hist, floor=0.0), (0.0, "historical"))
 
     def test_fallbacks(self):
         self.assertEqual(estimate_growth([], default=0.04), (0.04, "default"))
         self.assertEqual(estimate_growth([["2022-12-31", 1.0], ["2023-12-31", 2.0]], default=0.04), (0.04, "default"))
-        self.assertEqual(estimate_growth([["2019-12-31", -1.0], ["2023-12-31", 2.0]], default=0.04), (0.04, "default"))
+        self.assertEqual(estimate_growth([["2019-12-31", 1.0], ["2021-12-31", -1.0], ["2023-12-31", 2.0]], default=0.04),
+                         (0.04, "default"))
+        # Three points spanning under min_years
+        self.assertEqual(estimate_growth([["2022-01-31", 1.0], ["2022-12-31", 2.0], ["2023-06-30", 3.0]], default=0.04),
+                         (0.04, "default"))
+
+
+class NormalizedFcfTest(unittest.TestCase):
+    HIST = [["2021-12-31", 3.0], ["2022-12-31", 6.0], ["2023-12-31", 9.0]]
+
+    def test_fy_basis_averages_last_years(self):
+        self.assertEqual(normalized_fcf(9.0, self.HIST, "FY", 3), 6.0)
+        self.assertEqual(normalized_fcf(9.0, self.HIST, "FY", 2), 7.5)
+
+    def test_ttm_basis_includes_all_fiscal_years_before_it(self):
+        self.assertEqual(normalized_fcf(12.0, self.HIST, "TTM", 3), 9.0)
+
+    def test_disabled_and_short_history(self):
+        self.assertEqual(normalized_fcf(9.0, self.HIST, "FY", 1), 9.0)
+        self.assertEqual(normalized_fcf(4.0, [], "TTM", 3), 4.0)
+        self.assertIsNone(normalized_fcf(None, self.HIST))
 
 
 class EtfLookThroughTest(unittest.TestCase):
@@ -71,6 +99,13 @@ class EtfLookThroughTest(unittest.TestCase):
         self.assertEqual(res["covered_weight_pct"], 50.0)
         self.assertAlmostEqual(res["intrinsic_per_dollar"], 1.25)
         self.assertAlmostEqual(res["market_premium_pct"], -20.0)
+
+    def test_negative_value_counts_as_zero(self):
+        stocks = {"A": {"market_price": 10.0, "valuation": {"intrinsic_dcf": 20.0}},
+                  "B": {"market_price": 10.0, "valuation": {"intrinsic_dcf": -50.0}}}
+        res = etf_look_through([{"ticker": "A", "weight": 0.5}, {"ticker": "B", "weight": 0.5}], stocks)
+        self.assertAlmostEqual(res["intrinsic_per_dollar"], 1.0)
+        self.assertAlmostEqual(res["market_premium_pct"], 0.0)
 
     def test_nothing_valued(self):
         res = etf_look_through([{"ticker": "X", "weight": 1.0}], {"X": {"market_price": 5.0}})

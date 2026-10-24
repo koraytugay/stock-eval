@@ -2,8 +2,8 @@ name: Daily Fundamental Valuation Engine
 
 on:
   schedule:
-    # Runs at 16:00 UTC daily (12:00 PM EDT / 11:00 AM EST)
-    - cron: '0 16 * * *'
+    # Runs at 16:00 UTC on weekdays (12:00 PM EDT / 11:00 AM EST); markets are closed on weekends
+    - cron: '0 16 * * 1-5'
   workflow_dispatch: # Allows manual trigger anytime from GitHub UI
 
 permissions:

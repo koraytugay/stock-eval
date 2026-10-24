@@ -253,7 +253,7 @@ select:focus, input:focus {
   box-shadow: var(--card-shadow);
 }
 
-.table-controls input {
+.table-controls input[type="text"] {
   flex: 1;
   min-width: 160px;
 }
@@ -510,4 +510,129 @@ footer {
   .etf-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Filters, row details, backtest baskets */
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 8px;
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: #555;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-label:hover {
+  background-color: #f8f8f8;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: none;
+  accent-color: #333;
+  cursor: pointer;
+}
+
+.table-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: -6px 4px 8px 4px;
+}
+
+.stock-row {
+  cursor: pointer;
+}
+
+.stock-row.expanded td {
+  background: #f6f8fa;
+}
+
+.detail-row td,
+tbody tr.detail-row:hover td {
+  background: #fafbfc;
+  padding: 14px 16px;
+}
+
+.detail-explanation {
+  font-size: 0.85rem;
+  color: var(--text-strong);
+  background: var(--accent-soft);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px 20px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+}
+
+.detail-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-label);
+}
+
+.detail-history {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.detail-history .detail-label {
+  margin-right: 4px;
+}
+
+.history-chip {
+  font-size: 0.78rem;
+  padding: 2px 8px;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+}
+
+.stock-detail .muted {
+  font-size: 0.8rem;
+  margin-top: 10px;
+}
+
+.backtest-wrapper .kpi-grid {
+  margin: 12px 0;
+}
+
+.backtest-note {
+  text-align: center;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+}
+
+.backtest-baskets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 16px;
+}
+
+.backtest-basket h4 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 6px;
 }

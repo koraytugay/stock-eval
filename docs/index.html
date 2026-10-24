@@ -30,9 +30,9 @@
         <span id="kpi-stocks-sub" class="kpi-sub">S&P 500, QQQ, TSX Composite</span>
       </div>
       <div class="kpi-card">
-        <h3>Custom ETFs Monitored</h3>
-        <p id="kpi-etf-count" class="kpi-value">-</p>
-        <span class="kpi-sub">Look-through weighted portfolios</span>
+        <h3>Median Premium vs DCF</h3>
+        <p id="kpi-median-val" class="kpi-value">-</p>
+        <span id="kpi-median-sub" class="kpi-sub">Across valued equities</span>
       </div>
       <div class="kpi-card">
         <h3>Cheapest vs Intrinsic</h3>
@@ -67,16 +67,28 @@
           </select>
         </div>
         <div class="filter-group">
+          <label for="filter-sector">Sector:</label>
+          <select id="filter-sector">
+            <option value="ALL">All Sectors</option>
+          </select>
+        </div>
+        <label class="checkbox-label">
+          <input type="checkbox" id="valued-only" checked />
+          Valued only
+        </label>
+        <div class="filter-group">
           <label>Sort By:</label>
           <select id="sort-by">
             <option value="premium_asc">Cheapest (Lowest Premium)</option>
             <option value="premium_desc">Most Expensive (Highest Premium)</option>
             <option value="growth_desc">Highest Implied Growth</option>
             <option value="price_desc">Highest Price</option>
+            <option value="ticker_asc">Ticker (A-Z)</option>
           </select>
         </div>
       </div>
 
+      <p class="table-hint"><span id="result-count"></span> Click a row to see the inputs behind its valuation.</p>
       <div class="table-wrapper">
         <table id="stocks-table">
           <thead>
@@ -113,7 +125,7 @@
     <section id="tab-accuracy" class="tab-content">
       <div class="backtest-controls">
         <h2>Historical Accuracy & Returns Tracker</h2>
-        <p>Compare historical predictions against later market prices to check if undervalued stocks generated alpha.</p>
+        <p>Buy the cheapest and the most expensive stocks (by premium vs DCF) on the base date and compare their price returns with the average of every stock valued that day.</p>
         <div class="backtest-selectors">
           <div>
             <label for="backtest-base-date">Base Snapshot Date:</label>
@@ -122,6 +134,15 @@
           <div>
             <label for="backtest-target-date">Evaluation Date:</label>
             <select id="backtest-target-date"></select>
+          </div>
+          <div>
+            <label for="backtest-size">Basket Size:</label>
+            <select id="backtest-size">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+            </select>
           </div>
           <button id="run-backtest-btn" class="btn-primary">Compute Performance</button>
         </div>
