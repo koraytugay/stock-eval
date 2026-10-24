@@ -3,7 +3,8 @@ Script to fetch and cache universe lists:
 - S&P 500 (SPY)
 - Nasdaq 100 (QQQ)
 - S&P/TSX Capped Composite (XIC) - large-cap proxy list
-- Custom user-defined ETFs (from config/custom_etfs.json)
+- Custom ETFs (from config/custom_etfs.json): published top holdings are fetched and funds of funds
+  are expanded, or holdings can be listed by hand
 
 Also records a GICS sector per ticker (used for sector WACC). If a remote list cannot be fetched,
 the previously saved list is reused so a transient outage does not shrink the universe.
@@ -13,6 +14,10 @@ import csv
 import json
 import urllib.request
 from pathlib import Path
+
+from etf_holdings import resolve_holdings, fetch_yahoo_sector, YAHOO_TO_GICS
+
+GICS_SECTORS = set(YAHOO_TO_GICS.values())
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 CONFIG_PATH = BASE_DIR / "config" / "custom_etfs.json"
@@ -75,12 +80,33 @@ def fetch_qqq():
     return None
 
 
-def load_custom_etfs():
+def load_custom_etf_config():
     """Load user-defined ETFs from config/custom_etfs.json"""
     if CONFIG_PATH.exists():
         with open(CONFIG_PATH, "r") as f:
-            return json.load(f).get("etfs", {})
+            return json.load(f)
     return {}
+
+
+def build_custom_etfs(config, previous_custom):
+    """Resolves holdings for ETFs configured with a `holdings_page`; hand-listed holdings are kept as-is."""
+    aliases = config.get("fund_aliases", {})
+    etfs = {}
+    for etf_id, etf in config.get("etfs", {}).items():
+        etf = dict(etf)
+        page = etf.get("holdings_page")
+        if page:
+            resolved = resolve_holdings(page, aliases)
+            if resolved:
+                etf["holdings"] = [{"ticker": t, "weight": round(h["weight"], 6), "name": h["name"]}
+                                   for t, h in sorted(resolved.items(), key=lambda kv: -kv[1]["weight"])]
+            else:
+                etf["holdings"] = previous_custom.get(etf_id, {}).get("holdings", [])
+                print(f"Reusing previous holdings for {etf_id} ({len(etf['holdings'])})")
+            listed = sum(h["weight"] for h in etf["holdings"])
+            print(f"  {etf_id}: {len(etf['holdings'])} holdings covering {listed * 100:.1f}% of the fund")
+        etfs[etf_id] = etf
+    return etfs
 
 
 def load_previous_universe():
@@ -107,12 +133,21 @@ def update_all_universes():
     sp500, sp500_sectors = resolve("SP500", fetch_sp500())
     qqq, qqq_sectors = resolve("QQQ", fetch_qqq())
     xic = list(XIC_TICKERS)
-    custom_etfs = load_custom_etfs()
+    custom_etfs = build_custom_etfs(load_custom_etf_config(), previous.get("CUSTOM", {}))
 
     # S&P dataset uses true GICS sectors; QQQ dataset labels are often industries, so they rank last
     sectors = {}
     for mapping in (qqq_sectors, XIC_TICKERS, sp500_sectors):
         sectors.update({t: s for t, s in mapping.items() if s})
+
+    # Tickers without a GICS sector (QQQ industry labels, international ETF holdings) get one from Yahoo
+    needs_sector = [t for t in set(qqq) if sectors.get(t) not in GICS_SECTORS]
+    needs_sector += [h["ticker"] for etf in custom_etfs.values() for h in etf.get("holdings", [])
+                     if sectors.get(h["ticker"]) not in GICS_SECTORS]
+    for t in sorted(set(needs_sector)):
+        sector = prev_sectors.get(t) if prev_sectors.get(t) in GICS_SECTORS else fetch_yahoo_sector(t)
+        if sector:
+            sectors[t] = sector
 
     universe = {
         "SP500": {"name": "S&P 500 Index", "tickers": sp500},

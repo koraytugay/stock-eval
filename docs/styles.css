@@ -636,3 +636,16 @@ tbody tr.detail-row:hover td {
   font-weight: 700;
   margin-bottom: 6px;
 }
+
+.etf-coverage {
+  font-size: 0.8rem;
+  margin: 6px 0 4px 0;
+}
+
+.etf-more summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent-color);
+  margin-top: 10px;
+}

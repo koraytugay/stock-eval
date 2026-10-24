@@ -16,7 +16,8 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
 from data_sources import SCHEMA_VERSION, fetch_market_price, fetch_fx_rate, fetch_fundamentals
-from valuation_models import compute_dcf, compute_reverse_dcf, estimate_growth, normalized_fcf, etf_look_through
+from valuation_models import (compute_dcf, compute_reverse_dcf, estimate_growth, normalized_fcf, etf_look_through,
+                              infer_adr_ratio)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
@@ -68,7 +69,7 @@ def refresh_fundamentals(tickers, cache, today, params):
             print(f"  ...{idx}/{len(budget)}")
 
 
-def value_stock(price, price_ccy, fund, sector, params):
+def value_stock(ticker, price, price_ccy, fund, sector, params):
     """Returns (valuation dict or None, status string)."""
     if sector in params.get("excluded_sectors", []):
         return None, "sector_excluded"
@@ -90,6 +91,16 @@ def value_stock(price, price_ccy, fund, sector, params):
     growth, growth_source = estimate_growth(fund.get("fcf_history"), g_cfg["default"], g_cfg["floor"],
                                             g_cfg["cap"], g_cfg["min_history_years"])
     shares, net_debt = fund["shares_outstanding"], fund.get("net_debt", 0.0)
+
+    # A US-listed foreign company (ADR) trades in receipts that can each represent several ordinary shares;
+    # express the share count in receipts so the per-share value matches the quoted price
+    adr_ratio = None
+    if fund.get("source") == "Yahoo Finance" and "." not in ticker and fund.get("market_cap"):
+        mcap_fx = fetch_fx_rate(price_ccy, fund.get("market_cap_currency") or price_ccy)
+        if mcap_fx:
+            adr_ratio = infer_adr_ratio(price * mcap_fx, fund["market_cap"], shares)
+            if adr_ratio:
+                shares = shares / adr_ratio
 
     dcf = compute_dcf(fcf=fcf, growth_rate=growth, terminal_growth=params["terminal_growth"], wacc=wacc,
                       net_debt=net_debt, shares=shares, forecast_years=params["forecast_years"])
@@ -113,7 +124,8 @@ def value_stock(price, price_ccy, fund, sector, params):
         "wacc": wacc,
         "growth_rate_assumed": growth,
         "growth_source": growth_source,
-        "fx_rate": fx
+        "fx_rate": fx,
+        "adr_ratio": adr_ratio if adr_ratio not in (None, 1) else None
     }, status
 
 
@@ -174,7 +186,7 @@ def run_daily_evaluation():
     for ticker, (price, currency) in prices.items():
         fund = cache.get(ticker) or {}
         has_data = bool(fund.get("source"))
-        valuation, status = value_stock(price, currency, fund, sectors.get(ticker), params)
+        valuation, status = value_stock(ticker, price, currency, fund, sectors.get(ticker), params)
         status_counts[status] = status_counts.get(status, 0) + 1
 
         entry = {

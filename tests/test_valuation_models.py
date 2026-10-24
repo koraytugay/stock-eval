@@ -4,7 +4,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
-from valuation_models import compute_dcf, compute_reverse_dcf, estimate_growth, normalized_fcf, etf_look_through
+from valuation_models import (compute_dcf, compute_reverse_dcf, estimate_growth, normalized_fcf, etf_look_through,
+                              infer_adr_ratio)
 
 
 class ComputeDcfTest(unittest.TestCase):
@@ -107,10 +108,30 @@ class EtfLookThroughTest(unittest.TestCase):
         self.assertAlmostEqual(res["intrinsic_per_dollar"], 1.0)
         self.assertAlmostEqual(res["market_premium_pct"], 0.0)
 
+    def test_partial_holdings_list_measures_coverage_against_whole_fund(self):
+        stocks = {"A": {"market_price": 10.0, "valuation": {"intrinsic_dcf": 5.0}},
+                  "B": {"market_price": 10.0}}
+        res = etf_look_through([{"ticker": "A", "weight": 0.2}, {"ticker": "B", "weight": 0.1}], stocks)
+        self.assertEqual(res["listed_weight_pct"], 30.0)
+        self.assertEqual(res["covered_weight_pct"], 20.0)
+        self.assertAlmostEqual(res["intrinsic_per_dollar"], 0.5)
+
     def test_nothing_valued(self):
         res = etf_look_through([{"ticker": "X", "weight": 1.0}], {"X": {"market_price": 5.0}})
         self.assertEqual(res["covered_weight_pct"], 0.0)
         self.assertIsNone(res["intrinsic_per_dollar"])
+
+
+class AdrRatioTest(unittest.TestCase):
+    def test_snaps_to_common_ratio(self):
+        # Market cap 275B over 5.54B ordinary shares = ~49.6/share; receipt at 108 represents 2 shares
+        self.assertEqual(infer_adr_ratio(108.18, 274.3, 5.542), 2)
+        self.assertEqual(infer_adr_ratio(23.5, 258.9, 11.256), 1)
+        self.assertEqual(infer_adr_ratio(4.9, 100.0, 2.0), 0.1)
+
+    def test_unusable_inputs(self):
+        self.assertIsNone(infer_adr_ratio(10.0, None, 1.0))
+        self.assertIsNone(infer_adr_ratio(10.0, 5.0, 0.0))
 
 
 if __name__ == "__main__":

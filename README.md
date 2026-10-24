@@ -3,7 +3,7 @@
 An automated, serverless equity valuation and look-through ETF engine powered by **GitHub Actions** and hosted on **GitHub Pages**.
 
 ## Overview
-* **Universe:** S&P 500, Invesco QQQ (Nasdaq 100), a large-cap proxy list for TSE:XIC (S&P/TSX Composite), and user-defined custom ETFs.
+* **Universe:** S&P 500, Invesco QQQ (Nasdaq 100), a large-cap proxy list for TSE:XIC (S&P/TSX Composite), and the top holdings of the configured ETFs (including international stocks).
 * **Data sources:**
   * Prices and FX rates: Yahoo Finance chart endpoint.
   * Fundamentals: SEC EDGAR XBRL `companyfacts` (trailing-twelve-month FCF from 10-K + 10-Q where available); Yahoo Finance fundamentals for non-SEC listings such as `.TO` tickers.
@@ -27,24 +27,20 @@ Stocks that cannot be valued (negative FCF, missing share count, no fundamentals
 * `fundamentals_cache`: entries older than `stale_after_days` are refetched, at most `max_refresh_per_run` per run
 * `min_priced_fraction`: the run fails without writing a snapshot if fewer than this share of tickers get a price
 
-### Custom ETFs — [`config/custom_etfs.json`](config/custom_etfs.json)
+### ETFs — [`config/custom_etfs.json`](config/custom_etfs.json)
+Each ETF is valued by look-through. With `holdings_page` (a stockanalysis.com path) the published top holdings are fetched on every run, and funds of funds are expanded into the holdings of their underlying ETFs (`fund_aliases` maps an underlying fund without its own page to an equivalent one). Holdings can also be listed by hand:
 
 ```json
 {
   "etfs": {
-    "TSE:CAUS": {
-      "name": "CI U.S. Equity Index ETF",
-      "currency": "CAD",
-      "holdings": [
-        { "ticker": "MSFT", "weight": 0.25 },
-        { "ticker": "AAPL", "weight": 0.25 },
-        { "ticker": "GOOGL", "weight": 0.25 },
-        { "ticker": "AMZN", "weight": 0.25 }
-      ]
-    }
+    "TSE:XEQT": { "name": "iShares Core Equity ETF Portfolio", "currency": "CAD", "holdings_page": "quote/tsx/XEQT" },
+    "MY:BASKET": { "name": "Hand-picked basket", "currency": "CAD",
+                   "holdings": [{ "ticker": "MSFT", "weight": 0.5 }, { "ticker": "RY.TO", "weight": 0.5 }] }
   }
 }
 ```
+
+Free holdings pages only list the top 10–25 positions, so each ETF card reports how much of the fund the published holdings cover and how much of it is actually valued. International holdings are priced and valued through Yahoo Finance (London prices are converted from pence; ADR share ratios are inferred from market cap).
 
 ### SEC User-Agent
 The SEC asks automated clients to identify themselves. Set the `SEC_USER_AGENT` environment variable (locally) or a repository **variable** of the same name (in GitHub Actions) to something like `Your Name you@example.com`.

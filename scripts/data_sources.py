@@ -63,14 +63,21 @@ def _b(v):
 # Yahoo prices / FX
 # ---------------------------------------------------------------------------
 
+MINOR_UNIT_CURRENCIES = {"GBp": "GBP", "GBX": "GBP", "ZAc": "ZAR", "ILA": "ILS"}
+
+
 def fetch_market_price(ticker):
     """Fetch current market price and currency via Yahoo Chart endpoint"""
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=1d"
     try:
         meta = _http_json(url, YAHOO_HEADERS, timeout=8)['chart']['result'][0]['meta']
-        return meta.get('regularMarketPrice'), meta.get('currency', 'USD')
+        price, currency = meta.get('regularMarketPrice'), meta.get('currency', 'USD')
     except Exception:
         return None, None
+    # London, Johannesburg and Tel Aviv quote in minor units (pence, cents, agorot)
+    if currency in MINOR_UNIT_CURRENCIES and price is not None:
+        return price / 100.0, MINOR_UNIT_CURRENCIES[currency]
+    return price, currency
 
 
 _fx_cache = {}
@@ -290,6 +297,7 @@ YAHOO_TYPES = [
     "annualCashAndCashEquivalents", "quarterlyCashAndCashEquivalents",
     "annualTotalDebt", "quarterlyTotalDebt",
     "annualOrdinarySharesNumber", "quarterlyOrdinarySharesNumber",
+    "trailingMarketCap",
 ]
 
 
@@ -325,6 +333,7 @@ def parse_yahoo_timeseries(data, fetched_at=None):
     cash_p = latest("quarterlyCashAndCashEquivalents", "annualCashAndCashEquivalents")
     debt_p = latest("quarterlyTotalDebt", "annualTotalDebt")
     shares_p = latest("quarterlyOrdinarySharesNumber", "annualOrdinarySharesNumber")
+    mcap_p = latest("trailingMarketCap")
 
     val = lambda p: p["reportedValue"]["raw"] if p else 0.0
     warnings = [w for w, p in (("capex_missing", capex_p), ("cash_missing", cash_p),
@@ -354,6 +363,9 @@ def parse_yahoo_timeseries(data, fetched_at=None):
         "total_debt": _b(debt),
         "net_debt": _b(debt - cash),
         "shares_outstanding": _b(val(shares_p)),
+        # Used to infer the ADR ratio for US-listed foreign companies
+        "market_cap": _b(val(mcap_p)) if mcap_p else None,
+        "market_cap_currency": mcap_p.get("currencyCode") if mcap_p else None,
         "fcf_history": fcf_history,
         "warnings": warnings
     }

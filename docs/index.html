@@ -64,6 +64,7 @@
             <option value="SP500">S&P 500</option>
             <option value="QQQ">QQQ (Nasdaq 100)</option>
             <option value="XIC">TSX Composite</option>
+            <option value="MYETFS">Held by my ETFs</option>
           </select>
         </div>
         <div class="filter-group">
@@ -115,8 +116,8 @@
     <!-- TAB 2: Custom ETFs Look-Through -->
     <section id="tab-etfs" class="tab-content">
       <div class="etf-intro">
-        <h2>Custom & Tracked ETF Look-Through Portfolios</h2>
-        <p>Each holding contributes its weight &times; (DCF value / price), giving the intrinsic value of $1 invested across the holdings defined in <code>config/custom_etfs.json</code>. Holdings without a valid DCF are excluded and reduce the &ldquo;Valued&rdquo; coverage.</p>
+        <h2>My ETFs: Look-Through Valuation</h2>
+        <p>Each ETF is valued through its published top holdings (funds of funds such as XEQT are expanded into their underlying ETFs). Every valued holding contributes its weight &times; (DCF value / price), giving the intrinsic value of $1 invested in the valued part of the fund. Banks and insurers are not valued, and a DCF value below zero counts as zero.</p>
       </div>
       <div id="etf-cards-container" class="etf-grid"></div>
     </section>

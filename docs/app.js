@@ -14,6 +14,7 @@ const STATUS_LABELS = {
   no_shares: "Share count missing",
   negative_fcf: "Negative FCF",
   no_fx_rate: "FX rate unavailable",
+  no_price: "No price",
   sector_excluded: "Sector excluded (FCFF N/A)",
   debt_exceeds_value: "Debt exceeds value",
   model_not_applicable: "Model not applicable"
@@ -205,7 +206,10 @@ function renderStocksTable() {
   }
 
   // Index, sector and valuation filters
-  if (filterIndex !== "ALL") {
+  if (filterIndex === "MYETFS") {
+    const held = new Set(Object.values(currentSnapshot.etfs || {}).flatMap(e => (e.holdings || []).map(h => h.ticker)));
+    list = list.filter(s => held.has(s.ticker));
+  } else if (filterIndex !== "ALL") {
     list = list.filter(s => s.indices && s.indices.includes(filterIndex));
   }
   if (filterSector !== "ALL") {
@@ -307,6 +311,7 @@ function stockDetailHtml(s) {
         ${item("Discount rate (WACC)", pct(val.wacc))}
         ${item("Terminal growth", pct(model.terminal_growth))}
         ${item("FX rate to listing currency", typeof val.fx_rate === "number" && val.fx_rate !== 1 ? fmtNum(val.fx_rate, 4) : "-")}
+        ${val.adr_ratio ? item("Shares per ADR (inferred)", fmtNum(val.adr_ratio, 2)) : ""}
       </div>
       ${history ? `<div class="detail-history"><span class="detail-label">Annual FCF history (B ${ccy})</span>${history}</div>` : ""}
       ${warnings ? `<p class="muted">Data gaps: ${warnings}</p>` : ""}
@@ -325,23 +330,34 @@ function renderETFs() {
   }
 
   container.innerHTML = etfs.map(([etfId, data]) => {
-    const holdings = data.holdings || [];
-    const holdingsRows = holdings.map(h => {
+    const holdings = (data.holdings || []).slice().sort((a, b) => b.weight - a.weight);
+    const holdingRow = h => {
       const stock = (currentSnapshot.stocks || {})[h.ticker] || {};
       const val = stock.valuation || {};
-      const status = stock.valuation_status || (stock.valuation ? "ok" : "no_fundamentals");
+      const status = !stock.ticker ? "no_price" : stock.valuation_status || (stock.valuation ? "ok" : "no_fundamentals");
       const premium = val.market_premium_pct;
       const premiumClass = typeof premium === "number" ? (premium < 0 ? "premium-discount" : "premium-expensive") : "muted";
       return `
         <tr>
-          <td><strong>${escapeHtml(h.ticker)}</strong></td>
-          <td>${fmtNum(h.weight * 100, 1)}%</td>
+          <td><strong>${escapeHtml(h.ticker)}</strong>${h.name ? `<span class="status-note">${escapeHtml(h.name)}</span>` : ""}</td>
+          <td>${fmtNum(h.weight * 100, 2)}%</td>
           <td>${fmtNum(stock.market_price)} ${escapeHtml(stock.currency || "")}</td>
           <td>${status === "ok" ? fmtNum(val.intrinsic_dcf) : `<span class="muted">${escapeHtml(STATUS_LABELS[status] || status)}</span>`}</td>
           <td class="${premiumClass}">${fmtPct(premium)}</td>
         </tr>
       `;
-    }).join("");
+    };
+    const VISIBLE = 15;
+    const holdingsTable = rows => `
+      <table class="etf-holdings-table">
+        <thead><tr><th>Holding</th><th>Fund Weight</th><th>Price</th><th>DCF</th><th>Premium</th></tr></thead>
+        <tbody>${rows.map(holdingRow).join("")}</tbody>
+      </table>`;
+    const rest = holdings.slice(VISIBLE);
+    const coverage = typeof data.listed_weight_pct === "number"
+      ? `<p class="muted etf-coverage">Published holdings cover ${fmtNum(data.listed_weight_pct, 1)}% of the fund;
+         ${fmtNum(data.covered_weight_pct, 1)}% has a DCF valuation and drives the figures above.</p>`
+      : "";
 
     // Snapshots written before the look-through rework only have weighted per-share sums
     const summary = data.intrinsic_per_dollar !== undefined
@@ -359,21 +375,9 @@ function renderETFs() {
           <span class="badge" title="Share of portfolio weight with a valid DCF valuation">${escapeHtml(data.covered_weight_pct)}% Valued</span>
         </div>
         ${summary}
-
-        <table class="etf-holdings-table">
-          <thead>
-            <tr>
-              <th>Holding</th>
-              <th>Weight</th>
-              <th>Price</th>
-              <th>DCF</th>
-              <th>Premium</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${holdingsRows}
-          </tbody>
-        </table>
+        ${coverage}
+        ${holdingsTable(holdings.slice(0, VISIBLE))}
+        ${rest.length ? `<details class="etf-more"><summary>Show ${rest.length} more holdings</summary>${holdingsTable(rest)}</details>` : ""}
       </div>
     `;
   }).join("");

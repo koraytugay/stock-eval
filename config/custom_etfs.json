@@ -1,26 +1,28 @@
 {
-  "description": "User-defined custom ETF holdings and weights. Weights should ideally sum to 1.0 or 100%.",
+  "description": "ETFs valued by look-through. Use holdings_page (a stockanalysis.com path) to fetch published top holdings automatically, or list holdings by hand as [{\"ticker\": \"MSFT\", \"weight\": 0.25}]. Weights are fractions of the fund.",
+  "fund_aliases": {
+    "TSX-XTOT": "etf/itot"
+  },
   "etfs": {
-    "TSE:CADE": {
-      "name": "CI 1-3 Month T-Bill / CAD Enhanced ETF (Example)",
+    "TSE:XEQT": {
+      "name": "iShares Core Equity ETF Portfolio",
       "currency": "CAD",
-      "holdings": [
-        { "ticker": "RY.TO", "weight": 0.20 },
-        { "ticker": "TD.TO", "weight": 0.20 },
-        { "ticker": "ENB.TO", "weight": 0.20 },
-        { "ticker": "CNR.TO", "weight": 0.20 },
-        { "ticker": "CP.TO", "weight": 0.20 }
-      ]
+      "holdings_page": "quote/tsx/XEQT"
+    },
+    "TSE:XEF": {
+      "name": "iShares Core MSCI EAFE IMI Index ETF",
+      "currency": "CAD",
+      "holdings_page": "quote/tsx/XEF"
     },
     "TSE:CAUS": {
-      "name": "CI U.S. Equity Index ETF (Example)",
+      "name": "Avantis CIBC U.S. All-Cap Equity ETF",
       "currency": "CAD",
-      "holdings": [
-        { "ticker": "MSFT", "weight": 0.25 },
-        { "ticker": "AAPL", "weight": 0.25 },
-        { "ticker": "GOOGL", "weight": 0.25 },
-        { "ticker": "AMZN", "weight": 0.25 }
-      ]
+      "holdings_page": "quote/tsx/CAUS"
+    },
+    "TSE:CADE": {
+      "name": "Avantis CIBC International Equity ETF",
+      "currency": "CAD",
+      "holdings_page": "quote/tsx/CADE"
     }
   }
 }

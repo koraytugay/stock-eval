@@ -137,7 +137,9 @@ def etf_look_through(holdings, stocks):
     Only holdings with a valid valuation count toward coverage and the aggregate. A negative DCF value
     (debt exceeding enterprise value) counts as zero: shareholders cannot lose more than the share price.
     """
-    total_weight = sum(h.get("weight", 0) for h in holdings)
+    # Holdings may list only the fund's top positions, so coverage is measured against the whole fund
+    listed_weight = sum(h.get("weight", 0) for h in holdings)
+    total_weight = max(listed_weight, 1.0)
     valued_weight = 0.0
     intrinsic_per_dollar = 0.0
 
@@ -153,7 +155,8 @@ def etf_look_through(holdings, stocks):
 
     result = {
         "holdings_count": len(holdings),
-        "covered_weight_pct": round(valued_weight / total_weight * 100, 1) if total_weight > 0 else 0.0,
+        "listed_weight_pct": round(listed_weight / total_weight * 100, 1),
+        "covered_weight_pct": round(valued_weight / total_weight * 100, 1),
         "intrinsic_per_dollar": None,
         "market_premium_pct": None
     }
@@ -163,3 +166,17 @@ def etf_look_through(holdings, stocks):
         if per_dollar > 0:
             result["market_premium_pct"] = round((1.0 / per_dollar - 1.0) * 100.0, 2)
     return result
+
+
+COMMON_ADR_RATIOS = [0.1, 0.2, 0.25, 0.5, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20, 25, 40, 50, 100]
+
+
+def infer_adr_ratio(price, market_cap, shares):
+    """
+    Ordinary shares represented by one depositary receipt, inferred from price vs market cap per share and
+    snapped to the nearest common ratio (in log space). Returns None if the inputs are unusable.
+    """
+    if not price or not market_cap or not shares or price <= 0 or market_cap <= 0 or shares <= 0:
+        return None
+    raw = price / (market_cap / shares)
+    return min(COMMON_ADR_RATIOS, key=lambda r: abs(math.log(raw / r)))
