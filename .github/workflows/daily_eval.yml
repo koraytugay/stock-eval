@@ -1,0 +1,49 @@
+name: Daily Fundamental Valuation Engine
+
+on:
+  schedule:
+    # Runs at 16:00 UTC daily (12:00 PM EDT / 11:00 AM EST)
+    - cron: '0 16 * * *'
+  workflow_dispatch: # Allows manual trigger anytime from GitHub UI
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "valuation-run"
+  cancel-in-progress: false
+
+jobs:
+  evaluate-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Update Universe (SP500, QQQ, XIC, Custom ETFs)
+        run: |
+          python scripts/update_universe.py
+
+      - name: Run Daily Valuation & Save Snapshots
+        run: |
+          python scripts/fetch_and_evaluate.py
+
+      - name: Commit and Push Snapshot JSONs
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Automated daily valuation snapshot: $(date -u +'%Y-%m-%d')" && git push)
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs

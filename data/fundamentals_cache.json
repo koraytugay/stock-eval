@@ -1,0 +1,202 @@
+{
+  "A": {
+    "operating_cash_flow": 1.559,
+    "capex": 0.407,
+    "free_cash_flow": 1.152,
+    "total_cash": 1.758,
+    "total_debt": 2.73,
+    "net_debt": 0.972,
+    "shares_outstanding": 0.282,
+    "source": "SEC EDGAR"
+  },
+  "ABBV": {
+    "operating_cash_flow": 19.03,
+    "capex": 1.214,
+    "free_cash_flow": 17.816,
+    "total_cash": 6.569,
+    "total_debt": 0.0,
+    "net_debt": -6.569,
+    "shares_outstanding": 0.0,
+    "source": "SEC EDGAR"
+  },
+  "ABNB": {
+    "operating_cash_flow": 4.646,
+    "capex": 0.025,
+    "free_cash_flow": 4.621,
+    "total_cash": 6.821,
+    "total_debt": 2.476,
+    "net_debt": -4.345,
+    "shares_outstanding": 0.0,
+    "source": "SEC EDGAR"
+  },
+  "ABT": {
+    "operating_cash_flow": 9.566,
+    "capex": 2.171,
+    "free_cash_flow": 7.395,
+    "total_cash": 6.803,
+    "total_debt": 29.638,
+    "net_debt": 22.835,
+    "shares_outstanding": 0.0,
+    "source": "SEC EDGAR"
+  },
+  "ACN": {
+    "operating_cash_flow": 12.363,
+    "capex": 0.743,
+    "free_cash_flow": 11.621,
+    "total_cash": 12.831,
+    "total_debt": 0.0,
+    "net_debt": -12.831,
+    "shares_outstanding": 0.0,
+    "source": "SEC EDGAR"
+  },
+  "ADBE": {
+    "operating_cash_flow": 10.031,
+    "capex": 0.179,
+    "free_cash_flow": 9.852,
+    "total_cash": 4.359,
+    "total_debt": 1.9,
+    "net_debt": -2.459,
+    "shares_outstanding": 0.391,
+    "source": "SEC EDGAR"
+  },
+  "ADI": {
+    "operating_cash_flow": 4.812,
+    "capex": 0.534,
+    "free_cash_flow": 4.279,
+    "total_cash": 2.166,
+    "total_debt": 6.772,
+    "net_debt": 4.606,
+    "shares_outstanding": 0.485,
+    "source": "SEC EDGAR"
+  },
+  "AEP": {
+    "operating_cash_flow": 6.944,
+    "capex": 0.0,
+    "free_cash_flow": 6.944,
+    "total_cash": 0.306,
+    "total_debt": 46.85,
+    "net_debt": 46.544,
+    "shares_outstanding": 0.0,
+    "source": "SEC EDGAR"
+  },
+  "AES": {
+    "operating_cash_flow": 4.306,
+    "capex": 5.929,
+    "free_cash_flow": -1.623,
+    "total_cash": 1.8,
+    "total_debt": 0.0,
+    "net_debt": -1.8,
+    "shares_outstanding": 0.713,
+    "source": "SEC EDGAR"
+  },
+  "AFL": {
+    "operating_cash_flow": 2.555,
+    "capex": 0.0,
+    "free_cash_flow": 2.555,
+    "total_cash": 6.12,
+    "total_debt": 0.0,
+    "net_debt": -6.12,
+    "shares_outstanding": 0.502,
+    "source": "SEC EDGAR"
+  },
+  "ALNY": {
+    "operating_cash_flow": 0.524,
+    "capex": 0.059,
+    "free_cash_flow": 0.465,
+    "total_cash": 1.708,
+    "total_debt": 0.0,
+    "net_debt": -1.708,
+    "shares_outstanding": 0.134,
+    "source": "SEC EDGAR"
+  },
+  "AMD": {
+    "operating_cash_flow": 7.709,
+    "capex": 0.974,
+    "free_cash_flow": 6.735,
+    "total_cash": 5.086,
+    "total_debt": 2.351,
+    "net_debt": -2.735,
+    "shares_outstanding": 1.632,
+    "source": "SEC EDGAR"
+  },
+  "AMGN": {
+    "operating_cash_flow": 9.958,
+    "capex": 1.858,
+    "free_cash_flow": 8.1,
+    "total_cash": 13.989,
+    "total_debt": 51.859,
+    "net_debt": 37.87,
+    "shares_outstanding": 0.541,
+    "source": "SEC EDGAR"
+  },
+  "AMZN": {
+    "operating_cash_flow": 139.514,
+    "capex": 6.737,
+    "free_cash_flow": 132.777,
+    "total_cash": 78.213,
+    "total_debt": 128.894,
+    "net_debt": 50.681,
+    "shares_outstanding": 10.783,
+    "source": "SEC EDGAR"
+  },
+  "AOS": {
+    "operating_cash_flow": 0.617,
+    "capex": 0.0,
+    "free_cash_flow": 0.617,
+    "total_cash": 0.181,
+    "total_debt": 0.598,
+    "net_debt": 0.417,
+    "shares_outstanding": 0.0,
+    "source": "SEC EDGAR"
+  },
+  "GOOG": {
+    "operating_cash_flow": 164.713,
+    "capex": 91.447,
+    "free_cash_flow": 73.266,
+    "total_cash": 55.911,
+    "total_debt": 98.165,
+    "net_debt": 42.254,
+    "shares_outstanding": 12.23,
+    "source": "SEC EDGAR"
+  },
+  "GOOGL": {
+    "operating_cash_flow": 164.713,
+    "capex": 91.447,
+    "free_cash_flow": 73.266,
+    "total_cash": 55.911,
+    "total_debt": 98.165,
+    "net_debt": 42.254,
+    "shares_outstanding": 12.23,
+    "source": "SEC EDGAR"
+  },
+  "MMM": {
+    "operating_cash_flow": 2.306,
+    "capex": 0.91,
+    "free_cash_flow": 1.396,
+    "total_cash": 2.173,
+    "total_debt": 12.558,
+    "net_debt": 10.385,
+    "shares_outstanding": 0.517,
+    "source": "SEC EDGAR"
+  },
+  "MSFT": {
+    "operating_cash_flow": 182.935,
+    "capex": 115.948,
+    "free_cash_flow": 66.987,
+    "total_cash": 20.935,
+    "total_debt": 31.067,
+    "net_debt": 10.132,
+    "shares_outstanding": 7.427,
+    "source": "SEC EDGAR"
+  },
+  "AAPL": {
+    "operating_cash_flow": 111.482,
+    "capex": 12.715,
+    "free_cash_flow": 98.767,
+    "total_cash": 39.544,
+    "total_debt": 71.34,
+    "net_debt": 31.796,
+    "shares_outstanding": 14.609,
+    "source": "SEC EDGAR"
+  }
+}

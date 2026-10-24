@@ -1,0 +1,26 @@
+{
+  "description": "User-defined custom ETF holdings and weights. Weights should ideally sum to 1.0 or 100%.",
+  "etfs": {
+    "TSE:CADE": {
+      "name": "CI 1-3 Month T-Bill / CAD Enhanced ETF (Example)",
+      "currency": "CAD",
+      "holdings": [
+        { "ticker": "RY.TO", "weight": 0.20 },
+        { "ticker": "TD.TO", "weight": 0.20 },
+        { "ticker": "ENB.TO", "weight": 0.20 },
+        { "ticker": "CNR.TO", "weight": 0.20 },
+        { "ticker": "CP.TO", "weight": 0.20 }
+      ]
+    },
+    "TSE:CAUS": {
+      "name": "CI U.S. Equity Index ETF (Example)",
+      "currency": "CAD",
+      "holdings": [
+        { "ticker": "MSFT", "weight": 0.25 },
+        { "ticker": "AAPL", "weight": 0.25 },
+        { "ticker": "GOOGL", "weight": 0.25 },
+        { "ticker": "AMZN", "weight": 0.25 }
+      ]
+    }
+  }
+}

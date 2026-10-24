@@ -1,0 +1,610 @@
+{
+  "date": "2026-10-23",
+  "timestamp": "2026-10-23T22:15:49.397427",
+  "stocks": {
+    "A": {
+      "ticker": "A",
+      "currency": "USD",
+      "market_price": 173.07,
+      "indices": [
+        "SP500"
+      ],
+      "raw": {
+        "operating_cash_flow": 1.559,
+        "capex": 0.407,
+        "free_cash_flow": 1.152,
+        "total_cash": 1.758,
+        "total_debt": 2.73,
+        "net_debt": 0.972,
+        "shares_outstanding": 0.282,
+        "source": "SEC EDGAR"
+      },
+      "valuation": {
+        "intrinsic_dcf": 77.86,
+        "market_premium_pct": 122.28,
+        "implied_growth_reverse_dcf": 0.2344,
+        "wacc": 0.08,
+        "growth_rate_assumed": 0.04
+      }
+    },
+    "ABBV": {
+      "ticker": "ABBV",
+      "currency": "USD",
+      "market_price": 285.64,
+      "indices": [
+        "SP500"
+      ],
+      "raw": {
+        "operating_cash_flow": 19.03,
+        "capex": 1.214,
+        "free_cash_flow": 17.816,
+        "total_cash": 6.569,
+        "total_debt": 0.0,
+        "net_debt": -6.569,
+        "shares_outstanding": 0.0,
+        "source": "SEC EDGAR"
+      }
+    },
+    "ABNB": {
+      "ticker": "ABNB",
+      "currency": "USD",
+      "market_price": 172.01,
+      "indices": [
+        "QQQ"
+      ],
+      "raw": {
+        "operating_cash_flow": 4.646,
+        "capex": 0.025,
+        "free_cash_flow": 4.621,
+        "total_cash": 6.821,
+        "total_debt": 2.476,
+        "net_debt": -4.345,
+        "shares_outstanding": 0.0,
+        "source": "SEC EDGAR"
+      }
+    },
+    "ABT": {
+      "ticker": "ABT",
+      "currency": "USD",
+      "market_price": 103.7,
+      "indices": [
+        "SP500"
+      ],
+      "raw": {
+        "operating_cash_flow": 9.566,
+        "capex": 2.171,
+        "free_cash_flow": 7.395,
+        "total_cash": 6.803,
+        "total_debt": 29.638,
+        "net_debt": 22.835,
+        "shares_outstanding": 0.0,
+        "source": "SEC EDGAR"
+      }
+    },
+    "ACN": {
+      "ticker": "ACN",
+      "currency": "USD",
+      "market_price": 249.37,
+      "indices": [
+        "SP500"
+      ],
+      "raw": {
+        "operating_cash_flow": 12.363,
+        "capex": 0.743,
+        "free_cash_flow": 11.621,
+        "total_cash": 12.831,
+        "total_debt": 0.0,
+        "net_debt": -12.831,
+        "shares_outstanding": 0.0,
+        "source": "SEC EDGAR"
+      }
+    },
+    "ADBE": {
+      "ticker": "ADBE",
+      "currency": "USD",
+      "market_price": 263.82,
+      "indices": [
+        "SP500",
+        "QQQ"
+      ],
+      "raw": {
+        "operating_cash_flow": 10.031,
+        "capex": 0.179,
+        "free_cash_flow": 9.852,
+        "total_cash": 4.359,
+        "total_debt": 1.9,
+        "net_debt": -2.459,
+        "shares_outstanding": 0.391,
+        "source": "SEC EDGAR"
+      },
+      "valuation": {
+        "intrinsic_dcf": 553.13,
+        "market_premium_pct": -52.3,
+        "implied_growth_reverse_dcf": -0.1055,
+        "wacc": 0.08,
+        "growth_rate_assumed": 0.06
+      }
+    },
+    "ADI": {
+      "ticker": "ADI",
+      "currency": "USD",
+      "market_price": 391.07,
+      "indices": [
+        "QQQ"
+      ],
+      "raw": {
+        "operating_cash_flow": 4.812,
+        "capex": 0.534,
+        "free_cash_flow": 4.279,
+        "total_cash": 2.166,
+        "total_debt": 6.772,
+        "net_debt": 4.606,
+        "shares_outstanding": 0.485,
+        "source": "SEC EDGAR"
+      },
+      "valuation": {
+        "intrinsic_dcf": 181.98,
+        "market_premium_pct": 114.9,
+        "implied_growth_reverse_dcf": 0.2422,
+        "wacc": 0.08,
+        "growth_rate_assumed": 0.06
+      }
+    },
+    "AEP": {
+      "ticker": "AEP",
+      "currency": "USD",
+      "market_price": 129.69,
+      "indices": [
+        "QQQ"
+      ],
+      "raw": {
+        "operating_cash_flow": 6.944,
+        "capex": 0.0,
+        "free_cash_flow": 6.944,
+        "total_cash": 0.306,
+        "total_debt": 46.85,
+        "net_debt": 46.544,
+        "shares_outstanding": 0.0,
+        "source": "SEC EDGAR"
+      }
+    },
+    "AES": {
+      "ticker": "AES",
+      "currency": "USD",
+      "market_price": 15.0,
+      "indices": [
+        "SP500"
+      ],
+      "raw": {
+        "operating_cash_flow": 4.306,
+        "capex": 5.929,
+        "free_cash_flow": -1.623,
+        "total_cash": 1.8,
+        "total_debt": 0.0,
+        "net_debt": -1.8,
+        "shares_outstanding": 0.713,
+        "source": "SEC EDGAR"
+      },
+      "valuation": {
+        "intrinsic_dcf": 2.52,
+        "market_premium_pct": 495.24,
+        "implied_growth_reverse_dcf": null,
+        "wacc": 0.08,
+        "growth_rate_assumed": 0.04
+      }
+    },
+    "AFL": {
+      "ticker": "AFL",
+      "currency": "USD",
+      "market_price": 120.51,
+      "indices": [
+        "SP500"
+      ],
+      "raw": {
+        "operating_cash_flow": 2.555,
+        "capex": 0.0,
+        "free_cash_flow": 2.555,
+        "total_cash": 6.12,
+        "total_debt": 0.0,
+        "net_debt": -6.12,
+        "shares_outstanding": 0.502,
+        "source": "SEC EDGAR"
+      },
+      "valuation": {
+        "intrinsic_dcf": 113.49,
+        "market_premium_pct": 6.19,
+        "implied_growth_reverse_dcf": 0.0547,
+        "wacc": 0.08,
+        "growth_rate_assumed": 0.04
+      }
+    },
+    "ALNY": {
+      "ticker": "ALNY",
+      "currency": "USD",
+      "market_price": 224.03,
+      "indices": [
+        "QQQ"
+      ],
+      "raw": {
+        "operating_cash_flow": 0.524,
+        "capex": 0.059,
+        "free_cash_flow": 0.465,
+        "total_cash": 1.708,
+        "total_debt": 0.0,
+        "net_debt": -1.708,
+        "shares_outstanding": 0.134,
+        "source": "SEC EDGAR"
+      },
+      "valuation": {
+        "intrinsic_dcf": 88.06,
+        "market_premium_pct": 154.41,
+        "implied_growth_reverse_dcf": 0.3281,
+        "wacc": 0.08,
+        "growth_rate_assumed": 0.06
+      }
+    },
+    "AMD": {
+      "ticker": "AMD",
+      "currency": "USD",
+      "market_price": 516.79,
+      "indices": [
+        "SP500",
+        "QQQ"
+      ],
+      "raw": {
+        "operating_cash_flow": 7.709,
+        "capex": 0.974,
+        "free_cash_flow": 6.735,
+        "total_cash": 5.086,
+        "total_debt": 2.351,
+        "net_debt": -2.735,
+        "shares_outstanding": 1.632,
+        "source": "SEC EDGAR"
+      },
+      "valuation": {
+        "intrinsic_dcf": 91.24,
+        "market_premium_pct": 466.41,
+        "implied_growth_reverse_dcf": 0.5361,
+        "wacc": 0.08,
+        "growth_rate_assumed": 0.06
+      }
+    },
+    "AMGN": {
+      "ticker": "AMGN",
+      "currency": "USD",
+      "market_price": 439.26,
+      "indices": [
+        "QQQ"
+      ],
+      "raw": {
+        "operating_cash_flow": 9.958,
+        "capex": 1.858,
+        "free_cash_flow": 8.1,
+        "total_cash": 13.989,
+        "total_debt": 51.859,
+        "net_debt": 37.87,
+        "shares_outstanding": 0.541,
+        "source": "SEC EDGAR"
+      },
+      "valuation": {
+        "intrinsic_dcf": 254.94,
+        "market_premium_pct": 72.3,
+        "implied_growth_reverse_dcf": 0.168,
+        "wacc": 0.08,
+        "growth_rate_assumed": 0.06
+      }
+    },
+    "AMZN": {
+      "ticker": "AMZN",
+      "currency": "USD",
+      "market_price": 248.0,
+      "indices": [
+        "QQQ"
+      ],
+      "raw": {
+        "operating_cash_flow": 139.514,
+        "capex": 6.737,
+        "free_cash_flow": 132.777,
+        "total_cash": 78.213,
+        "total_debt": 128.894,
+        "net_debt": 50.681,
+        "shares_outstanding": 10.783,
+        "source": "SEC EDGAR"
+      },
+      "valuation": {
+        "intrinsic_dcf": 262.53,
+        "market_premium_pct": -5.53,
+        "implied_growth_reverse_dcf": 0.0471,
+        "wacc": 0.08,
+        "growth_rate_assumed": 0.06
+      }
+    },
+    "AOS": {
+      "ticker": "AOS",
+      "currency": "USD",
+      "market_price": 61.65,
+      "indices": [
+        "SP500"
+      ],
+      "raw": {
+        "operating_cash_flow": 0.617,
+        "capex": 0.0,
+        "free_cash_flow": 0.617,
+        "total_cash": 0.181,
+        "total_debt": 0.598,
+        "net_debt": 0.417,
+        "shares_outstanding": 0.0,
+        "source": "SEC EDGAR"
+      }
+    },
+    "ATD.TO": {
+      "ticker": "ATD.TO",
+      "currency": "CAD",
+      "market_price": 83.33,
+      "indices": [
+        "XIC"
+      ],
+      "raw": {}
+    },
+    "BMO.TO": {
+      "ticker": "BMO.TO",
+      "currency": "CAD",
+      "market_price": 236.87,
+      "indices": [
+        "XIC"
+      ],
+      "raw": {}
+    },
+    "BNS.TO": {
+      "ticker": "BNS.TO",
+      "currency": "CAD",
+      "market_price": 130.0,
+      "indices": [
+        "XIC"
+      ],
+      "raw": {}
+    },
+    "CNQ.TO": {
+      "ticker": "CNQ.TO",
+      "currency": "CAD",
+      "market_price": 77.12,
+      "indices": [
+        "XIC"
+      ],
+      "raw": {}
+    },
+    "CNR.TO": {
+      "ticker": "CNR.TO",
+      "currency": "CAD",
+      "market_price": 172.5,
+      "indices": [
+        "XIC"
+      ],
+      "raw": {}
+    },
+    "CP.TO": {
+      "ticker": "CP.TO",
+      "currency": "CAD",
+      "market_price": 125.52,
+      "indices": [
+        "XIC"
+      ],
+      "raw": {}
+    },
+    "ENB.TO": {
+      "ticker": "ENB.TO",
+      "currency": "CAD",
+      "market_price": 67.37,
+      "indices": [
+        "XIC"
+      ],
+      "raw": {}
+    },
+    "GOOG": {
+      "ticker": "GOOG",
+      "currency": "USD",
+      "market_price": 317.28,
+      "indices": [
+        "QQQ"
+      ],
+      "raw": {
+        "operating_cash_flow": 164.713,
+        "capex": 91.447,
+        "free_cash_flow": 73.266,
+        "total_cash": 55.911,
+        "total_debt": 98.165,
+        "net_debt": 42.254,
+        "shares_outstanding": 12.23,
+        "source": "SEC EDGAR"
+      },
+      "valuation": {
+        "intrinsic_dcf": 126.56,
+        "market_premium_pct": 150.7,
+        "implied_growth_reverse_dcf": 0.2871,
+        "wacc": 0.08,
+        "growth_rate_assumed": 0.06
+      }
+    },
+    "GOOGL": {
+      "ticker": "GOOGL",
+      "currency": "USD",
+      "market_price": 320.21,
+      "indices": [
+        "QQQ"
+      ],
+      "raw": {
+        "operating_cash_flow": 164.713,
+        "capex": 91.447,
+        "free_cash_flow": 73.266,
+        "total_cash": 55.911,
+        "total_debt": 98.165,
+        "net_debt": 42.254,
+        "shares_outstanding": 12.23,
+        "source": "SEC EDGAR"
+      },
+      "valuation": {
+        "intrinsic_dcf": 126.56,
+        "market_premium_pct": 153.01,
+        "implied_growth_reverse_dcf": 0.2897,
+        "wacc": 0.08,
+        "growth_rate_assumed": 0.06
+      }
+    },
+    "MMM": {
+      "ticker": "MMM",
+      "currency": "USD",
+      "market_price": 173.46,
+      "indices": [
+        "SP500"
+      ],
+      "raw": {
+        "operating_cash_flow": 2.306,
+        "capex": 0.91,
+        "free_cash_flow": 1.396,
+        "total_cash": 2.173,
+        "total_debt": 12.558,
+        "net_debt": 10.385,
+        "shares_outstanding": 0.517,
+        "source": "SEC EDGAR"
+      },
+      "valuation": {
+        "intrinsic_dcf": 33.65,
+        "market_premium_pct": 415.48,
+        "implied_growth_reverse_dcf": 0.3672,
+        "wacc": 0.08,
+        "growth_rate_assumed": 0.04
+      }
+    },
+    "RY.TO": {
+      "ticker": "RY.TO",
+      "currency": "CAD",
+      "market_price": 281.77,
+      "indices": [
+        "XIC"
+      ],
+      "raw": {}
+    },
+    "TD.TO": {
+      "ticker": "TD.TO",
+      "currency": "CAD",
+      "market_price": 174.47,
+      "indices": [
+        "XIC"
+      ],
+      "raw": {}
+    },
+    "TRP.TO": {
+      "ticker": "TRP.TO",
+      "currency": "CAD",
+      "market_price": 87.32,
+      "indices": [
+        "XIC"
+      ],
+      "raw": {}
+    },
+    "MSFT": {
+      "ticker": "MSFT",
+      "currency": "USD",
+      "market_price": 524.51,
+      "indices": [],
+      "raw": {
+        "operating_cash_flow": 182.935,
+        "capex": 115.948,
+        "free_cash_flow": 66.987,
+        "total_cash": 20.935,
+        "total_debt": 31.067,
+        "net_debt": 10.132,
+        "shares_outstanding": 7.427,
+        "source": "SEC EDGAR"
+      },
+      "valuation": {
+        "intrinsic_dcf": 178.15,
+        "market_premium_pct": 194.42,
+        "implied_growth_reverse_dcf": 0.3105,
+        "wacc": 0.08,
+        "growth_rate_assumed": 0.04
+      }
+    },
+    "AAPL": {
+      "ticker": "AAPL",
+      "currency": "USD",
+      "market_price": 347.725,
+      "indices": [],
+      "raw": {
+        "operating_cash_flow": 111.482,
+        "capex": 12.715,
+        "free_cash_flow": 98.767,
+        "total_cash": 39.544,
+        "total_debt": 71.34,
+        "net_debt": 31.796,
+        "shares_outstanding": 14.609,
+        "source": "SEC EDGAR"
+      },
+      "valuation": {
+        "intrinsic_dcf": 132.38,
+        "market_premium_pct": 162.67,
+        "implied_growth_reverse_dcf": 0.278,
+        "wacc": 0.08,
+        "growth_rate_assumed": 0.04
+      }
+    }
+  },
+  "etfs": {
+    "TSE:CADE": {
+      "name": "CI 1-3 Month T-Bill / CAD Enhanced ETF (Example)",
+      "currency": "CAD",
+      "holdings_count": 5,
+      "covered_weight_pct": 100.0,
+      "weighted_intrinsic_dcf": 164.33,
+      "weighted_market_price": 164.33,
+      "holdings": [
+        {
+          "ticker": "RY.TO",
+          "weight": 0.2
+        },
+        {
+          "ticker": "TD.TO",
+          "weight": 0.2
+        },
+        {
+          "ticker": "ENB.TO",
+          "weight": 0.2
+        },
+        {
+          "ticker": "CNR.TO",
+          "weight": 0.2
+        },
+        {
+          "ticker": "CP.TO",
+          "weight": 0.2
+        }
+      ]
+    },
+    "TSE:CAUS": {
+      "name": "CI U.S. Equity Index ETF (Example)",
+      "currency": "CAD",
+      "holdings_count": 4,
+      "covered_weight_pct": 100.0,
+      "weighted_intrinsic_dcf": 174.9,
+      "weighted_market_price": 360.11,
+      "holdings": [
+        {
+          "ticker": "MSFT",
+          "weight": 0.25
+        },
+        {
+          "ticker": "AAPL",
+          "weight": 0.25
+        },
+        {
+          "ticker": "GOOGL",
+          "weight": 0.25
+        },
+        {
+          "ticker": "AMZN",
+          "weight": 0.25
+        }
+      ]
+    }
+  }
+}
