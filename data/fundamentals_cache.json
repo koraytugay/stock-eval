@@ -49807,5 +49807,1449 @@
     "warnings": [
       "capex_missing"
     ]
+  },
+  "4452.T": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "JPY",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2024-12-31",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": 201.585,
+    "capex": 67.476,
+    "free_cash_flow": 134.109,
+    "total_cash": 326.659,
+    "total_debt": 237.207,
+    "net_debt": -89.452,
+    "shares_outstanding": 0.905,
+    "market_cap": 2956.369,
+    "market_cap_currency": "JPY",
+    "fcf_history": [
+      [
+        "2021-12-31",
+        104.005
+      ],
+      [
+        "2022-12-31",
+        53.704
+      ],
+      [
+        "2023-12-31",
+        136.034
+      ],
+      [
+        "2024-12-31",
+        134.109
+      ]
+    ],
+    "warnings": []
+  },
+  "4661.T": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "JPY",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-03-31",
+    "balance_sheet_date": "2026-03-31",
+    "operating_cash_flow": 181.281,
+    "capex": 83.604,
+    "free_cash_flow": 97.677,
+    "total_cash": 468.214,
+    "total_debt": 326.706,
+    "net_debt": -141.508,
+    "shares_outstanding": 1.64,
+    "market_cap": 5192.982,
+    "market_cap_currency": "JPY",
+    "fcf_history": [
+      [
+        "2023-03-31",
+        74.524
+      ],
+      [
+        "2024-03-31",
+        144.981
+      ],
+      [
+        "2025-03-31",
+        92.691
+      ],
+      [
+        "2026-03-31",
+        97.677
+      ]
+    ],
+    "warnings": []
+  },
+  "4684.T": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "JPY",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-03-31",
+    "balance_sheet_date": "2026-03-31",
+    "operating_cash_flow": 73.746,
+    "capex": 2.286,
+    "free_cash_flow": 71.46,
+    "total_cash": 207.385,
+    "total_debt": 0.0,
+    "net_debt": -207.385,
+    "shares_outstanding": 0.433,
+    "market_cap": 1949.992,
+    "market_cap_currency": "JPY",
+    "fcf_history": [
+      [
+        "2023-03-31",
+        51.801
+      ],
+      [
+        "2024-03-31",
+        52.069
+      ],
+      [
+        "2025-03-31",
+        60.71
+      ],
+      [
+        "2026-03-31",
+        71.46
+      ]
+    ],
+    "warnings": [
+      "debt_missing"
+    ]
+  },
+  "6178.T": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "JPY",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-03-31",
+    "balance_sheet_date": "2026-03-31",
+    "operating_cash_flow": -10338.345,
+    "capex": 260.466,
+    "free_cash_flow": -10598.811,
+    "total_cash": 57012.194,
+    "total_debt": 3794.711,
+    "net_debt": -53217.483,
+    "shares_outstanding": 2.806,
+    "market_cap": 6684.647,
+    "market_cap_currency": "JPY",
+    "fcf_history": [
+      [
+        "2023-03-31",
+        -8477.433
+      ],
+      [
+        "2024-03-31",
+        -2679.015
+      ],
+      [
+        "2025-03-31",
+        2488.602
+      ],
+      [
+        "2026-03-31",
+        -10598.811
+      ]
+    ],
+    "warnings": []
+  },
+  "8697.T": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "JPY",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-03-31",
+    "balance_sheet_date": "2026-03-31",
+    "operating_cash_flow": 107.749,
+    "capex": 8.472,
+    "free_cash_flow": 99.277,
+    "total_cash": 110.471,
+    "total_debt": 52.493,
+    "net_debt": -57.978,
+    "shares_outstanding": 1.028,
+    "market_cap": 2236.866,
+    "market_cap_currency": "JPY",
+    "fcf_history": [
+      [
+        "2023-03-31",
+        55.577
+      ],
+      [
+        "2024-03-31",
+        63.972
+      ],
+      [
+        "2025-03-31",
+        70.983
+      ],
+      [
+        "2026-03-31",
+        99.277
+      ]
+    ],
+    "warnings": []
+  },
+  "8725.T": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "JPY",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-03-31",
+    "balance_sheet_date": "2026-03-31",
+    "operating_cash_flow": 762.608,
+    "capex": 90.886,
+    "free_cash_flow": 671.722,
+    "total_cash": 1920.411,
+    "total_debt": 998.406,
+    "net_debt": -922.005,
+    "shares_outstanding": 1.451,
+    "market_cap": 7096.812,
+    "market_cap_currency": "JPY",
+    "fcf_history": [
+      [
+        "2023-03-31",
+        112.521
+      ],
+      [
+        "2024-03-31",
+        464.526
+      ],
+      [
+        "2025-03-31",
+        571.896
+      ],
+      [
+        "2026-03-31",
+        671.722
+      ]
+    ],
+    "warnings": []
+  },
+  "8951.T": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "JPY",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": 66.216,
+    "capex": 100.925,
+    "free_cash_flow": -34.709,
+    "total_cash": 11.93,
+    "total_debt": 629.0,
+    "net_debt": 617.07,
+    "shares_outstanding": 0.009,
+    "market_cap": 1198.89,
+    "market_cap_currency": "JPY",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        -25.292
+      ],
+      [
+        "2023-12-31",
+        26.327
+      ],
+      [
+        "2024-12-31",
+        55.465
+      ],
+      [
+        "2025-12-31",
+        -18.051
+      ]
+    ],
+    "warnings": []
+  },
+  "9022.T": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "JPY",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-03-31",
+    "balance_sheet_date": "2026-03-31",
+    "operating_cash_flow": 748.185,
+    "capex": 524.129,
+    "free_cash_flow": 224.056,
+    "total_cash": 345.693,
+    "total_debt": 4308.084,
+    "net_debt": 3962.391,
+    "shares_outstanding": 0.955,
+    "market_cap": 3792.86,
+    "market_cap_currency": "JPY",
+    "fcf_history": [
+      [
+        "2023-03-31",
+        32.639
+      ],
+      [
+        "2024-03-31",
+        269.303
+      ],
+      [
+        "2025-03-31",
+        159.638
+      ],
+      [
+        "2026-03-31",
+        224.056
+      ]
+    ],
+    "warnings": []
+  },
+  "9433.T": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "JPY",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-03-31",
+    "balance_sheet_date": "2026-03-31",
+    "operating_cash_flow": 1788.853,
+    "capex": 679.006,
+    "free_cash_flow": 1109.847,
+    "total_cash": 1078.807,
+    "total_debt": 5805.637,
+    "net_debt": 4726.83,
+    "shares_outstanding": 3.807,
+    "market_cap": 11121.237,
+    "market_cap_currency": "JPY",
+    "fcf_history": [
+      [
+        "2023-03-31",
+        444.744
+      ],
+      [
+        "2024-03-31",
+        956.968
+      ],
+      [
+        "2025-03-31",
+        566.111
+      ],
+      [
+        "2026-03-31",
+        1109.847
+      ]
+    ],
+    "warnings": []
+  },
+  "9434.T": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "JPY",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-03-31",
+    "balance_sheet_date": "2026-03-31",
+    "operating_cash_flow": 1393.76,
+    "capex": 570.465,
+    "free_cash_flow": 823.295,
+    "total_cash": 1438.799,
+    "total_debt": 6484.582,
+    "net_debt": 5045.783,
+    "shares_outstanding": 47.801,
+    "market_cap": 10686.053,
+    "market_cap_currency": "JPY",
+    "fcf_history": [
+      [
+        "2022-03-31",
+        506.826
+      ],
+      [
+        "2023-03-31",
+        546.528
+      ],
+      [
+        "2024-03-31",
+        685.615
+      ],
+      [
+        "2025-03-31",
+        621.214
+      ]
+    ],
+    "warnings": []
+  },
+  "9735.T": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "JPY",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-03-31",
+    "balance_sheet_date": "2026-03-31",
+    "operating_cash_flow": 203.566,
+    "capex": 90.569,
+    "free_cash_flow": 112.997,
+    "total_cash": 537.222,
+    "total_debt": 68.502,
+    "net_debt": -468.72,
+    "shares_outstanding": 0.404,
+    "market_cap": 2759.268,
+    "market_cap_currency": "JPY",
+    "fcf_history": [
+      [
+        "2023-03-31",
+        85.088
+      ],
+      [
+        "2024-03-31",
+        71.339
+      ],
+      [
+        "2025-03-31",
+        72.581
+      ],
+      [
+        "2026-03-31",
+        112.997
+      ]
+    ],
+    "warnings": []
+  },
+  "9843.T": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "JPY",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-03-31",
+    "balance_sheet_date": "2026-03-31",
+    "operating_cash_flow": 148.911,
+    "capex": 44.412,
+    "free_cash_flow": 104.499,
+    "total_cash": 145.01,
+    "total_debt": 160.0,
+    "net_debt": 14.99,
+    "shares_outstanding": 0.565,
+    "market_cap": 1434.398,
+    "market_cap_currency": "JPY",
+    "fcf_history": [
+      [
+        "2022-02-28",
+        -17.597
+      ],
+      [
+        "2024-03-31",
+        53.824
+      ],
+      [
+        "2025-03-31",
+        19.076
+      ],
+      [
+        "2026-03-31",
+        104.499
+      ]
+    ],
+    "warnings": []
+  },
+  "AD.AS": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "EUR",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": 6.598,
+    "capex": 2.564,
+    "free_cash_flow": 4.034,
+    "total_cash": 3.153,
+    "total_debt": 4.861,
+    "net_debt": 1.708,
+    "shares_outstanding": 0.874,
+    "market_cap": 27.034,
+    "market_cap_currency": "EUR",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        3.62
+      ],
+      [
+        "2023-12-31",
+        4.032
+      ],
+      [
+        "2024-12-31",
+        3.925
+      ],
+      [
+        "2025-12-31",
+        4.425
+      ]
+    ],
+    "warnings": []
+  },
+  "ANF": {
+    "schema": 2,
+    "source": "SEC EDGAR",
+    "currency": "USD",
+    "fetched_at": "2026-10-24",
+    "filed": "2026-09-04",
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-08-01",
+    "balance_sheet_date": "2026-08-01",
+    "operating_cash_flow": 0.82,
+    "capex": 0.253,
+    "free_cash_flow": 0.566,
+    "total_cash": 0.628,
+    "total_debt": 0.0,
+    "net_debt": -0.628,
+    "shares_outstanding": 0.042,
+    "fcf_history": [
+      [
+        "2009-01-31",
+        0.123
+      ],
+      [
+        "2010-01-30",
+        0.22
+      ],
+      [
+        "2011-01-29",
+        0.231
+      ],
+      [
+        "2012-01-28",
+        0.047
+      ],
+      [
+        "2013-02-02",
+        0.344
+      ],
+      [
+        "2014-02-01",
+        0.012
+      ],
+      [
+        "2015-01-31",
+        0.138
+      ],
+      [
+        "2016-01-30",
+        0.167
+      ],
+      [
+        "2017-01-28",
+        0.044
+      ],
+      [
+        "2018-02-03",
+        0.181
+      ],
+      [
+        "2019-02-02",
+        0.201
+      ],
+      [
+        "2020-02-01",
+        0.098
+      ],
+      [
+        "2021-01-30",
+        0.303
+      ],
+      [
+        "2022-01-29",
+        0.181
+      ],
+      [
+        "2023-01-28",
+        -0.167
+      ],
+      [
+        "2024-02-03",
+        0.496
+      ],
+      [
+        "2025-02-01",
+        0.527
+      ],
+      [
+        "2026-01-31",
+        0.378
+      ]
+    ],
+    "warnings": [
+      "debt_missing"
+    ]
+  },
+  "CHRD": {
+    "schema": 2,
+    "source": "SEC EDGAR",
+    "currency": "USD",
+    "fetched_at": "2026-10-24",
+    "filed": "2026-08-06",
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": 2.588,
+    "capex": 0.0,
+    "free_cash_flow": 2.588,
+    "total_cash": 0.612,
+    "total_debt": 1.481,
+    "net_debt": 0.87,
+    "shares_outstanding": 0.055,
+    "fcf_history": [
+      [
+        "2009-12-31",
+        0.006
+      ],
+      [
+        "2010-12-31",
+        0.05
+      ],
+      [
+        "2011-12-31",
+        0.176
+      ],
+      [
+        "2012-12-31",
+        0.392
+      ],
+      [
+        "2013-12-31",
+        0.698
+      ],
+      [
+        "2014-12-31",
+        0.873
+      ],
+      [
+        "2015-12-31",
+        0.36
+      ],
+      [
+        "2016-12-31",
+        0.228
+      ],
+      [
+        "2017-12-31",
+        0.508
+      ],
+      [
+        "2018-12-31",
+        0.996
+      ],
+      [
+        "2019-12-31",
+        0.893
+      ],
+      [
+        "2021-12-31",
+        0.914
+      ],
+      [
+        "2022-12-31",
+        1.924
+      ],
+      [
+        "2023-12-31",
+        1.82
+      ],
+      [
+        "2024-12-31",
+        2.097
+      ],
+      [
+        "2025-12-31",
+        2.041
+      ]
+    ],
+    "warnings": [
+      "capex_missing"
+    ]
+  },
+  "CROX": {
+    "schema": 2,
+    "source": "SEC EDGAR",
+    "currency": "USD",
+    "fetched_at": "2026-10-24",
+    "filed": "2026-07-30",
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": 0.763,
+    "capex": 0.058,
+    "free_cash_flow": 0.705,
+    "total_cash": 0.17,
+    "total_debt": 1.313,
+    "net_debt": 1.143,
+    "shares_outstanding": 0.048,
+    "fcf_history": [
+      [
+        "2009-12-31",
+        0.041
+      ],
+      [
+        "2010-12-31",
+        0.073
+      ],
+      [
+        "2011-12-31",
+        0.115
+      ],
+      [
+        "2012-12-31",
+        0.089
+      ],
+      [
+        "2013-12-31",
+        0.043
+      ],
+      [
+        "2015-12-31",
+        -0.009
+      ],
+      [
+        "2016-12-31",
+        0.018
+      ],
+      [
+        "2017-12-31",
+        0.085
+      ],
+      [
+        "2018-12-31",
+        0.102
+      ],
+      [
+        "2019-12-31",
+        0.053
+      ],
+      [
+        "2020-12-31",
+        0.225
+      ],
+      [
+        "2021-12-31",
+        0.511
+      ],
+      [
+        "2022-12-31",
+        0.499
+      ],
+      [
+        "2023-12-31",
+        0.815
+      ],
+      [
+        "2024-12-31",
+        0.923
+      ],
+      [
+        "2025-12-31",
+        0.659
+      ]
+    ],
+    "warnings": []
+  },
+  "DB1.DE": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "EUR",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": 2.966,
+    "capex": 0.426,
+    "free_cash_flow": 2.54,
+    "total_cash": 1.747,
+    "total_debt": 8.136,
+    "net_debt": 6.389,
+    "shares_outstanding": 0.18,
+    "market_cap": 50.463,
+    "market_cap_currency": "EUR",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        2.158
+      ],
+      [
+        "2023-12-31",
+        2.281
+      ],
+      [
+        "2024-12-31",
+        2.05
+      ],
+      [
+        "2025-12-31",
+        2.43
+      ]
+    ],
+    "warnings": []
+  },
+  "ENX.PA": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "EUR",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": 1.172,
+    "capex": 0.134,
+    "free_cash_flow": 1.038,
+    "total_cash": 1.311,
+    "total_debt": 3.031,
+    "net_debt": 1.72,
+    "shares_outstanding": 0.102,
+    "market_cap": 12.622,
+    "market_cap_currency": "EUR",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        0.517
+      ],
+      [
+        "2023-12-31",
+        0.723
+      ],
+      [
+        "2024-12-31",
+        0.621
+      ],
+      [
+        "2025-12-31",
+        0.682
+      ]
+    ],
+    "warnings": []
+  },
+  "GET.PA": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "EUR",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": 0.916,
+    "capex": 0.207,
+    "free_cash_flow": 0.709,
+    "total_cash": 1.194,
+    "total_debt": 5.096,
+    "net_debt": 3.902,
+    "shares_outstanding": 0.543,
+    "market_cap": 10.047,
+    "market_cap_currency": "EUR",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        0.939
+      ],
+      [
+        "2023-12-31",
+        0.892
+      ],
+      [
+        "2024-12-31",
+        0.71
+      ],
+      [
+        "2025-12-31",
+        0.624
+      ]
+    ],
+    "warnings": []
+  },
+  "HNR1.DE": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "EUR",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": 6.458,
+    "capex": 0.0,
+    "free_cash_flow": 6.458,
+    "total_cash": 1.064,
+    "total_debt": 4.142,
+    "net_debt": 3.078,
+    "shares_outstanding": 0.121,
+    "market_cap": 30.463,
+    "market_cap_currency": "EUR",
+    "fcf_history": [],
+    "warnings": [
+      "capex_missing"
+    ]
+  },
+  "IAG.AX": {
+    "schema": 2,
+    "fetched_at": "2026-10-24",
+    "source": null
+  },
+  "INSW": {
+    "schema": 2,
+    "source": "SEC EDGAR",
+    "currency": "USD",
+    "fetched_at": "2026-10-24",
+    "filed": "2026-08-10",
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": 0.633,
+    "capex": 0.0,
+    "free_cash_flow": 0.633,
+    "total_cash": 0.159,
+    "total_debt": 0.646,
+    "net_debt": 0.486,
+    "shares_outstanding": 0.05,
+    "fcf_history": [
+      [
+        "2016-12-31",
+        0.129
+      ],
+      [
+        "2017-12-31",
+        0.017
+      ],
+      [
+        "2018-12-31",
+        -0.012
+      ],
+      [
+        "2019-12-31",
+        0.087
+      ],
+      [
+        "2020-12-31",
+        0.216
+      ],
+      [
+        "2021-12-31",
+        -0.076
+      ],
+      [
+        "2022-12-31",
+        0.288
+      ],
+      [
+        "2023-12-31",
+        0.688
+      ],
+      [
+        "2024-12-31",
+        0.547
+      ],
+      [
+        "2025-12-31",
+        0.38
+      ]
+    ],
+    "warnings": [
+      "capex_missing"
+    ]
+  },
+  "LEA": {
+    "schema": 2,
+    "source": "SEC EDGAR",
+    "currency": "USD",
+    "fetched_at": "2026-10-24",
+    "filed": "2026-07-31",
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-07-04",
+    "balance_sheet_date": "2026-07-04",
+    "operating_cash_flow": 1.479,
+    "capex": 0.629,
+    "free_cash_flow": 0.849,
+    "total_cash": 1.001,
+    "total_debt": 2.746,
+    "net_debt": 1.746,
+    "shares_outstanding": 0.049,
+    "fcf_history": [
+      [
+        "2010-12-31",
+        0.429
+      ],
+      [
+        "2011-12-31",
+        0.461
+      ],
+      [
+        "2012-12-31",
+        0.272
+      ],
+      [
+        "2013-12-31",
+        0.359
+      ],
+      [
+        "2014-12-31",
+        0.503
+      ],
+      [
+        "2015-12-31",
+        0.785
+      ],
+      [
+        "2016-12-31",
+        1.091
+      ],
+      [
+        "2017-12-31",
+        1.189
+      ],
+      [
+        "2018-12-31",
+        1.103
+      ],
+      [
+        "2019-12-31",
+        0.68
+      ],
+      [
+        "2020-12-31",
+        0.211
+      ],
+      [
+        "2021-12-31",
+        0.085
+      ],
+      [
+        "2022-12-31",
+        0.383
+      ],
+      [
+        "2023-12-31",
+        0.623
+      ],
+      [
+        "2024-12-31",
+        0.561
+      ],
+      [
+        "2025-12-31",
+        0.527
+      ]
+    ],
+    "warnings": []
+  },
+  "LSEG.L": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "GBP",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2025-12-31",
+    "operating_cash_flow": 3.925,
+    "capex": 1.916,
+    "free_cash_flow": 2.009,
+    "total_cash": 2.761,
+    "total_debt": 11.718,
+    "net_debt": 8.957,
+    "shares_outstanding": 0.509,
+    "market_cap": 39.305,
+    "market_cap_currency": "GBP",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        1.771
+      ],
+      [
+        "2023-12-31",
+        1.858
+      ],
+      [
+        "2024-12-31",
+        2.388
+      ],
+      [
+        "2025-12-31",
+        1.716
+      ]
+    ],
+    "warnings": []
+  },
+  "M": {
+    "schema": 2,
+    "source": "SEC EDGAR",
+    "currency": "USD",
+    "fetched_at": "2026-10-24",
+    "filed": "2026-09-10",
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-08-01",
+    "balance_sheet_date": "2026-08-01",
+    "operating_cash_flow": 1.761,
+    "capex": 0.347,
+    "free_cash_flow": 1.414,
+    "total_cash": 1.294,
+    "total_debt": 2.433,
+    "net_debt": 1.139,
+    "shares_outstanding": 0.261,
+    "fcf_history": [
+      [
+        "2009-01-31",
+        1.105
+      ],
+      [
+        "2010-01-30",
+        1.395
+      ],
+      [
+        "2011-01-29",
+        1.167
+      ],
+      [
+        "2012-01-28",
+        1.618
+      ],
+      [
+        "2013-02-02",
+        1.481
+      ],
+      [
+        "2014-02-01",
+        1.942
+      ],
+      [
+        "2015-01-31",
+        1.939
+      ],
+      [
+        "2016-01-30",
+        1.207
+      ],
+      [
+        "2017-01-28",
+        1.205
+      ],
+      [
+        "2018-02-03",
+        1.489
+      ],
+      [
+        "2019-02-02",
+        1.078
+      ],
+      [
+        "2020-02-01",
+        0.706
+      ],
+      [
+        "2021-01-30",
+        0.311
+      ],
+      [
+        "2022-01-29",
+        2.358
+      ],
+      [
+        "2023-01-28",
+        0.727
+      ],
+      [
+        "2024-02-03",
+        0.674
+      ],
+      [
+        "2025-02-01",
+        0.76
+      ],
+      [
+        "2026-01-31",
+        1.057
+      ]
+    ],
+    "warnings": []
+  },
+  "MRX": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "USD",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": 0.441,
+    "capex": 0.022,
+    "free_cash_flow": 0.419,
+    "total_cash": 3.851,
+    "total_debt": 11.529,
+    "net_debt": 7.678,
+    "shares_outstanding": 0.072,
+    "market_cap": 5.094,
+    "market_cap_currency": "USD",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        0.216
+      ],
+      [
+        "2023-12-31",
+        0.723
+      ],
+      [
+        "2024-12-31",
+        1.144
+      ],
+      [
+        "2025-12-31",
+        0.648
+      ]
+    ],
+    "warnings": []
+  },
+  "ORA.PA": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "EUR",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": 12.345,
+    "capex": 7.765,
+    "free_cash_flow": 4.58,
+    "total_cash": 9.305,
+    "total_debt": 8.859,
+    "net_debt": -0.446,
+    "shares_outstanding": 2.658,
+    "market_cap": 38.259,
+    "market_cap_currency": "EUR",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        2.458
+      ],
+      [
+        "2023-12-31",
+        4.092
+      ],
+      [
+        "2024-12-31",
+        3.167
+      ],
+      [
+        "2025-12-31",
+        3.313
+      ]
+    ],
+    "warnings": []
+  },
+  "RED.MC": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "EUR",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": 0.983,
+    "capex": 1.484,
+    "free_cash_flow": -0.501,
+    "total_cash": 0.938,
+    "total_debt": 6.066,
+    "net_debt": 5.128,
+    "shares_outstanding": 0.54,
+    "market_cap": 8.116,
+    "market_cap_currency": "EUR",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        -0.38
+      ],
+      [
+        "2023-12-31",
+        -0.495
+      ],
+      [
+        "2024-12-31",
+        -0.123
+      ],
+      [
+        "2025-12-31",
+        -0.394
+      ]
+    ],
+    "warnings": []
+  },
+  "SCMN.SW": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "CHF",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": 6.114,
+    "capex": 2.89,
+    "free_cash_flow": 3.224,
+    "total_cash": 0.215,
+    "total_debt": 3.48,
+    "net_debt": 3.265,
+    "shares_outstanding": 0.052,
+    "market_cap": 34.863,
+    "market_cap_currency": "CHF",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        1.587
+      ],
+      [
+        "2023-12-31",
+        1.757
+      ],
+      [
+        "2024-12-31",
+        2.099
+      ],
+      [
+        "2025-12-31",
+        3.004
+      ]
+    ],
+    "warnings": []
+  },
+  "SHB-A.ST": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "SEK",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": -26.405,
+    "capex": 0.995,
+    "free_cash_flow": -27.4,
+    "total_cash": 602.051,
+    "total_debt": 1785.814,
+    "net_debt": 1183.763,
+    "shares_outstanding": 1.98,
+    "market_cap": 302.467,
+    "market_cap_currency": "SEK",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        -39.795
+      ],
+      [
+        "2023-12-31",
+        21.336
+      ],
+      [
+        "2024-12-31",
+        42.902
+      ],
+      [
+        "2025-12-31",
+        -47.387
+      ]
+    ],
+    "warnings": []
+  },
+  "WKL.AS": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "EUR",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": 1.692,
+    "capex": 0.301,
+    "free_cash_flow": 1.391,
+    "total_cash": 1.494,
+    "total_debt": 5.43,
+    "net_debt": 3.936,
+    "shares_outstanding": 0.223,
+    "market_cap": 14.735,
+    "market_cap_currency": "EUR",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        1.287
+      ],
+      [
+        "2023-12-31",
+        1.221
+      ],
+      [
+        "2024-12-31",
+        1.34
+      ],
+      [
+        "2025-12-31",
+        1.363
+      ]
+    ],
+    "warnings": []
+  },
+  "ZURN.SW": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "USD",
+    "fetched_at": "2026-10-24",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": 2.933,
+    "capex": 0.51,
+    "free_cash_flow": 2.423,
+    "total_cash": 6.715,
+    "total_debt": 14.083,
+    "net_debt": 7.368,
+    "shares_outstanding": 0.149,
+    "market_cap": 90.1,
+    "market_cap_currency": "CHF",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        4.507
+      ],
+      [
+        "2023-12-31",
+        6.927
+      ],
+      [
+        "2024-12-31",
+        7.233
+      ],
+      [
+        "2025-12-31",
+        5.423
+      ]
+    ],
+    "warnings": []
   }
 }

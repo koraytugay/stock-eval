@@ -1,5 +1,5 @@
 {
-  "description": "ETFs valued by look-through. Use holdings_page (a stockanalysis.com path) to fetch published top holdings automatically, or list holdings by hand as [{\"ticker\": \"MSFT\", \"weight\": 0.25}]. Weights are fractions of the fund.",
+  "description": "ETFs valued by look-through. Use holdings_page (a stockanalysis.com path) to fetch published top holdings automatically, or list holdings by hand as [{\"ticker\": \"MSFT\", \"weight\": 0.25}]. Weights are fractions of the fund. When a fund has no holdings page, point holdings_page at a fund tracking the same index (e.g. XSMC -> etf/ijr).",
   "fund_aliases": {
     "TSX-XTOT": "etf/itot"
   },
@@ -18,6 +18,11 @@
       "name": "Avantis CIBC Emerging Markets Equity ETF",
       "currency": "CAD",
       "holdings_page": "quote/tsx/CAEM"
+    },
+    "TSE:CASV": {
+      "name": "Avantis CIBC Global Small Cap Value ETF",
+      "currency": "CAD",
+      "holdings_page": "quote/tsx/CASV"
     },
     "TSE:CAUS": {
       "name": "Avantis CIBC U.S. All-Cap Equity ETF",
@@ -54,10 +59,25 @@
       "currency": "CAD",
       "holdings_page": "quote/tsx/XEQT"
     },
+    "TSE:XMC": {
+      "name": "iShares S&P U.S. Mid-Cap Index ETF",
+      "currency": "CAD",
+      "holdings_page": "quote/tsx/XMC"
+    },
+    "TSE:XSMC": {
+      "name": "iShares S&P U.S. Small-Cap Index ETF",
+      "currency": "CAD",
+      "holdings_page": "etf/ijr"
+    },
     "TSE:XUU": {
       "name": "iShares Core S&P U.S. Total Market Index ETF",
       "currency": "CAD",
       "holdings_page": "quote/tsx/XUU"
+    },
+    "TSE:ZLI": {
+      "name": "BMO Low Volatility International Equity Fund",
+      "currency": "CAD",
+      "holdings_page": "quote/tsx/ZLI"
     },
     "TSE:ZLU": {
       "name": "BMO Low Volatility US Equity Fund",

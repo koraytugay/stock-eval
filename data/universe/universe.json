@@ -835,6 +835,63 @@
         }
       ]
     },
+    "TSE:CASV": {
+      "name": "Avantis CIBC Global Small Cap Value ETF",
+      "currency": "CAD",
+      "holdings_page": "quote/tsx/CASV",
+      "holdings": [
+        {
+          "ticker": "SM",
+          "weight": 0.0059,
+          "name": "SM Energy Company"
+        },
+        {
+          "ticker": "M",
+          "weight": 0.0049,
+          "name": "Macy's, Inc."
+        },
+        {
+          "ticker": "LEA",
+          "weight": 0.0047,
+          "name": "Lear Corporation"
+        },
+        {
+          "ticker": "INSW",
+          "weight": 0.0046,
+          "name": "International Seaways, Inc."
+        },
+        {
+          "ticker": "PAYC",
+          "weight": 0.0046,
+          "name": "Paycom Software, Inc."
+        },
+        {
+          "ticker": "CHRD",
+          "weight": 0.0046,
+          "name": "Chord Energy Corporation"
+        },
+        {
+          "ticker": "ANF",
+          "weight": 0.0045,
+          "name": "Abercrombie & Fitch Co."
+        },
+        {
+          "ticker": "CROX",
+          "weight": 0.0042,
+          "name": "Crocs, Inc."
+        },
+        {
+          "ticker": "KEX",
+          "weight": 0.0042,
+          "name": "Kirby Corporation"
+        },
+        {
+          "ticker": "MRX",
+          "weight": 0.0041,
+          "name": "Marex Group Limited"
+        }
+      ]
+    },
     "TSE:CAUS": {
       "name": "Avantis CIBC U.S. All-Cap Equity ETF",
       "currency": "CAD",
@@ -2004,6 +2061,265 @@
         }
       ]
     },
+    "TSE:XMC": {
+      "name": "iShares S&P U.S. Mid-Cap Index ETF",
+      "currency": "CAD",
+      "holdings_page": "quote/tsx/XMC",
+      "holdings": [
+        {
+          "ticker": "OKTA",
+          "weight": 0.009794,
+          "name": "Okta, Inc."
+        },
+        {
+          "ticker": "FTI",
+          "weight": 0.007695,
+          "name": "TechnipFMC plc"
+        },
+        {
+          "ticker": "UTHR",
+          "weight": 0.007396,
+          "name": "United Therapeutics Corporation"
+        },
+        {
+          "ticker": "USFD",
+          "weight": 0.006596,
+          "name": "US Foods Holding Corp."
+        },
+        {
+          "ticker": "XPO",
+          "weight": 0.006496,
+          "name": "XPO, Inc."
+        },
+        {
+          "ticker": "ATI",
+          "weight": 0.006496,
+          "name": "ATI Inc."
+        },
+        {
+          "ticker": "THC",
+          "weight": 0.006396,
+          "name": "Tenet Healthcare Corporation"
+        },
+        {
+          "ticker": "RS",
+          "weight": 0.006296,
+          "name": "Reliance, Inc."
+        },
+        {
+          "ticker": "ROKU",
+          "weight": 0.006196,
+          "name": "Roku, Inc."
+        },
+        {
+          "ticker": "NVT",
+          "weight": 0.006096,
+          "name": "nVent Electric plc"
+        },
+        {
+          "ticker": "PR",
+          "weight": 0.005996,
+          "name": "Permian Resources Corporation"
+        },
+        {
+          "ticker": "ROIV",
+          "weight": 0.005996,
+          "name": "Roivant Sciences Ltd."
+        },
+        {
+          "ticker": "RGLD",
+          "weight": 0.005797,
+          "name": "Royal Gold, Inc."
+        },
+        {
+          "ticker": "SNX",
+          "weight": 0.005797,
+          "name": "TD SYNNEX Corporation"
+        },
+        {
+          "ticker": "ENTG",
+          "weight": 0.005797,
+          "name": "Entegris, Inc."
+        },
+        {
+          "ticker": "OVV",
+          "weight": 0.005597,
+          "name": "Ovintiv Inc."
+        },
+        {
+          "ticker": "DINO",
+          "weight": 0.005597,
+          "name": "HF Sinclair Corporation"
+        },
+        {
+          "ticker": "NTNX",
+          "weight": 0.005497,
+          "name": "Nutanix, Inc."
+        },
+        {
+          "ticker": "DT",
+          "weight": 0.005397,
+          "name": "Dynatrace, Inc."
+        },
+        {
+          "ticker": "EWBC",
+          "weight": 0.005297,
+          "name": "East West Bancorp, Inc."
+        },
+        {
+          "ticker": "WWD",
+          "weight": 0.005297,
+          "name": "Woodward, Inc."
+        },
+        {
+          "ticker": "RGA",
+          "weight": 0.005197,
+          "name": "Reinsurance Group of America, Incorporated"
+        },
+        {
+          "ticker": "CW",
+          "weight": 0.005097,
+          "name": "Curtiss-Wright Corporation"
+        },
+        {
+          "ticker": "TOST",
+          "weight": 0.004997,
+          "name": "Toast, Inc."
+        },
+        {
+          "ticker": "ITT",
+          "weight": 0.004897,
+          "name": "ITT Inc."
+        }
+      ]
+    },
+    "TSE:XSMC": {
+      "name": "iShares S&P U.S. Small-Cap Index ETF",
+      "currency": "CAD",
+      "holdings_page": "etf/ijr",
+      "holdings": [
+        {
+          "ticker": "MTCH",
+          "weight": 0.006,
+          "name": "Match Group, Inc."
+        },
+        {
+          "ticker": "PAYC",
+          "weight": 0.006,
+          "name": "Paycom Software, Inc."
+        },
+        {
+          "ticker": "GKOS",
+          "weight": 0.006,
+          "name": "Glaukos Corporation"
+        },
+        {
+          "ticker": "SM",
+          "weight": 0.0052,
+          "name": "SM Energy Company"
+        },
+        {
+          "ticker": "PTGX",
+          "weight": 0.0052,
+          "name": "Protagonist Therapeutics, Inc."
+        },
+        {
+          "ticker": "RHP",
+          "weight": 0.0051,
+          "name": "Ryman Hospitality Properties, Inc."
+        },
+        {
+          "ticker": "JXN",
+          "weight": 0.0048,
+          "name": "Jackson Financial Inc."
+        },
+        {
+          "ticker": "VSAT",
+          "weight": 0.0047,
+          "name": "Viasat, Inc."
+        },
+        {
+          "ticker": "LTH",
+          "weight": 0.0046,
+          "name": "Life Time Group Holdings, Inc."
+        },
+        {
+          "ticker": "ETSY",
+          "weight": 0.0044,
+          "name": "Etsy, Inc."
+        },
+        {
+          "ticker": "LW",
+          "weight": 0.0044,
+          "name": "Lamb Weston Holdings, Inc."
+        },
+        {
+          "ticker": "ESI",
+          "weight": 0.0043,
+          "name": "Element Solutions Inc"
+        },
+        {
+          "ticker": "TGTX",
+          "weight": 0.0043,
+          "name": "TG Therapeutics, Inc."
+        },
+        {
+          "ticker": "KMX",
+          "weight": 0.0043,
+          "name": "CarMax, Inc."
+        },
+        {
+          "ticker": "EMN",
+          "weight": 0.0043,
+          "name": "Eastman Chemical Company"
+        },
+        {
+          "ticker": "ALKS",
+          "weight": 0.0042,
+          "name": "Alkermes plc"
+        },
+        {
+          "ticker": "ACA",
+          "weight": 0.0042,
+          "name": "Arcosa, Inc."
+        },
+        {
+          "ticker": "RAL",
+          "weight": 0.0042,
+          "name": "Ralliant Corporation"
+        },
+        {
+          "ticker": "AWI",
+          "weight": 0.0042,
+          "name": "Armstrong World Industries, Inc."
+        },
+        {
+          "ticker": "CAG",
+          "weight": 0.0041,
+          "name": "Conagra Brands, Inc."
+        },
+        {
+          "ticker": "ZWS",
+          "weight": 0.0041,
+          "name": "Zurn Elkay Water Solutions Corporation"
+        },
+        {
+          "ticker": "POOL",
+          "weight": 0.0041,
+          "name": "Pool Corporation"
+        },
+        {
+          "ticker": "EPAM",
+          "weight": 0.0041,
+          "name": "EPAM Systems, Inc."
+        },
+        {
+          "ticker": "TRNO",
+          "weight": 0.0041,
+          "name": "Terreno Realty Corporation"
+        }
+      ]
+    },
     "TSE:XUU": {
       "name": "iShares Core S&P U.S. Total Market Index ETF",
       "currency": "CAD",
@@ -2468,6 +2784,138 @@
           "ticker": "TRNO",
           "weight": 3.9e-05,
           "name": "Terreno Realty Corporation"
+        }
+      ]
+    },
+    "TSE:ZLI": {
+      "name": "BMO Low Volatility International Equity Fund",
+      "currency": "CAD",
+      "holdings_page": "quote/tsx/ZLI",
+      "holdings": [
+        {
+          "ticker": "ENX.PA",
+          "weight": 0.0225,
+          "name": "Euronext N.V."
+        },
+        {
+          "ticker": "DB1.DE",
+          "weight": 0.019,
+          "name": "Deutsche B\u00f6rse AG"
+        },
+        {
+          "ticker": "ORA.PA",
+          "weight": 0.0184,
+          "name": "Orange S.A."
+        },
+        {
+          "ticker": "9843.T",
+          "weight": 0.017,
+          "name": "Nitori Holdings Co., Ltd."
+        },
+        {
+          "ticker": "4684.T",
+          "weight": 0.0167,
+          "name": "OBIC Co.,Ltd."
+        },
+        {
+          "ticker": "9434.T",
+          "weight": 0.0163,
+          "name": "SoftBank Corp."
+        },
+        {
+          "ticker": "IAG.AX",
+          "weight": 0.0161,
+          "name": "Insurance Australia Group Limited"
+        },
+        {
+          "ticker": "6178.T",
+          "weight": 0.0158,
+          "name": "Japan Post Holdings Co., Ltd."
+        },
+        {
+          "ticker": "4452.T",
+          "weight": 0.0155,
+          "name": "Kao Corporation"
+        },
+        {
+          "ticker": "9735.T",
+          "weight": 0.0153,
+          "name": "SECOM CO., LTD."
+        },
+        {
+          "ticker": "LSEG.L",
+          "weight": 0.0151,
+          "name": "London Stock Exchange Group plc"
+        },
+        {
+          "ticker": "4661.T",
+          "weight": 0.0147,
+          "name": "Oriental Land Co., Ltd."
+        },
+        {
+          "ticker": "9433.T",
+          "weight": 0.0145,
+          "name": "KDDI Corporation"
+        },
+        {
+          "ticker": "8725.T",
+          "weight": 0.0142,
+          "name": "MS&AD Insurance Group Holdings, Inc."
+        },
+        {
+          "ticker": "WKL.AS",
+          "weight": 0.014,
+          "name": "Wolters Kluwer N.V."
+        },
+        {
+          "ticker": "GET.PA",
+          "weight": 0.0139,
+          "name": "Getlink SE"
+        },
+        {
+          "ticker": "SHB-A.ST",
+          "weight": 0.0139,
+          "name": "Svenska Handelsbanken AB (publ)"
+        },
+        {
+          "ticker": "ZURN.SW",
+          "weight": 0.0137,
+          "name": "Zurich Insurance Group AG"
+        },
+        {
+          "ticker": "8697.T",
+          "weight": 0.0136,
+          "name": "Japan Exchange Group, Inc."
+        },
+        {
+          "ticker": "9022.T",
+          "weight": 0.0134,
+          "name": "Central Japan Railway Company"
+        },
+        {
+          "ticker": "AD.AS",
+          "weight": 0.0134,
+          "name": "Koninklijke Ahold Delhaize N.V."
+        },
+        {
+          "ticker": "HNR1.DE",
+          "weight": 0.0132,
+          "name": "Hannover R\u00fcck SE"
+        },
+        {
+          "ticker": "RED.MC",
+          "weight": 0.013,
+          "name": "Redeia Corporaci\u00f3n, S.A."
+        },
+        {
+          "ticker": "8951.T",
+          "weight": 0.0129,
+          "name": "Nippon Building Fund Inc."
+        },
+        {
+          "ticker": "SCMN.SW",
+          "weight": 0.0126,
+          "name": "Swisscom AG"
         }
       ]
     },
@@ -3187,17 +3635,31 @@
     "3711.TW": "Information Technology",
     "3988.HK": "Financials",
     "402340.KS": "Information Technology",
+    "4452.T": "Consumer Staples",
+    "4661.T": "Consumer Discretionary",
+    "4684.T": "Information Technology",
     "6098.T": "Communication Services",
+    "6178.T": "Financials",
     "6501.T": "Industrials",
     "6758.T": "Information Technology",
     "6857.T": "Information Technology",
     "7203.T": "Consumer Discretionary",
     "8306.T": "Financials",
     "8316.T": "Financials",
+    "8697.T": "Financials",
+    "8725.T": "Financials",
+    "8951.T": "Real Estate",
+    "9022.T": "Industrials",
+    "9433.T": "Communication Services",
+    "9434.T": "Communication Services",
+    "9735.T": "Industrials",
+    "9843.T": "Consumer Discretionary",
     "9988.HK": "Consumer Discretionary",
     "ACA": "Industrials",
+    "AD.AS": "Consumer Staples",
     "ALKS": "Health Care",
     "ALV.DE": "Financials",
+    "ANF": "Consumer Discretionary",
     "ASML.AS": "Information Technology",
     "ASX": "Information Technology",
     "ATI": "Industrials",
@@ -3214,14 +3676,18 @@
     "BP.L": "Energy",
     "CAG": "Consumer Staples",
     "CBA.AX": "Financials",
+    "CHRD": "Energy",
     "CICHF": "Financials",
     "CM.TO": "Financials",
+    "CROX": "Consumer Discretionary",
     "CW": "Industrials",
     "D05.SI": "Financials",
+    "DB1.DE": "Financials",
     "DINO": "Energy",
     "DT": "Information Technology",
     "EMN": "Materials",
     "ENTG": "Information Technology",
+    "ENX.PA": "Financials",
     "EPAM": "Information Technology",
     "ESI": "Materials",
     "ETSY": "Consumer Discretionary",
@@ -3229,25 +3695,33 @@
     "FLR": "Industrials",
     "FTI": "Energy",
     "GATX": "Industrials",
+    "GET.PA": "Industrials",
     "GKOS": "Health Care",
     "HDFCBANK.NS": "Financials",
+    "HNR1.DE": "Financials",
     "HSBA.L": "Financials",
+    "IAG.AX": "Financials",
     "IBE.MC": "Utilities",
     "ICICIBANK.NS": "Financials",
     "IDCBF": "Financials",
     "INGA.AS": "Financials",
     "INGR": "Consumer Staples",
+    "INSW": "Energy",
     "ISP.MI": "Financials",
     "ITT": "Industrials",
     "ITUB4.SA": "Financials",
     "JXN": "Financials",
     "KEX": "Industrials",
     "KMX": "Consumer Discretionary",
+    "LEA": "Consumer Discretionary",
     "LNG": "Energy",
     "LNTH": "Health Care",
+    "LSEG.L": "Financials",
     "LTH": "Consumer Discretionary",
     "LW": "Consumer Staples",
+    "M": "Consumer Discretionary",
     "MATX": "Industrials",
+    "MRX": "Financials",
     "MTCH": "Communication Services",
     "MUFG": "Financials",
     "NA.TO": "Financials",
@@ -3259,6 +3733,7 @@
     "NU": "Financials",
     "NVT": "Industrials",
     "OKTA": "Information Technology",
+    "ORA.PA": "Communication Services",
     "OVV": "Energy",
     "PAYC": "Information Technology",
     "PETR3.SA": "Energy",
@@ -3268,6 +3743,7 @@
     "PTGX": "Health Care",
     "QLYS": "Information Technology",
     "RAL": "Information Technology",
+    "RED.MC": "Utilities",
     "RELIANCE.NS": "Energy",
     "RGA": "Financials",
     "RGLD": "Materials",
@@ -3279,6 +3755,8 @@
     "RS": "Materials",
     "SAN.MC": "Financials",
     "SAP.DE": "Information Technology",
+    "SCMN.SW": "Communication Services",
+    "SHB-A.ST": "Financials",
     "SHEL": "Energy",
     "SHEL.L": "Energy",
     "SIE.DE": "Industrials",
@@ -3299,8 +3777,10 @@
     "USFD": "Consumer Staples",
     "UTHR": "Health Care",
     "VSAT": "Information Technology",
+    "WKL.AS": "Industrials",
     "WWD": "Industrials",
     "XPO": "Industrials",
+    "ZURN.SW": "Financials",
     "ZWS": "Industrials"
   }
 }
