@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock & ETF Fundamental Valuation Engine</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <div class="header-container">
+      <div class="brand">
+        <h1>StockEval</h1>
+        <p class="subtitle">Intrinsic DCF & Reverse DCF Look-Through Engine</p>
+      </div>
+      <div class="header-controls">
+        <label for="snapshot-select">Snapshot Date:</label>
+        <select id="snapshot-select"></select>
+        <span id="last-updated" class="badge">Loading...</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <!-- Top KPI Cards -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <h3>Total Equities Tracked</h3>
+        <p id="kpi-stocks-count" class="kpi-value">-</p>
+        <span class="kpi-sub">S&P 500, QQQ, TSX Composite</span>
+      </div>
+      <div class="kpi-card">
+        <h3>Custom ETFs Monitored</h3>
+        <p id="kpi-etf-count" class="kpi-value">-</p>
+        <span class="kpi-sub">Look-through weighted portfolios</span>
+      </div>
+      <div class="kpi-card">
+        <h3>Cheapest vs Intrinsic</h3>
+        <p id="kpi-cheapest-ticker" class="kpi-value">-</p>
+        <span id="kpi-cheapest-val" class="kpi-sub">-</span>
+      </div>
+      <div class="kpi-card">
+        <h3>Highest Growth Priced</h3>
+        <p id="kpi-growth-ticker" class="kpi-value">-</p>
+        <span id="kpi-growth-val" class="kpi-sub">-</span>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="tab-stocks">Individual Equities</button>
+      <button class="tab-btn" data-tab="tab-etfs">ETF Look-Through</button>
+      <button class="tab-btn" data-tab="tab-accuracy">Model Accuracy Backtest</button>
+    </nav>
+
+    <!-- TAB 1: Individual Equities -->
+    <section id="tab-stocks" class="tab-content active">
+      <div class="table-controls">
+        <input type="text" id="search-input" placeholder="Search ticker or index..." />
+        <div class="filter-group">
+          <label>Filter Index:</label>
+          <select id="filter-index">
+            <option value="ALL">All Indices</option>
+            <option value="SP500">S&P 500</option>
+            <option value="QQQ">QQQ (Nasdaq 100)</option>
+            <option value="XIC">TSX Composite</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Sort By:</label>
+          <select id="sort-by">
+            <option value="premium_asc">Cheapest (Lowest Premium)</option>
+            <option value="premium_desc">Most Expensive (Highest Premium)</option>
+            <option value="growth_desc">Highest Implied Growth</option>
+            <option value="price_desc">Highest Price</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table id="stocks-table">
+          <thead>
+            <tr>
+              <th>Ticker</th>
+              <th>Index</th>
+              <th>Currency</th>
+              <th>Market Price</th>
+              <th>Intrinsic DCF</th>
+              <th>Market Premium (%)</th>
+              <th>Implied Growth (Rev. DCF)</th>
+              <th>FCF (B)</th>
+              <th>Net Debt (B)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="9" class="loading">Loading equities...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TAB 2: Custom ETFs Look-Through -->
+    <section id="tab-etfs" class="tab-content">
+      <div class="etf-intro">
+        <h2>Custom & Tracked ETF Look-Through Portfolios</h2>
+        <p>Intrinsic values are calculated as the weighted sum of individual constituent DCFs defined in <code>config/custom_etfs.json</code>.</p>
+      </div>
+      <div id="etf-cards-container" class="etf-grid"></div>
+    </section>
+
+    <!-- TAB 3: Model Accuracy Backtest -->
+    <section id="tab-accuracy" class="tab-content">
+      <div class="backtest-controls">
+        <h2>Historical Accuracy & Returns Tracker</h2>
+        <p>Compare historical predictions against later market prices to check if undervalued stocks generated alpha.</p>
+        <div class="backtest-selectors">
+          <div>
+            <label for="backtest-base-date">Base Snapshot Date:</label>
+            <select id="backtest-base-date"></select>
+          </div>
+          <div>
+            <label for="backtest-target-date">Evaluation Date:</label>
+            <select id="backtest-target-date"></select>
+          </div>
+          <button id="run-backtest-btn" class="btn-primary">Compute Performance</button>
+        </div>
+      </div>
+      <div id="backtest-results" class="backtest-wrapper">
+        <p class="placeholder-text">Select two dates to run a performance backtest.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-container">
+      <p>Raw data sourced daily from audited Form 10-Ks and market feeds. Automated via GitHub Actions & GitHub Pages.</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
