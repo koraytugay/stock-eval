@@ -122,6 +122,27 @@ class ParseYahooTest(unittest.TestCase):
         self.assertEqual(r["shares_outstanding"], 0.5)
         self.assertEqual(r["fcf_history"], [["2022-12-31", 2.0], ["2023-12-31", 3.0]])
 
+    def test_quarterly_ttm_and_point_in_time(self):
+        data = {"timeseries": {"result": [
+            ts("annualOperatingCashFlow", ("2023-12-31", 8 * B)),
+            ts("annualCapitalExpenditure", ("2023-12-31", -2 * B)),
+            ts("quarterlyOperatingCashFlow", ("2023-09-30", 2 * B), ("2023-12-31", 2 * B),
+               ("2024-03-31", 3 * B), ("2024-06-30", 3 * B), ("2024-09-30", 4 * B)),
+            ts("quarterlyCapitalExpenditure", ("2023-09-30", -1 * B), ("2023-12-31", -1 * B),
+               ("2024-03-31", -1 * B), ("2024-06-30", -1 * B), ("2024-09-30", -1 * B)),
+            ts("quarterlyOrdinarySharesNumber", ("2024-09-30", 1 * B)),
+        ]}}
+        live = parse_yahoo_timeseries(data)
+        self.assertEqual((live["fcf_basis"], live["fcf_period_end"]), ("TTM", "2024-09-30"))
+        self.assertEqual(live["free_cash_flow"], 12.0 - 4.0)
+        # By 2024-09-01 the June quarter is known (60-day reporting lag), the September one is not
+        past = parse_yahoo_timeseries(data, as_of="2024-09-01")
+        self.assertEqual(past["fcf_period_end"], "2024-06-30")
+        self.assertEqual(past["free_cash_flow"], 10.0 - 4.0)
+        # Earlier still, fewer than four quarters after the annual report: fall back to the fiscal year
+        early = parse_yahoo_timeseries(data, as_of="2024-03-15")
+        self.assertEqual((early["fcf_basis"], early["free_cash_flow"]), ("FY", 6.0))
+
     def test_empty(self):
         self.assertIsNone(parse_yahoo_timeseries({"timeseries": {"result": []}}))
 

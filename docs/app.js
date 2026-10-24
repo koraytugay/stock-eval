@@ -3,6 +3,7 @@
 let currentSnapshot = null;
 let allHistoryDates = [];
 let expandedTicker = null;
+let etfHistory = null;
 
 // The dashboard lives in docs/ and reads data/ from the repo root; "data/" is kept as a fallback for other layouts.
 const DATA_ROOTS = ["../data/", "data/"];
@@ -34,7 +35,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupTabs();
   setupEventListeners();
   await loadHistoryIndex();
+  etfHistory = await fetchData("etf_history.json").catch(() => null);
   await loadSnapshot("latest");
+  let resizeTimer = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(drawEtfCharts, 150);
+  });
 });
 
 function escapeHtml(value) {
@@ -319,8 +326,54 @@ function stockDetailHtml(s) {
   `;
 }
 
+function etfHistoryRows(etfId) {
+  // Rows: [date, intrinsic per $1, premium %, valued weight %]; only rows with a premium are usable
+  return ((etfHistory && etfHistory.etfs && etfHistory.etfs[etfId]) || []).filter(r => typeof r[2] === "number");
+}
+
+function historyStats(rows) {
+  if (rows.length < 20) return null;
+  const premiums = rows.map(r => r[2]);
+  const current = premiums[premiums.length - 1];
+  const percentile = (premiums.filter(p => p <= current).length / premiums.length) * 100;
+  return { current, percentile, min: Math.min(...premiums), max: Math.max(...premiums), median: median(premiums) };
+}
+
+function verdict(percentile) {
+  if (percentile <= 20) return { label: "Cheaper than usual", cls: "verdict-cheap", icon: "\u2193" };
+  if (percentile >= 80) return { label: "Pricier than usual", cls: "verdict-pricey", icon: "\u2191" };
+  return { label: "Typical", cls: "verdict-typical", icon: "\u2013" };
+}
+
+function renderEtfSummary() {
+  const tbody = document.querySelector("#etf-summary-table tbody");
+  document.getElementById("etf-backfill-date").textContent = (etfHistory && etfHistory.backfilled_until) || "-";
+  const etfs = Object.entries(currentSnapshot.etfs || {});
+  if (!etfHistory || etfs.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="loading">No valuation history available yet.</td></tr>`;
+    return;
+  }
+  const rows = etfs.map(([id, data]) => ({ id, data, stats: historyStats(etfHistoryRows(id)) }))
+    .sort((a, b) => (a.stats ? a.stats.percentile : 999) - (b.stats ? b.stats.percentile : 999));
+  tbody.innerHTML = rows.map(({ id, data, stats }) => {
+    const v = stats ? verdict(stats.percentile) : null;
+    return `
+      <tr>
+        <td><strong>${escapeHtml(id)}</strong><span class="status-note">${escapeHtml(data.name || "")}</span></td>
+        <td>${fmtPct(data.market_premium_pct)}</td>
+        <td>${stats ? `${fmtPct(stats.min)} to ${fmtPct(stats.max)}` : "-"}</td>
+        <td>${stats ? fmtPct(stats.median) : "-"}</td>
+        <td>${stats ? `${Math.round(stats.percentile)}th` : "-"}</td>
+        <td>${v ? `<span class="verdict ${v.cls}"><span aria-hidden="true">${v.icon}</span> ${v.label}</span>` : "Not enough history"}</td>
+        <td>${fmtNum(data.covered_weight_pct, 1)}%</td>
+      </tr>
+    `;
+  }).join("");
+}
+
 function renderETFs() {
   if (!currentSnapshot || !currentSnapshot.etfs) return;
+  renderEtfSummary();
   const container = document.getElementById("etf-cards-container");
   const etfs = Object.entries(currentSnapshot.etfs);
 
@@ -376,11 +429,141 @@ function renderETFs() {
         </div>
         ${summary}
         ${coverage}
+        ${etfHistoryRows(etfId).length > 1 ? `
+          <div class="etf-chart-block">
+            <div class="etf-chart-title">Premium vs DCF, past year</div>
+            <div class="etf-chart" data-etf="${escapeHtml(etfId)}"></div>
+          </div>` : ""}
         ${holdingsTable(holdings.slice(0, VISIBLE))}
         ${rest.length ? `<details class="etf-more"><summary>Show ${rest.length} more holdings</summary>${holdingsTable(rest)}</details>` : ""}
       </div>
     `;
   }).join("");
+  drawEtfCharts();
+}
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+function svgEl(tag, attrs) {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+
+function niceStep(range, target) {
+  const raw = range / target;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  return [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw) || mag * 10;
+}
+
+function drawEtfCharts() {
+  document.querySelectorAll(".etf-chart").forEach(el => drawEtfChart(el, etfHistoryRows(el.dataset.etf)));
+}
+
+function drawEtfChart(container, rows) {
+  container.textContent = "";
+  if (rows.length < 2) return;
+  const width = container.clientWidth || 360;
+  const height = 170;
+  const m = { top: 10, right: 12, bottom: 22, left: 46 };
+  const w = width - m.left - m.right;
+  const h = height - m.top - m.bottom;
+
+  const times = rows.map(r => Date.parse(r[0]));
+  const values = rows.map(r => r[2]);
+  // Keep 0% (fair value) in view, but only pad the side that holds data
+  const vMin = Math.min(...values), vMax = Math.max(...values);
+  const pad = (Math.max(vMax, 0) - Math.min(vMin, 0)) * 0.08 || 5;
+  let lo = vMin < 0 ? vMin - pad : 0;
+  let hi = vMax > 0 ? vMax + pad : 0;
+  const step = niceStep(hi - lo, 4);
+  lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+
+  const t0 = times[0], t1 = times[times.length - 1];
+  const x = t => m.left + ((t - t0) / (t1 - t0)) * w;
+  const y = v => m.top + (1 - (v - lo) / (hi - lo)) * h;
+
+  const svg = svgEl("svg", { width, height, role: "img", "aria-label": "Premium versus DCF over the past year" });
+
+  // Reconstructed (backfilled) period
+  const backfilledUntil = etfHistory && etfHistory.backfilled_until;
+  if (backfilledUntil) {
+    const bx = x(Math.min(Date.parse(backfilledUntil), t1));
+    svg.appendChild(svgEl("rect", { x: m.left, y: m.top, width: Math.max(bx - m.left, 0), height: h, class: "chart-backfill" }));
+  }
+
+  // Gridlines and y ticks
+  for (let v = lo; v <= hi + 1e-9; v += step) {
+    svg.appendChild(svgEl("line", { x1: m.left, x2: m.left + w, y1: y(v), y2: y(v), class: v === 0 ? "chart-zero" : "chart-grid" }));
+    const label = svgEl("text", { x: m.left - 6, y: y(v) + 3, "text-anchor": "end", class: "chart-tick" });
+    label.textContent = `${v > 0 ? "+" : ""}${Math.round(v)}%`;
+    svg.appendChild(label);
+  }
+
+  // Month ticks
+  const d = new Date(t0);
+  d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + 1);
+  let monthIdx = 0;
+  while (d.getTime() <= t1) {
+    if (monthIdx % 3 === 0) {
+      const tx = x(d.getTime());
+      const label = svgEl("text", { x: tx, y: height - 6, "text-anchor": "middle", class: "chart-tick" });
+      label.textContent = d.toLocaleDateString("en-CA", { month: "short", year: "2-digit", timeZone: "UTC" });
+      svg.appendChild(label);
+    }
+    d.setUTCMonth(d.getUTCMonth() + 1);
+    monthIdx++;
+  }
+
+  const points = rows.map((r, i) => [x(times[i]), y(values[i])]);
+  const linePath = points.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join("");
+  const base = y(Math.max(lo, Math.min(0, hi)));
+  svg.appendChild(svgEl("path", { d: `${linePath}L${points[points.length - 1][0]},${base}L${points[0][0]},${base}Z`, class: "chart-area" }));
+  svg.appendChild(svgEl("path", { d: linePath, class: "chart-line" }));
+
+  // End dot and value
+  const last = points[points.length - 1];
+  svg.appendChild(svgEl("circle", { cx: last[0], cy: last[1], r: 4, class: "chart-dot" }));
+
+  // Crosshair + tooltip
+  const cross = svgEl("line", { y1: m.top, y2: m.top + h, class: "chart-cross", visibility: "hidden" });
+  const hoverDot = svgEl("circle", { r: 4, class: "chart-dot", visibility: "hidden" });
+  svg.appendChild(cross);
+  svg.appendChild(hoverDot);
+  const tip = document.createElement("div");
+  tip.className = "chart-tooltip";
+  tip.hidden = true;
+  const tipValue = document.createElement("strong");
+  const tipDetail = document.createElement("span");
+  tip.append(tipValue, tipDetail);
+
+  const hit = svgEl("rect", { x: m.left, y: m.top, width: w, height: h, fill: "transparent" });
+  const show = evt => {
+    const rect = svg.getBoundingClientRect();
+    const px = evt.clientX - rect.left;
+    const t = t0 + ((px - m.left) / w) * (t1 - t0);
+    let i = 0;
+    for (let j = 1; j < times.length; j++) if (Math.abs(times[j] - t) < Math.abs(times[i] - t)) i = j;
+    const [cx, cy] = points[i];
+    cross.setAttribute("x1", cx); cross.setAttribute("x2", cx); cross.setAttribute("visibility", "visible");
+    hoverDot.setAttribute("cx", cx); hoverDot.setAttribute("cy", cy); hoverDot.setAttribute("visibility", "visible");
+    tipValue.textContent = fmtPct(values[i]);
+    const reconstructed = backfilledUntil && rows[i][0] <= backfilledUntil ? " (reconstructed)" : "";
+    tipDetail.textContent = `${rows[i][0]} \u00b7 $${fmtNum(rows[i][1])} per $1${reconstructed}`;
+    tip.hidden = false;
+    tip.style.left = `${Math.min(Math.max(cx - 70, 0), width - 150)}px`;
+    tip.style.top = `${Math.max(cy - 52, 0)}px`;
+  };
+  const hide = () => {
+    cross.setAttribute("visibility", "hidden");
+    hoverDot.setAttribute("visibility", "hidden");
+    tip.hidden = true;
+  };
+  hit.addEventListener("pointermove", show);
+  hit.addEventListener("pointerleave", hide);
+  svg.appendChild(hit);
+
+  container.append(svg, tip);
 }
 
 function knownBy(stock, date) {

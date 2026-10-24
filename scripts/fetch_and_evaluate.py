@@ -24,6 +24,7 @@ DATA_DIR = BASE_DIR / "data"
 SNAPSHOTS_DIR = DATA_DIR / "snapshots"
 UNIVERSE_FILE = DATA_DIR / "universe" / "universe.json"
 CACHE_FILE = DATA_DIR / "fundamentals_cache.json"
+ETF_HISTORY_FILE = DATA_DIR / "etf_history.json"
 PARAMS_FILE = BASE_DIR / "config" / "model_params.json"
 
 # Dated snapshots accumulate in git, so they keep only the raw fields the table and backtest use
@@ -44,6 +45,21 @@ def save_json(path, obj, compact=False):
             json.dump(obj, f, separators=(",", ":"))
         else:
             json.dump(obj, f, indent=2)
+
+
+def etf_history_row(date, etf):
+    """Compact daily history row: [date, intrinsic per $1, premium %, valued weight %]."""
+    return [date, etf.get("intrinsic_per_dollar"), etf.get("market_premium_pct"), etf.get("covered_weight_pct")]
+
+
+def update_etf_history(date, etfs, history=None):
+    """Upserts one day's ETF valuations into the history (rows sorted by date)."""
+    history = history if history is not None else load_json(ETF_HISTORY_FILE, {"backfilled_until": None, "etfs": {}})
+    for etf_id, etf in etfs.items():
+        rows = [r for r in history["etfs"].get(etf_id, []) if r[0] != date]
+        rows.append(etf_history_row(date, etf))
+        history["etfs"][etf_id] = sorted(rows, key=lambda r: r[0])
+    return history
 
 
 def is_stale(entry, today, stale_after_days):
@@ -69,8 +85,8 @@ def refresh_fundamentals(tickers, cache, today, params):
             print(f"  ...{idx}/{len(budget)}")
 
 
-def value_stock(ticker, price, price_ccy, fund, sector, params):
-    """Returns (valuation dict or None, status string)."""
+def model_inputs(fund, sector, params):
+    """DCF inputs for a stock in its reporting currency. Returns (inputs dict or None, status string)."""
     if sector in params.get("excluded_sectors", []):
         return None, "sector_excluded"
     if not fund or not fund.get("source"):
@@ -82,15 +98,31 @@ def value_stock(ticker, price, price_ccy, fund, sector, params):
     if fcf is None or fcf <= 0:
         return None, "negative_fcf"
 
+    g_cfg = params["growth"]
+    growth, growth_source = estimate_growth(fund.get("fcf_history"), g_cfg["default"], g_cfg["floor"],
+                                            g_cfg["cap"], g_cfg["min_history_years"])
+    return {
+        "fcf": fcf,
+        "wacc": params["sector_wacc"].get(sector, params["default_wacc"]),
+        "growth": growth,
+        "growth_source": growth_source,
+        "shares": fund["shares_outstanding"],
+        "net_debt": fund.get("net_debt", 0.0),
+    }, "ok"
+
+
+def value_stock(ticker, price, price_ccy, fund, sector, params):
+    """Returns (valuation dict or None, status string)."""
+    inputs, status = model_inputs(fund, sector, params)
+    if not inputs:
+        return None, status
+
     fx = fetch_fx_rate(fund.get("currency", "USD"), price_ccy)
     if fx is None:
         return None, "no_fx_rate"
 
-    wacc = params["sector_wacc"].get(sector, params["default_wacc"])
-    g_cfg = params["growth"]
-    growth, growth_source = estimate_growth(fund.get("fcf_history"), g_cfg["default"], g_cfg["floor"],
-                                            g_cfg["cap"], g_cfg["min_history_years"])
-    shares, net_debt = fund["shares_outstanding"], fund.get("net_debt", 0.0)
+    fcf, wacc, growth, growth_source = inputs["fcf"], inputs["wacc"], inputs["growth"], inputs["growth_source"]
+    shares, net_debt = inputs["shares"], inputs["net_debt"]
 
     # A US-listed foreign company (ADR) trades in receipts that can each represent several ordinary shares;
     # express the share count in receipts so the per-share value matches the quoted price
@@ -221,6 +253,8 @@ def run_daily_evaluation():
         for t, e in today_snapshot["stocks"].items()}}
     save_json(snapshot_path, slim, compact=True)
     save_json(DATA_DIR / "latest.json", today_snapshot, compact=True)
+
+    save_json(ETF_HISTORY_FILE, update_etf_history(today_str, today_snapshot["etfs"]), compact=True)
 
     index_path = DATA_DIR / "history_index.json"
     history = load_json(index_path, [])

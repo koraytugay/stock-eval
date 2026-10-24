@@ -119,6 +119,23 @@
         <h2>My ETFs: Look-Through Valuation</h2>
         <p>Each ETF is valued through its published top holdings (funds of funds such as XEQT are expanded into their underlying ETFs). Every valued holding contributes its weight &times; (DCF value / price), giving the intrinsic value of $1 invested in the valued part of the fund. Banks and insurers are not valued, and a DCF value below zero counts as zero.</p>
       </div>
+      <div class="table-wrapper etf-summary">
+        <table id="etf-summary-table">
+          <thead>
+            <tr>
+              <th>ETF</th>
+              <th>Premium vs DCF</th>
+              <th>Past-year range</th>
+              <th>Past-year median</th>
+              <th>Percentile</th>
+              <th>Versus its past year</th>
+              <th>Fund weight valued</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="7" class="loading">Loading valuation history...</td></tr></tbody>
+        </table>
+      </div>
+      <p class="table-hint etf-summary-hint">Percentile = share of the past year's daily readings that were cheaper than or equal to today's. Low = cheaper than usual for this ETF. History before <span id="etf-backfill-date">-</span> is a reconstruction using today's holdings.</p>
       <div id="etf-cards-container" class="etf-grid"></div>
     </section>
 

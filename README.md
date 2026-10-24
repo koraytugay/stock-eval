@@ -42,6 +42,11 @@ Each ETF is valued by look-through. With `holdings_page` (a stockanalysis.com pa
 
 Free holdings pages only list the top 10–25 positions, so each ETF card reports how much of the fund the published holdings cover and how much of it is actually valued. International holdings are priced and valued through Yahoo Finance (London prices are converted from pence; ADR share ratios are inferred from market cap).
 
+### Valuation history
+`data/etf_history.json` holds one row per ETF per trading day (intrinsic value per $1, premium vs DCF, valued weight). The daily run appends the day's values; the ETF tab charts the past year and labels each ETF *cheaper than usual*, *typical* or *pricier than usual* from the percentile of today's premium within that history (bottom/top 20%).
+
+The first year was reconstructed with `python3 scripts/backfill_etf_history.py`, which replays historical prices and point-in-time fundamentals (SEC facts filed by each month start; Yahoo periods ending 60+ days earlier) against **today's** holdings. That part of the chart is shaded and marked as reconstructed. Re-run it after adding an ETF to give the new one a history.
+
 ### SEC User-Agent
 The SEC asks automated clients to identify themselves. Set the `SEC_USER_AGENT` environment variable (locally) or a repository **variable** of the same name (in GitHub Actions) to something like `Your Name you@example.com`.
 

@@ -358,6 +358,8 @@ tbody tr:hover td {
 }
 
 .etf-card {
+  min-width: 0;
+  overflow-x: auto;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 10px;
@@ -507,8 +509,9 @@ footer {
     padding: 10px 12px;
   }
 
-  .etf-grid {
-    grid-template-columns: 1fr;
+  .etf-grid,
+  .backtest-baskets {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -648,4 +651,127 @@ tbody tr.detail-row:hover td {
   font-weight: 600;
   color: var(--accent-color);
   margin-top: 10px;
+}
+
+/* ETF valuation history */
+.etf-summary {
+  margin-bottom: 8px;
+}
+
+.etf-summary-hint {
+  margin: 0 4px 16px 4px;
+}
+
+.verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid var(--border-color);
+  color: var(--text-strong);
+}
+
+.verdict-cheap {
+  background: #dafbe1;
+  border-color: #aceebb;
+}
+
+.verdict-pricey {
+  background: #ffebe9;
+  border-color: #ffcecb;
+}
+
+.verdict-typical {
+  background: #f6f8fa;
+}
+
+.etf-chart-block {
+  margin: 12px 0 4px 0;
+}
+
+.etf-chart-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-label);
+  margin-bottom: 4px;
+}
+
+.etf-chart {
+  position: relative;
+  width: 100%;
+}
+
+.etf-chart svg {
+  display: block;
+  overflow: visible;
+}
+
+.chart-grid {
+  stroke: #eaeef2;
+  stroke-width: 1;
+}
+
+.chart-zero {
+  stroke: #afb8c1;
+  stroke-width: 1;
+}
+
+.chart-tick {
+  font-size: 10px;
+  fill: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-backfill {
+  fill: #f6f8fa;
+}
+
+.chart-area {
+  fill: var(--accent-color);
+  opacity: 0.1;
+}
+
+.chart-line {
+  fill: none;
+  stroke: var(--accent-color);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.chart-dot {
+  fill: var(--accent-color);
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.chart-cross {
+  stroke: #8c959f;
+  stroke-width: 1;
+}
+
+.chart-tooltip {
+  position: absolute;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+  padding: 6px 10px;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.chart-tooltip strong {
+  font-size: 0.95rem;
+  color: var(--text-strong);
 }

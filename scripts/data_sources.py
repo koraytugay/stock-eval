@@ -80,6 +80,22 @@ def fetch_market_price(ticker):
     return price, currency
 
 
+def fetch_price_history(ticker, range_="1y"):
+    """Daily closes as (currency, {iso_date: close}), or (None, {}) on failure. Minor units are converted."""
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range={range_}"
+    try:
+        result = _http_json(url, YAHOO_HEADERS, timeout=10)['chart']['result'][0]
+        currency = result['meta'].get('currency', 'USD')
+        closes = result['indicators']['quote'][0]['close']
+        timestamps = result['timestamp']
+    except Exception:
+        return None, {}
+    scale = 100.0 if currency in MINOR_UNIT_CURRENCIES else 1.0
+    history = {datetime.datetime.utcfromtimestamp(ts).date().isoformat(): c / scale
+               for ts, c in zip(timestamps, closes) if c is not None}
+    return MINOR_UNIT_CURRENCIES.get(currency, currency), history
+
+
 _fx_cache = {}
 
 def fetch_fx_rate(from_ccy, to_ccy):
@@ -177,6 +193,18 @@ def _latest_instant(entries, on_or_before=None, max_age_days=400):
     if not cands:
         return None
     return max(cands, key=lambda e: (e["end"], e.get("filed", "")))
+
+
+def facts_as_of(data, as_of):
+    """Copy of a companyfacts payload keeping only facts filed on or before `as_of` (point-in-time view)."""
+    facts = {}
+    for tax, concepts in data.get("facts", {}).items():
+        facts[tax] = {}
+        for concept, body in concepts.items():
+            units = {u: [e for e in entries if e.get("filed", "") <= as_of]
+                     for u, entries in body.get("units", {}).items()}
+            facts[tax][concept] = {"units": units}
+    return {"facts": facts}
 
 
 def parse_sec_companyfacts(data, fetched_at=None):
@@ -293,6 +321,7 @@ def parse_sec_companyfacts(data, fetched_at=None):
 
 YAHOO_TYPES = [
     "annualOperatingCashFlow", "annualCapitalExpenditure",
+    "quarterlyOperatingCashFlow", "quarterlyCapitalExpenditure",
     "trailingOperatingCashFlow", "trailingCapitalExpenditure",
     "annualCashAndCashEquivalents", "quarterlyCashAndCashEquivalents",
     "annualTotalDebt", "quarterlyTotalDebt",
@@ -311,11 +340,19 @@ def fetch_yahoo_timeseries(ticker):
         time.sleep(0.05)
 
 
-def parse_yahoo_timeseries(data, fetched_at=None):
+def parse_yahoo_timeseries(data, fetched_at=None, as_of=None, report_lag_days=60):
+    """
+    Parses Yahoo fundamentals. With `as_of`, only periods ending at least `report_lag_days` before that date
+    are used, approximating what had been reported by then (Yahoo has no filing dates).
+    """
+    cutoff = None
+    if as_of:
+        cutoff = (_date(as_of) - datetime.timedelta(days=report_lag_days)).isoformat()
     series = {}
     for res in data.get("timeseries", {}).get("result", []) or []:
         t = (res.get("meta", {}).get("type") or [None])[0]
-        points = [p for p in (res.get(t) or []) if p and p.get("reportedValue")]
+        points = [p for p in (res.get(t) or []) if p and p.get("reportedValue")
+                  and (cutoff is None or p["asOfDate"] <= cutoff)]
         series[t] = sorted(points, key=lambda p: p["asOfDate"])
 
     def latest(*types):
@@ -324,23 +361,40 @@ def parse_yahoo_timeseries(data, fetched_at=None):
                 return series[t][-1]
         return None
 
-    ocf_p = latest("trailingOperatingCashFlow", "annualOperatingCashFlow")
-    if not ocf_p:
+    val = lambda p: p["reportedValue"]["raw"] if p else 0.0
+
+    # Cash flow, freshest first: sum of the last four quarters (consistent between live and point-in-time
+    # reads), Yahoo's own trailing figure, then the last fiscal year
+    annual_p = latest("annualOperatingCashFlow")
+    quarters = series.get("quarterlyOperatingCashFlow", [])[-4:]
+    q_capex = {p["asOfDate"]: p for p in series.get("quarterlyCapitalExpenditure", [])}
+    trailing_p = latest("trailingOperatingCashFlow")
+    if (len(quarters) == 4 and 250 <= _days(quarters[0]["asOfDate"], quarters[-1]["asOfDate"]) <= 300
+            and all(q["asOfDate"] in q_capex for q in quarters)
+            and (not annual_p or quarters[-1]["asOfDate"] >= annual_p["asOfDate"])):
+        ocf_p, basis = quarters[-1], "TTM"
+        ocf = sum(val(q) for q in quarters)
+        capex_p = q_capex[quarters[-1]["asOfDate"]]
+        capex = sum(abs(val(q_capex[q["asOfDate"]])) for q in quarters)
+    elif trailing_p and (not annual_p or trailing_p["asOfDate"] >= annual_p["asOfDate"]):
+        ocf_p, basis = trailing_p, "TTM"
+        capex_p = latest("trailingCapitalExpenditure", "annualCapitalExpenditure")
+        ocf, capex = val(ocf_p), abs(val(capex_p))  # Yahoo reports CapEx as a negative cash flow
+    elif annual_p:
+        ocf_p, basis = annual_p, "FY"
+        capex_p = latest("annualCapitalExpenditure")
+        ocf, capex = val(ocf_p), abs(val(capex_p))
+    else:
         return None
-    basis = "TTM" if series.get("trailingOperatingCashFlow") else "FY"
-    capex_p = latest("trailingCapitalExpenditure" if basis == "TTM" else "annualCapitalExpenditure",
-                     "annualCapitalExpenditure")
+
     cash_p = latest("quarterlyCashAndCashEquivalents", "annualCashAndCashEquivalents")
     debt_p = latest("quarterlyTotalDebt", "annualTotalDebt")
     shares_p = latest("quarterlyOrdinarySharesNumber", "annualOrdinarySharesNumber")
     mcap_p = latest("trailingMarketCap")
 
-    val = lambda p: p["reportedValue"]["raw"] if p else 0.0
     warnings = [w for w, p in (("capex_missing", capex_p), ("cash_missing", cash_p),
                                ("debt_missing", debt_p), ("shares_missing", shares_p)) if not p]
 
-    ocf = val(ocf_p)
-    capex = abs(val(capex_p))  # Yahoo reports CapEx as a negative cash flow
     cash, debt = val(cash_p), val(debt_p)
 
     capex_by_date = {p["asOfDate"]: abs(p["reportedValue"]["raw"]) for p in series.get("annualCapitalExpenditure", [])}
