@@ -3,8 +3,8 @@
 let currentSnapshot = null;
 let allHistoryDates = [];
 
-// On GitHub Pages data is published next to the page; in a local preview from the repo root it lives one level up.
-const DATA_ROOTS = ["data/", "../data/"];
+// The dashboard lives in docs/ and reads data/ from the repo root; "data/" is kept as a fallback for other layouts.
+const DATA_ROOTS = ["../data/", "data/"];
 let dataRoot = null;
 
 const STATUS_LABELS = {
