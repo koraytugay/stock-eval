@@ -27,7 +27,7 @@
       <div class="kpi-card">
         <h3>Total Equities Tracked</h3>
         <p id="kpi-stocks-count" class="kpi-value">-</p>
-        <span class="kpi-sub">S&P 500, QQQ, TSX Composite</span>
+        <span id="kpi-stocks-sub" class="kpi-sub">S&P 500, QQQ, TSX Composite</span>
       </div>
       <div class="kpi-card">
         <h3>Custom ETFs Monitored</h3>
@@ -56,7 +56,7 @@
     <!-- TAB 1: Individual Equities -->
     <section id="tab-stocks" class="tab-content active">
       <div class="table-controls">
-        <input type="text" id="search-input" placeholder="Search ticker or index..." />
+        <input type="text" id="search-input" placeholder="Search ticker, index or sector..." />
         <div class="filter-group">
           <label>Filter Index:</label>
           <select id="filter-index">
@@ -88,12 +88,13 @@
               <th>Intrinsic DCF</th>
               <th>Market Premium (%)</th>
               <th>Implied Growth (Rev. DCF)</th>
+              <th>Growth / WACC Used</th>
               <th>FCF (B)</th>
               <th>Net Debt (B)</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="9" class="loading">Loading equities...</td></tr>
+            <tr><td colspan="10" class="loading">Loading equities...</td></tr>
           </tbody>
         </table>
       </div>
@@ -103,7 +104,7 @@
     <section id="tab-etfs" class="tab-content">
       <div class="etf-intro">
         <h2>Custom & Tracked ETF Look-Through Portfolios</h2>
-        <p>Intrinsic values are calculated as the weighted sum of individual constituent DCFs defined in <code>config/custom_etfs.json</code>.</p>
+        <p>Each holding contributes its weight &times; (DCF value / price), giving the intrinsic value of $1 invested across the holdings defined in <code>config/custom_etfs.json</code>. Holdings without a valid DCF are excluded and reduce the &ldquo;Valued&rdquo; coverage.</p>
       </div>
       <div id="etf-cards-container" class="etf-grid"></div>
     </section>
@@ -133,7 +134,7 @@
 
   <footer>
     <div class="footer-container">
-      <p>Raw data sourced daily from audited Form 10-Ks and market feeds. Automated via GitHub Actions & GitHub Pages.</p>
+      <p>Fundamentals from SEC EDGAR 10-K/10-Q filings (Yahoo Finance for non-SEC listings); prices from Yahoo Finance. Not investment advice. Automated via GitHub Actions &amp; GitHub Pages.</p>
     </div>
   </footer>
 

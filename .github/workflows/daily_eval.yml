@@ -27,11 +27,18 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Run Unit Tests
+        run: |
+          python -m unittest discover -s tests -v
+
       - name: Update Universe (SP500, QQQ, XIC, Custom ETFs)
         run: |
           python scripts/update_universe.py
 
       - name: Run Daily Valuation & Save Snapshots
+        env:
+          # Set a repository variable SEC_USER_AGENT like "Your Name your@email.com" (SEC fair-access policy)
+          SEC_USER_AGENT: ${{ vars.SEC_USER_AGENT }}
         run: |
           python scripts/fetch_and_evaluate.py
 
@@ -42,8 +49,14 @@ jobs:
           git add data/
           git diff --quiet && git diff --staged --quiet || (git commit -m "Automated daily valuation snapshot: $(date -u +'%Y-%m-%d')" && git push)
 
+      - name: Assemble Site (dashboard + data)
+        run: |
+          rm -rf _site
+          cp -r docs _site
+          cp -r data _site/data
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
+          publish_dir: ./_site

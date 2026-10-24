@@ -1,0 +1,130 @@
+import sys
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+
+from data_sources import parse_sec_companyfacts, parse_yahoo_timeseries
+
+
+def fact(val, end, form, filed, start=None):
+    e = {"val": val, "end": end, "form": form, "filed": filed}
+    if start:
+        e["start"] = start
+    return e
+
+
+def usd(*entries):
+    return {"units": {"USD": list(entries)}}
+
+
+def shares(*entries):
+    return {"units": {"shares": list(entries)}}
+
+
+B = 1e9
+
+SEC_FIXTURE = {"facts": {
+    "dei": {"EntityCommonStockSharesOutstanding": shares(fact(2 * B, "2024-04-20", "10-Q", "2024-05-01"))},
+    "us-gaap": {
+        "NetCashProvidedByUsedInOperatingActivities": usd(
+            fact(8 * B, "2022-12-31", "10-K", "2023-02-01", "2022-01-01"),
+            fact(10 * B, "2023-12-31", "10-K", "2024-02-01", "2023-01-01"),
+            # Amended 10-K restating FY2023 must win over the original
+            fact(11 * B, "2023-12-31", "10-K/A", "2024-03-01", "2023-01-01"),
+            fact(2 * B, "2023-03-31", "10-Q", "2023-04-30", "2023-01-01"),
+            fact(3 * B, "2024-03-31", "10-Q", "2024-04-30", "2024-01-01"),
+        ),
+        "PaymentsToAcquirePropertyPlantAndEquipment": usd(
+            fact(1 * B, "2022-12-31", "10-K", "2023-02-01", "2022-01-01"),
+            fact(2 * B, "2023-12-31", "10-K", "2024-02-01", "2023-01-01"),
+            fact(0.5 * B, "2023-03-31", "10-Q", "2023-04-30", "2023-01-01"),
+            fact(0.5 * B, "2024-03-31", "10-Q", "2024-04-30", "2024-01-01"),
+        ),
+        "CashAndCashEquivalentsAtCarryingValue": usd(
+            fact(4 * B, "2023-12-31", "10-K", "2024-02-01"),
+            fact(5 * B, "2024-03-31", "10-Q", "2024-04-30"),
+        ),
+        "LongTermDebtNoncurrent": usd(fact(6 * B, "2024-03-31", "10-Q", "2024-04-30")),
+        "LongTermDebtCurrent": usd(fact(1 * B, "2024-03-31", "10-Q", "2024-04-30")),
+        "CommercialPaper": usd(fact(0.5 * B, "2024-03-31", "10-Q", "2024-04-30")),
+        # Stale debt figure from long before the balance sheet date is ignored
+        "ShortTermBorrowings": usd(fact(9 * B, "2019-12-31", "10-K", "2020-02-01")),
+    },
+}}
+
+
+class ParseSecTest(unittest.TestCase):
+    def setUp(self):
+        self.r = parse_sec_companyfacts(SEC_FIXTURE, "2024-05-02")
+
+    def test_ttm_fcf(self):
+        # OCF TTM = 11 + 3 - 2 = 12; CapEx TTM = 2 + 0.5 - 0.5 = 2
+        self.assertEqual(self.r["fcf_basis"], "TTM")
+        self.assertEqual(self.r["fcf_period_end"], "2024-03-31")
+        self.assertEqual(self.r["operating_cash_flow"], 12.0)
+        self.assertEqual(self.r["capex"], 2.0)
+        self.assertEqual(self.r["free_cash_flow"], 10.0)
+        self.assertEqual(self.r["filed"], "2024-04-30")
+
+    def test_history_uses_amended_values(self):
+        self.assertEqual(self.r["fcf_history"], [["2022-12-31", 7.0], ["2023-12-31", 9.0]])
+
+    def test_balance_sheet(self):
+        self.assertEqual(self.r["balance_sheet_date"], "2024-03-31")
+        self.assertEqual(self.r["total_cash"], 5.0)
+        # Noncurrent + current + commercial paper (stale ShortTermBorrowings is skipped)
+        self.assertEqual(self.r["total_debt"], 7.5)
+        self.assertEqual(self.r["net_debt"], 2.5)
+
+    def test_shares_from_dei(self):
+        self.assertEqual(self.r["shares_outstanding"], 2.0)
+        self.assertEqual(self.r["warnings"], [])
+
+    def test_fy_fallback_and_missing_fields(self):
+        data = {"facts": {"us-gaap": {
+            "NetCashProvidedByUsedInOperatingActivities": usd(fact(5 * B, "2023-12-31", "10-K", "2024-02-01", "2023-01-01")),
+            "WeightedAverageNumberOfDilutedSharesOutstanding": shares(
+                fact(3 * B, "2023-12-31", "10-K", "2024-02-01", "2023-01-01")),
+        }}}
+        r = parse_sec_companyfacts(data)
+        self.assertEqual(r["fcf_basis"], "FY")
+        self.assertEqual(r["free_cash_flow"], 5.0)
+        self.assertEqual(r["shares_outstanding"], 3.0)
+        self.assertIn("capex_missing", r["warnings"])
+        self.assertIn("debt_missing", r["warnings"])
+
+    def test_no_cash_flow_data(self):
+        self.assertIsNone(parse_sec_companyfacts({"facts": {"us-gaap": {}}}))
+
+
+def ts(type_, *points):
+    return {"meta": {"type": [type_]},
+            type_: [{"asOfDate": d, "currencyCode": "USD", "reportedValue": {"raw": v}} for d, v in points]}
+
+
+class ParseYahooTest(unittest.TestCase):
+    def test_parse(self):
+        data = {"timeseries": {"result": [
+            ts("annualOperatingCashFlow", ("2022-12-31", 3 * B), ("2023-12-31", 4 * B)),
+            ts("annualCapitalExpenditure", ("2022-12-31", -1 * B), ("2023-12-31", -1 * B)),
+            ts("trailingOperatingCashFlow", ("2024-06-30", 5 * B)),
+            ts("trailingCapitalExpenditure", ("2024-06-30", -2 * B)),
+            ts("quarterlyCashAndCashEquivalents", ("2024-06-30", 1 * B)),
+            ts("quarterlyTotalDebt", ("2024-06-30", 4 * B)),
+            ts("quarterlyOrdinarySharesNumber", ("2024-06-30", 0.5 * B)),
+        ]}}
+        r = parse_yahoo_timeseries(data, "2024-07-01")
+        self.assertEqual(r["currency"], "USD")
+        self.assertEqual(r["fcf_basis"], "TTM")
+        self.assertEqual(r["free_cash_flow"], 3.0)
+        self.assertEqual(r["net_debt"], 3.0)
+        self.assertEqual(r["shares_outstanding"], 0.5)
+        self.assertEqual(r["fcf_history"], [["2022-12-31", 2.0], ["2023-12-31", 3.0]])
+
+    def test_empty(self):
+        self.assertIsNone(parse_yahoo_timeseries({"timeseries": {"result": []}}))
+
+
+if __name__ == "__main__":
+    unittest.main()

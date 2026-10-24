@@ -1,0 +1,377 @@
+"""
+Market and fundamentals data sources:
+- Yahoo chart endpoint: market prices and FX rates.
+- SEC EDGAR companyfacts: US-listed fundamentals (10-K / 10-Q XBRL).
+- Yahoo fundamentals-timeseries: fallback fundamentals for non-SEC tickers (e.g. TSX).
+
+The parse_* functions are pure (no network) so they can be unit tested against fixtures.
+All monetary outputs are in billions of the reported currency; shares are in billions.
+"""
+
+import os
+import ssl
+import json
+import time
+import datetime
+import urllib.request
+
+SSL_CTX = ssl.create_default_context()
+# SEC requires a descriptive User-Agent with contact details: https://www.sec.gov/os/accessing-edgar-data
+# Requests without a contact email are rejected with HTTP 403.
+SEC_HEADERS = {"User-Agent": os.environ.get("SEC_USER_AGENT") or "StockEvalApp admin@stockeval-research.org"}
+YAHOO_HEADERS = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"}
+
+SCHEMA_VERSION = 2
+
+FCF_FLOW_CONCEPTS = {
+    "ocf": ["NetCashProvidedByUsedInOperatingActivities",
+            "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations"],
+    "capex": ["PaymentsToAcquirePropertyPlantAndEquipment",
+              "PaymentsToAcquireProductiveAssets"],
+}
+CASH_CONCEPTS = ["CashAndCashEquivalentsAtCarryingValue",
+                 "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
+                 "Cash"]
+LT_DEBT_TOTAL_CONCEPTS = ["LongTermDebt"]
+LT_DEBT_NONCURRENT_CONCEPTS = ["LongTermDebtNoncurrent", "LongTermDebtAndCapitalLeaseObligations"]
+LT_DEBT_CURRENT_CONCEPTS = ["LongTermDebtCurrent", "LongTermDebtAndCapitalLeaseObligationsCurrent"]
+SHORT_TERM_DEBT_CONCEPTS = ["ShortTermBorrowings", "CommercialPaper"]
+SHARES_CONCEPTS = [("dei", "EntityCommonStockSharesOutstanding"),
+                   ("us-gaap", "CommonStockSharesOutstanding"),
+                   ("us-gaap", "WeightedAverageNumberOfDilutedSharesOutstanding")]
+
+
+def _http_json(url, headers, timeout=10):
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, context=SSL_CTX, timeout=timeout) as resp:
+        return json.loads(resp.read().decode())
+
+
+def _date(s):
+    return datetime.date.fromisoformat(s)
+
+
+def _days(start, end):
+    return (_date(end) - _date(start)).days
+
+
+def _b(v):
+    return round(v / 1e9, 3)
+
+
+# ---------------------------------------------------------------------------
+# Yahoo prices / FX
+# ---------------------------------------------------------------------------
+
+def fetch_market_price(ticker):
+    """Fetch current market price and currency via Yahoo Chart endpoint"""
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=1d"
+    try:
+        meta = _http_json(url, YAHOO_HEADERS, timeout=8)['chart']['result'][0]['meta']
+        return meta.get('regularMarketPrice'), meta.get('currency', 'USD')
+    except Exception:
+        return None, None
+
+
+_fx_cache = {}
+
+def fetch_fx_rate(from_ccy, to_ccy):
+    """Units of to_ccy per 1 from_ccy, or None if unavailable."""
+    if not from_ccy or not to_ccy or from_ccy == to_ccy:
+        return 1.0
+    key = (from_ccy, to_ccy)
+    if key not in _fx_cache:
+        rate, _ = fetch_market_price(f"{from_ccy}{to_ccy}=X")
+        _fx_cache[key] = rate
+    return _fx_cache[key]
+
+
+# ---------------------------------------------------------------------------
+# SEC EDGAR
+# ---------------------------------------------------------------------------
+
+_sec_ticker_map = None
+
+def get_sec_ticker_map():
+    global _sec_ticker_map
+    if _sec_ticker_map is not None:
+        return _sec_ticker_map
+    # Fail hard: silently falling back to Yahoo for every US ticker would degrade the whole snapshot
+    data = _http_json("https://www.sec.gov/files/company_tickers.json", SEC_HEADERS)
+    _sec_ticker_map = {item['ticker']: str(item['cik_str']).zfill(10) for item in data.values()}
+    return _sec_ticker_map
+
+
+def fetch_sec_companyfacts(ticker):
+    """Returns the raw companyfacts JSON, or None if the ticker is not an SEC filer."""
+    cik = get_sec_ticker_map().get(ticker.upper())
+    if not cik:
+        return None
+    try:
+        return _http_json(f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json", SEC_HEADERS, timeout=20)
+    finally:
+        time.sleep(0.12)  # Respect SEC 10 requests/sec limit
+
+
+def _units(facts, taxonomy, concept, unit="USD"):
+    return facts.get(taxonomy, {}).get(concept, {}).get("units", {}).get(unit, [])
+
+
+def _dedupe_latest_filed(entries):
+    """One entry per (start, end) period, preferring the most recently filed (handles amendments)."""
+    best = {}
+    for e in entries:
+        key = (e.get("start"), e.get("end"))
+        if key not in best or e.get("filed", "") > best[key].get("filed", ""):
+            best[key] = e
+    return list(best.values())
+
+
+def _annual_flows(entries):
+    """{period_end: entry} for full-year durations reported in 10-K filings."""
+    annual = [e for e in entries
+              if e.get("start") and str(e.get("form", "")).startswith("10-K")
+              and 350 <= _days(e["start"], e["end"]) <= 380]
+    return {e["end"]: e for e in _dedupe_latest_filed(annual)}
+
+
+def _ttm_flow(entries, annual):
+    """
+    Trailing-twelve-month value = last fiscal year + current YTD - prior-year YTD.
+    Cash flow statements in 10-Qs are year-to-date, so this works for OCF and CapEx.
+    Returns (value, period_end, filed) or None if no fresher YTD period is available.
+    """
+    if not annual:
+        return None
+    fy_end = max(annual)
+    flows = _dedupe_latest_filed([e for e in entries if e.get("start")])
+    ytd = [e for e in flows
+           if str(e.get("form", "")).startswith("10-Q") and e["end"] > fy_end
+           and 80 <= _days(e["start"], e["end"]) <= 300
+           and abs(_days(fy_end, e["start"]) - 1) <= 10]
+    if not ytd:
+        return None
+    cur = max(ytd, key=lambda e: e["end"])
+    cur_len = _days(cur["start"], cur["end"])
+    prior = [e for e in flows
+             if abs(_days(e["end"], cur["end"]) - 365) <= 10
+             and abs(_days(e["start"], e["end"]) - cur_len) <= 10]
+    if not prior:
+        return None
+    prev = max(prior, key=lambda e: e.get("filed", ""))
+    return annual[fy_end]["val"] + cur["val"] - prev["val"], cur["end"], cur.get("filed")
+
+
+def _latest_instant(entries, on_or_before=None, max_age_days=400):
+    """Latest point-in-time value, optionally no later than (and not too stale relative to) a date."""
+    cands = _dedupe_latest_filed(entries)
+    if on_or_before:
+        cands = [e for e in cands if e["end"] <= on_or_before and _days(e["end"], on_or_before) <= max_age_days]
+    if not cands:
+        return None
+    return max(cands, key=lambda e: (e["end"], e.get("filed", "")))
+
+
+def parse_sec_companyfacts(data, fetched_at=None):
+    """Extracts FCF, net debt and shares from an SEC companyfacts payload."""
+    facts = data.get("facts", {})
+    gaap = facts.get("us-gaap", {})
+    warnings = []
+
+    # --- Free cash flow: OCF and CapEx from the same period ---
+    ocf_entries = ocf_annual = None
+    for c in FCF_FLOW_CONCEPTS["ocf"]:
+        entries = _units(facts, "us-gaap", c)
+        annual = _annual_flows(entries)
+        if annual:
+            ocf_entries, ocf_annual = entries, annual
+            break
+    if not ocf_annual:
+        return None
+    fy_end = max(ocf_annual)
+
+    capex_entries, capex_annual = [], {}
+    for c in FCF_FLOW_CONCEPTS["capex"]:
+        entries = _units(facts, "us-gaap", c)
+        annual = _annual_flows(entries)
+        if fy_end in annual:
+            capex_entries, capex_annual = entries, annual
+            break
+    if not capex_annual:
+        warnings.append("capex_missing")
+
+    ocf = ocf_annual[fy_end]["val"]
+    capex = capex_annual[fy_end]["val"] if fy_end in capex_annual else 0.0
+    fcf_end, basis, filed = fy_end, "FY", ocf_annual[fy_end].get("filed")
+
+    ocf_ttm = _ttm_flow(ocf_entries, ocf_annual)
+    capex_ttm = _ttm_flow(capex_entries, capex_annual) if capex_annual else None
+    if ocf_ttm and (capex_ttm or not capex_annual):
+        if not capex_annual or capex_ttm[1] == ocf_ttm[1]:
+            ocf = ocf_ttm[0]
+            capex = capex_ttm[0] if capex_ttm else 0.0
+            fcf_end, basis, filed = ocf_ttm[1], "TTM", ocf_ttm[2]
+
+    fcf_history = []
+    for end in sorted(ocf_annual):
+        if capex_annual and end not in capex_annual:
+            continue
+        cx = capex_annual[end]["val"] if capex_annual else 0.0
+        fcf_history.append([end, _b(ocf_annual[end]["val"] - cx)])
+
+    # --- Balance sheet: cash and debt as of the same date ---
+    cash_cands = [e for e in (_latest_instant(_units(facts, "us-gaap", c)) for c in CASH_CONCEPTS) if e]
+    cash_e = max(cash_cands, key=lambda e: e["end"]) if cash_cands else None
+    bs_date = cash_e["end"] if cash_e else fcf_end
+    cash = cash_e["val"] if cash_e else 0.0
+    if not cash_e:
+        warnings.append("cash_missing")
+
+    def instant(concepts):
+        for c in concepts:
+            e = _latest_instant(_units(facts, "us-gaap", c), bs_date)
+            if e:
+                return e
+        return None
+
+    lt_total = instant(LT_DEBT_TOTAL_CONCEPTS)
+    lt_noncur = instant(LT_DEBT_NONCURRENT_CONCEPTS)
+    lt_cur = instant(LT_DEBT_CURRENT_CONCEPTS)
+    if lt_total and (not lt_noncur or lt_total["end"] >= lt_noncur["end"]):
+        lt_debt = lt_total["val"]
+    else:
+        lt_debt = (lt_noncur["val"] if lt_noncur else 0.0) + (lt_cur["val"] if lt_cur else 0.0)
+    st = instant(SHORT_TERM_DEBT_CONCEPTS)
+    debt = lt_debt + (st["val"] if st else 0.0)
+    if not (lt_total or lt_noncur or lt_cur or st):
+        warnings.append("debt_missing")
+
+    # --- Shares: most current source, in preference order ---
+    share_cands = []
+    for tax, c in SHARES_CONCEPTS:
+        e = _latest_instant(_units(facts, tax, c, "shares"))
+        if e and e["val"] > 0:
+            share_cands.append(e)
+    shares = 0.0
+    if share_cands:
+        newest = max(e["end"] for e in share_cands)
+        shares = next(e["val"] for e in share_cands if _days(e["end"], newest) <= 548)
+    else:
+        warnings.append("shares_missing")
+
+    return {
+        "schema": SCHEMA_VERSION,
+        "source": "SEC EDGAR",
+        "currency": "USD",
+        "fetched_at": fetched_at,
+        "filed": filed,
+        "fcf_basis": basis,
+        "fcf_period_end": fcf_end,
+        "balance_sheet_date": bs_date,
+        "operating_cash_flow": _b(ocf),
+        "capex": _b(capex),
+        "free_cash_flow": _b(ocf - capex),
+        "total_cash": _b(cash),
+        "total_debt": _b(debt),
+        "net_debt": _b(debt - cash),
+        "shares_outstanding": _b(shares),
+        "fcf_history": fcf_history,
+        "warnings": warnings
+    }
+
+
+# ---------------------------------------------------------------------------
+# Yahoo fundamentals (non-SEC tickers)
+# ---------------------------------------------------------------------------
+
+YAHOO_TYPES = [
+    "annualOperatingCashFlow", "annualCapitalExpenditure",
+    "trailingOperatingCashFlow", "trailingCapitalExpenditure",
+    "annualCashAndCashEquivalents", "quarterlyCashAndCashEquivalents",
+    "annualTotalDebt", "quarterlyTotalDebt",
+    "annualOrdinarySharesNumber", "quarterlyOrdinarySharesNumber",
+]
+
+
+def fetch_yahoo_timeseries(ticker):
+    now = int(time.time())
+    url = (f"https://query1.finance.yahoo.com/ws/fundamentals-timeseries/v1/finance/timeseries/{ticker}"
+           f"?type={','.join(YAHOO_TYPES)}&period1={now - 7 * 365 * 86400}&period2={now}")
+    try:
+        return _http_json(url, YAHOO_HEADERS, timeout=10)
+    finally:
+        time.sleep(0.05)
+
+
+def parse_yahoo_timeseries(data, fetched_at=None):
+    series = {}
+    for res in data.get("timeseries", {}).get("result", []) or []:
+        t = (res.get("meta", {}).get("type") or [None])[0]
+        points = [p for p in (res.get(t) or []) if p and p.get("reportedValue")]
+        series[t] = sorted(points, key=lambda p: p["asOfDate"])
+
+    def latest(*types):
+        for t in types:
+            if series.get(t):
+                return series[t][-1]
+        return None
+
+    ocf_p = latest("trailingOperatingCashFlow", "annualOperatingCashFlow")
+    if not ocf_p:
+        return None
+    basis = "TTM" if series.get("trailingOperatingCashFlow") else "FY"
+    capex_p = latest("trailingCapitalExpenditure" if basis == "TTM" else "annualCapitalExpenditure",
+                     "annualCapitalExpenditure")
+    cash_p = latest("quarterlyCashAndCashEquivalents", "annualCashAndCashEquivalents")
+    debt_p = latest("quarterlyTotalDebt", "annualTotalDebt")
+    shares_p = latest("quarterlyOrdinarySharesNumber", "annualOrdinarySharesNumber")
+
+    val = lambda p: p["reportedValue"]["raw"] if p else 0.0
+    warnings = [w for w, p in (("capex_missing", capex_p), ("cash_missing", cash_p),
+                               ("debt_missing", debt_p), ("shares_missing", shares_p)) if not p]
+
+    ocf = val(ocf_p)
+    capex = abs(val(capex_p))  # Yahoo reports CapEx as a negative cash flow
+    cash, debt = val(cash_p), val(debt_p)
+
+    capex_by_date = {p["asOfDate"]: abs(p["reportedValue"]["raw"]) for p in series.get("annualCapitalExpenditure", [])}
+    fcf_history = [[p["asOfDate"], _b(p["reportedValue"]["raw"] - capex_by_date[p["asOfDate"]])]
+                   for p in series.get("annualOperatingCashFlow", []) if p["asOfDate"] in capex_by_date]
+
+    return {
+        "schema": SCHEMA_VERSION,
+        "source": "Yahoo Finance",
+        "currency": ocf_p.get("currencyCode", "USD"),
+        "fetched_at": fetched_at,
+        "filed": None,
+        "fcf_basis": basis,
+        "fcf_period_end": ocf_p["asOfDate"],
+        "balance_sheet_date": cash_p["asOfDate"] if cash_p else None,
+        "operating_cash_flow": _b(ocf),
+        "capex": _b(capex),
+        "free_cash_flow": _b(ocf - capex),
+        "total_cash": _b(cash),
+        "total_debt": _b(debt),
+        "net_debt": _b(debt - cash),
+        "shares_outstanding": _b(val(shares_p)),
+        "fcf_history": fcf_history,
+        "warnings": warnings
+    }
+
+
+def fetch_fundamentals(ticker, fetched_at):
+    """SEC for US filers, Yahoo timeseries otherwise. Returns a parsed record or None."""
+    get_sec_ticker_map()  # raises if the SEC is unreachable or rejects our User-Agent
+    try:
+        facts = fetch_sec_companyfacts(ticker)
+        if facts:
+            parsed = parse_sec_companyfacts(facts, fetched_at)
+            if parsed:
+                return parsed
+    except Exception as e:
+        print(f"  SEC fetch failed for {ticker}: {e}")
+    try:
+        return parse_yahoo_timeseries(fetch_yahoo_timeseries(ticker), fetched_at)
+    except Exception as e:
+        print(f"  Yahoo fundamentals failed for {ticker}: {e}")
+        return None

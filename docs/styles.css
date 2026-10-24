@@ -330,3 +330,14 @@ footer {
   border-top: 1px solid var(--border-color);
   margin-top: 3rem;
 }
+
+.muted {
+  color: var(--text-muted);
+}
+
+.status-note {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: normal;
+  color: var(--text-muted);
+}
