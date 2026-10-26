@@ -51251,5 +51251,129 @@
       ]
     ],
     "warnings": []
+  },
+  "BABAF": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "CNY",
+    "fetched_at": "2026-10-26",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": 78.486,
+    "capex": 126.937,
+    "free_cash_flow": -48.451,
+    "total_cash": 142.914,
+    "total_debt": 266.53,
+    "net_debt": 123.616,
+    "shares_outstanding": 19.193,
+    "market_cap": 248.368,
+    "market_cap_currency": "USD",
+    "fcf_history": [
+      [
+        "2023-03-31",
+        165.4
+      ],
+      [
+        "2024-03-31",
+        149.664
+      ],
+      [
+        "2025-03-31",
+        77.537
+      ],
+      [
+        "2026-03-31",
+        -50.724
+      ]
+    ],
+    "warnings": []
+  },
+  "CHKP": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "USD",
+    "fetched_at": "2026-10-26",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": 1.131,
+    "capex": 0.031,
+    "free_cash_flow": 1.1,
+    "total_cash": 0.596,
+    "total_debt": 1.975,
+    "net_debt": 1.379,
+    "shares_outstanding": 0.104,
+    "market_cap": 16.237,
+    "market_cap_currency": "USD",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        1.076
+      ],
+      [
+        "2023-12-31",
+        1.019
+      ],
+      [
+        "2024-12-31",
+        1.028
+      ],
+      [
+        "2025-12-31",
+        1.173
+      ]
+    ],
+    "warnings": []
+  },
+  "VSXY": {
+    "schema": 2,
+    "source": "SEC EDGAR",
+    "currency": "USD",
+    "fetched_at": "2026-10-26",
+    "filed": "2026-09-04",
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-08-01",
+    "balance_sheet_date": "2026-08-01",
+    "operating_cash_flow": 0.758,
+    "capex": 0.204,
+    "free_cash_flow": 0.554,
+    "total_cash": 0.522,
+    "total_debt": 0.975,
+    "net_debt": 0.453,
+    "shares_outstanding": 0.08,
+    "fcf_history": [
+      [
+        "2020-02-01",
+        0.09
+      ],
+      [
+        "2021-01-30",
+        0.547
+      ],
+      [
+        "2022-01-29",
+        0.682
+      ],
+      [
+        "2023-01-28",
+        0.273
+      ],
+      [
+        "2024-02-03",
+        0.133
+      ],
+      [
+        "2025-02-01",
+        0.247
+      ],
+      [
+        "2026-01-31",
+        0.312
+      ]
+    ],
+    "warnings": []
   }
 }
