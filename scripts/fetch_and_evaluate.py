@@ -181,8 +181,13 @@ def run_daily_evaluation():
     custom_etfs = universe_data.get("CUSTOM", {})
 
     all_tickers = set().union(*index_members.values())
+    etf_yahoo_tickers = {
+        etf_id: etf_id.replace("TSE:", "") + (".TO" if etf_id.startswith("TSE:") else "")
+        for etf_id in custom_etfs.keys()
+    }
     for etf_obj in custom_etfs.values():
         all_tickers.update(h["ticker"] for h in etf_obj.get("holdings", []) if h.get("ticker"))
+    all_tickers.update(etf_yahoo_tickers.values())
     all_tickers = sorted(all_tickers)
     print(f"Total unique constituents in universe: {len(all_tickers)}")
 
@@ -239,9 +244,12 @@ def run_daily_evaluation():
 
     for etf_id, etf_obj in custom_etfs.items():
         holdings = etf_obj.get("holdings", [])
+        yt = etf_yahoo_tickers.get(etf_id)
+        p, c = prices.get(yt, (None, None))
         today_snapshot["etfs"][etf_id] = {
             "name": etf_obj.get("name", etf_id),
-            "currency": etf_obj.get("currency", "CAD"),
+            "currency": c or etf_obj.get("currency", "CAD"),
+            "market_price": p,
             **etf_look_through(holdings, today_snapshot["stocks"]),
             "holdings": holdings
         }

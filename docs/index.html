@@ -25,9 +25,9 @@
     <!-- Top KPI Cards -->
     <section class="kpi-grid">
       <div class="kpi-card">
-        <h3>Tracked ETFs</h3>
+        <h3>Active Buy Triggers</h3>
         <p id="kpi-etf-count" class="kpi-value">-</p>
-        <span id="kpi-etf-sub" class="kpi-sub">Look-through DCF valuation</span>
+        <span id="kpi-etf-sub" class="kpi-sub">ETFs in target buy zone</span>
       </div>
       <div class="kpi-card">
         <h3>Median ETF Premium</h3>
@@ -49,8 +49,8 @@
     <!-- Main ETF Dashboard -->
     <section class="etf-dashboard-section">
       <div class="etf-intro">
-        <h2>ETF Look-Through Valuations</h2>
-        <p>Each ETF is valued through its published top holdings (funds of funds such as XEQT are expanded into their underlying ETFs). Every valued holding contributes its weight &times; (DCF value / price), giving the intrinsic value of $1 invested in the valued part of the fund. Percentiles compare today's valuation against its past year of history (lower = cheaper than usual for this ETF).</p>
+        <h2>ETF Look-Through Valuations &amp; Buy Triggers</h2>
+        <p>Each ETF is valued by look-through of its underlying holdings to compute its intrinsic DCF value and target buy-below prices. <strong>Buy</strong> triggers indicate funds currently trading at historical bargain percentiles or steep DCF discounts.</p>
       </div>
 
       <div class="table-controls">
@@ -70,10 +70,11 @@
         <div class="filter-group">
           <label for="etf-sort-by">Sort By:</label>
           <select id="etf-sort-by">
+            <option value="stance_asc">Buying Stance (Buys First)</option>
+            <option value="distance_asc">Closest to Buy Target</option>
             <option value="percentile_asc">Best Relative Value (Lowest %ile)</option>
             <option value="premium_asc">Deepest DCF Discount (Lowest Premium)</option>
             <option value="intrinsic_desc">Highest Intrinsic per $1</option>
-            <option value="premium_desc">Highest Premium (Priciest)</option>
             <option value="name_asc">Name / Ticker (A-Z)</option>
           </select>
         </div>
@@ -88,13 +89,13 @@
             <tr>
               <th>ETF</th>
               <th>Category</th>
+              <th>Decision Stance</th>
+              <th>Market Price</th>
+              <th>DCF Fair Value</th>
+              <th>Buy-Below Target</th>
               <th>Premium vs DCF</th>
-              <th>Intrinsic / $1</th>
-              <th>Past-Year Range</th>
-              <th>Past-Year Median</th>
+              <th>1-Year Range</th>
               <th>Percentile</th>
-              <th>Versus Past Year</th>
-              <th>Fund Weight Valued</th>
             </tr>
           </thead>
           <tbody>

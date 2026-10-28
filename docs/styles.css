@@ -843,3 +843,64 @@ tbody tr.detail-row:hover td {
   font-size: 0.95rem;
   color: var(--text-strong);
 }
+
+/* Buying Decision Stances & Price Targets */
+.stance-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.stance-buy {
+  background: #dafbe1;
+  color: #1a7f37;
+  border: 1px solid #9ae6b4;
+}
+
+.stance-accumulate {
+  background: #ddf4ff;
+  color: #0969da;
+  border: 1px solid #b6e3ff;
+}
+
+.stance-wait {
+  background: #fff8c5;
+  color: #9a6700;
+  border: 1px solid #fae17d;
+}
+
+.stance-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.distance-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 2px;
+}
+
+.distance-in-zone {
+  background: #1a7f37;
+  color: #ffffff;
+}
+
+.distance-above {
+  background: #eaeef2;
+  color: #57606a;
+}
+
