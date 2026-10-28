@@ -978,6 +978,12 @@ tbody tr.detail-row:hover td {
   fill: #f6f8fa;
 }
 
+.chart-buy-zone {
+  fill: #16a34a;
+  opacity: 0.13;
+  pointer-events: none;
+}
+
 .chart-area {
   fill: var(--accent-color);
   opacity: 0.1;

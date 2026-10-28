@@ -433,6 +433,45 @@ function renderEtfSummary(list) {
   }).join("");
 }
 
+function computeHistoricalBuyWindows(rows) {
+  if (!rows || rows.length < 5) return [];
+  const premiums = rows.map(r => r[2]).filter(p => typeof p === "number");
+  if (!premiums.length) return [];
+  const n = premiums.length;
+
+  const buyIndices = [];
+  rows.forEach((r, i) => {
+    const iv = r[1];
+    const prem = r[2];
+    if (typeof prem !== "number") return;
+    const pctile = (premiums.filter(p => p <= prem).length / n) * 100;
+    const isBuy = (pctile <= 20) || (typeof iv === "number" && iv >= 1.0 && pctile <= 50);
+    if (isBuy) buyIndices.push(i);
+  });
+
+  if (!buyIndices.length) return [];
+
+  const windows = [];
+  let startIdx = buyIndices[0];
+  let prevIdx = buyIndices[0];
+
+  for (let k = 1; k < buyIndices.length; k++) {
+    const currIdx = buyIndices[k];
+    const tPrev = Date.parse(rows[prevIdx][0]);
+    const tCurr = Date.parse(rows[currIdx][0]);
+    const daysDiff = (tCurr - tPrev) / (1000 * 60 * 60 * 24);
+    if (daysDiff <= 4.5) {
+      prevIdx = currIdx;
+    } else {
+      windows.push({ startIdx, endIdx: prevIdx, count: prevIdx - startIdx + 1 });
+      startIdx = currIdx;
+      prevIdx = currIdx;
+    }
+  }
+  windows.push({ startIdx, endIdx: prevIdx, count: prevIdx - startIdx + 1 });
+  return windows;
+}
+
 function buildEtfInfoCardHtml(etfId, idx, isHover) {
   if (!currentSnapshot || !currentSnapshot.etfs) return "";
   const data = currentSnapshot.etfs[etfId];
@@ -457,6 +496,15 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
     const histPrice = r[4];
     const histReturn = (histPrice && basePrice) ? ((histPrice - basePrice) / basePrice) * 100 : null;
     const histReturnStr = histReturn !== null ? `${histReturn >= 0 ? "+" : ""}${fmtNum(histReturn, 1)}%` : "-";
+
+    const allPrems = rows.map(row => row[2]).filter(p => typeof p === "number");
+    const histPctile = (allPrems.filter(p => p <= premium).length / allPrems.length) * 100;
+    let histStance = { code: "WAIT", label: "Wait / Extended", cls: "stance-wait", icon: "⏸" };
+    if (histPctile <= 20 || (typeof intrinsic === "number" && intrinsic >= 1.0 && histPctile <= 50)) {
+      histStance = { code: "BUY", label: "Strong Value / Buy", cls: "stance-buy", icon: "✓" };
+    } else if (histPctile <= 65) {
+      histStance = { code: "ACCUMULATE", label: "Fair / Accumulate", cls: "stance-accumulate", icon: "◈" };
+    }
 
     const isReconstructed = backfilledUntil && dateStr <= backfilledUntil;
     const premColor = premium < 0 ? "#16a34a" : "#cf222e";
@@ -499,19 +547,19 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
 
       <div class="chart-card-section-divider">
         <div class="chart-card-row">
+          <span>Stance Then:</span>
+          <span class="stance-badge ${histStance.cls}" style="font-size:0.72rem; padding:1px 6px;">${histStance.icon} ${histStance.label}</span>
+        </div>
+        <div class="chart-card-row">
+          <span>Stance Today:</span>
+          <span class="stance-badge ${dec.stance.cls}" style="font-size:0.72rem; padding:1px 6px;">${dec.stance.icon} ${dec.stance.label}</span>
+        </div>
+        <div class="chart-card-row">
           <span>Market Price Today:</span>
           <strong>${dec.marketPrice !== null ? `$${fmtNum(dec.marketPrice, 2)} ${escapeHtml(dec.currency)}` : "-"}</strong>
         </div>
         <div class="chart-card-row">
-          <span>Fair Value Today:</span>
-          <strong>${dec.fairValuePrice !== null ? `$${fmtNum(dec.fairValuePrice, 2)} ${escapeHtml(dec.currency)}` : "-"}</strong>
-        </div>
-        <div class="chart-card-row">
-          <span>Current Stance:</span>
-          <span class="stance-badge ${dec.stance.cls}" style="font-size:0.72rem; padding:1px 6px;">${dec.stance.icon} ${dec.stance.label}</span>
-        </div>
-        <div class="chart-card-row">
-          <span>1-Yr Price Return:</span>
+          <span>1-Yr Total Return:</span>
           <strong style="color:#16a34a;">${totalReturnStr}</strong>
         </div>
       </div>
@@ -634,9 +682,10 @@ function renderEtfCards(list) {
               <div class="etf-chart" data-etf="${escapeHtml(id)}" id="chart-${safeId}"></div>
             </div>
             <div class="chart-card-footer" style="margin-top: 6px; border-top: none; justify-content: space-between; font-size: 0.74rem; color: #64748b;">
-              <div style="display: flex; align-items: center; gap: 14px;">
+              <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
                 <span><span style="display:inline-block; width:12px; height:3px; background:#0969da; border-radius:1px; margin-right:5px; vertical-align:middle;"></span><strong>Valuation Prem vs DCF</strong> (Left &bull; <span style="color:#0969da;">&ndash;&ndash;</span> 0% Fair Value)</span>
                 <span><span style="display:inline-block; width:12px; height:3px; background:#16a34a; border-radius:1px; margin-right:5px; vertical-align:middle;"></span><strong>ETF Market Price %</strong> (Right &bull; <span style="color:#16a34a;">&ndash;&ndash;</span> 0% Base)</span>
+                <span><span style="display:inline-block; width:12px; height:10px; background:rgba(22,163,74,0.18); border:1px solid rgba(22,163,74,0.4); border-radius:2px; margin-right:5px; vertical-align:middle;"></span><strong>Buy Zone Window</strong></span>
               </div>
             </div>
           </div>
@@ -1041,6 +1090,23 @@ function drawEtfChart(container, rows) {
       class: "chart-backfill"
     }));
   }
+
+  // Shaded Historical Buy Zone Windows
+  const buyWindows = computeHistoricalBuyWindows(rows);
+  const dayW = w / Math.max(times.length - 1, 1);
+  buyWindows.forEach(win => {
+    const x1 = x(times[win.startIdx]);
+    const x2 = x(times[win.endIdx]);
+    const rectX = Math.max(m.left, x1 - dayW * 0.5);
+    const rectW = Math.max(dayW, (x2 - x1) + dayW);
+    svg.appendChild(svgEl("rect", {
+      x: rectX,
+      y: m.top,
+      width: Math.min(rectW, m.left + w - rectX),
+      height: h,
+      class: "chart-buy-zone"
+    }));
+  });
 
   // Left Y-axis header (Prem %)
   const leftHdr = svgEl("text", {
