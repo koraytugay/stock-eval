@@ -635,8 +635,8 @@ function renderEtfCards(list) {
             </div>
             <div class="chart-card-footer" style="margin-top: 6px; border-top: none; justify-content: space-between; font-size: 0.74rem; color: #64748b;">
               <div style="display: flex; align-items: center; gap: 14px;">
-                <span><span style="display:inline-block; width:12px; height:3px; background:#0969da; border-radius:1px; margin-right:5px; vertical-align:middle;"></span><strong>Valuation Prem vs DCF</strong> (Left &bull; <span style="color:#afb8c1;">&mdash;</span> 0% Fair Value)</span>
-                <span><span style="display:inline-block; width:12px; height:3px; background:#16a34a; border-radius:1px; margin-right:5px; vertical-align:middle;"></span><strong>ETF Market Price %</strong> (Right &bull; <span style="color:#16a34a;">&ndash;&ndash;</span> 0% Base)</span>
+                <span><span style="display:inline-block; width:12px; height:2px; border-top:2px dotted #0969da; margin-right:5px; vertical-align:middle;"></span><strong>Valuation Prem vs DCF</strong> (Left &bull; <span style="color:#afb8c1;">&mdash;</span> 0% Fair Value)</span>
+                <span><span style="display:inline-block; width:12px; height:2px; border-top:2px dotted #16a34a; margin-right:5px; vertical-align:middle;"></span><strong>ETF Market Price %</strong> (Right &bull; <span style="color:#16a34a;">&ndash;&ndash;</span> 0% Base)</span>
               </div>
             </div>
           </div>
@@ -1033,18 +1033,6 @@ function drawEtfChart(container, rows) {
     "aria-label": `Valuation premium and market price return over the past year for ${etfId}`
   });
 
-  // Unique Gradient Def
-  const defs = svgEl("defs", {});
-  const grad = svgEl("linearGradient", {
-    id: `area-grad-${safeId}`,
-    x1: "0", y1: "0", x2: "0", y2: "1"
-  });
-  const stop1 = svgEl("stop", { offset: "0%", "stop-color": "#0969da", "stop-opacity": "0.26" });
-  const stop2 = svgEl("stop", { offset: "100%", "stop-color": "#0969da", "stop-opacity": "0.01" });
-  grad.append(stop1, stop2);
-  defs.appendChild(grad);
-  svg.appendChild(defs);
-
   const backfilledUntil = etfHistory && etfHistory.backfilled_until;
   if (backfilledUntil) {
     const bx = x(Math.min(Date.parse(backfilledUntil), t1));
@@ -1126,11 +1114,6 @@ function drawEtfChart(container, rows) {
   // 1. Primary Line: Valuation Premium vs DCF
   const points = rows.map((r, i) => [x(times[i]), y(values[i])]);
   const linePath = points.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join("");
-  const base = y(Math.max(lo, Math.min(0, hi)));
-  svg.appendChild(svgEl("path", {
-    d: `${linePath}L${points[points.length - 1][0].toFixed(1)},${base}L${points[0][0].toFixed(1)},${base}Z`,
-    fill: `url(#area-grad-${safeId})`
-  }));
   svg.appendChild(svgEl("path", {
     d: linePath,
     class: "chart-line"
