@@ -597,10 +597,6 @@ function renderEtfCards(list) {
 
   container.innerHTML = list.map(({ id, data, stats, dec, catInfo }) => {
     const safeId = id.replace(/[^a-zA-Z0-9]/g, "_");
-    const inZone = dec.distancePct !== null && dec.distancePct <= 0;
-    const distanceBadge = dec.distancePct !== null
-      ? `<span class="distance-tag ${inZone ? "distance-in-zone" : "distance-above"}">${inZone ? "Currently in Buy Zone!" : `+${fmtNum(dec.distancePct, 1)}% to target`}</span>`
-      : "";
 
     return `
       <div class="etf-card" id="card-${safeId}">
@@ -616,13 +612,9 @@ function renderEtfCards(list) {
             </div>
           </div>
           <div style="display:flex; align-items:center; gap:8px;">
+            <span class="stance-badge ${dec.stance.cls}">${dec.stance.icon} ${dec.stance.label}</span>
             <span class="badge" title="Share of portfolio weight with a valid DCF valuation">${fmtNum(data.covered_weight_pct, 1)}% Valued</span>
           </div>
-        </div>
-
-        <div class="stance-banner ${dec.stance.cls}">
-          <span><span aria-hidden="true">${dec.stance.icon}</span> <strong>${dec.stance.label}</strong></span>
-          ${distanceBadge}
         </div>
 
         <div class="chart-layout-grid">

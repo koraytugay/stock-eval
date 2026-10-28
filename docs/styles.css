@@ -1019,16 +1019,6 @@ tbody tr.detail-row:hover td {
   border: 1px solid #fae17d;
 }
 
-.stance-banner {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  border-radius: 6px;
-  margin-bottom: 12px;
-  font-size: 0.84rem;
-  font-weight: 700;
-}
 
 .distance-tag {
   display: inline-block;
