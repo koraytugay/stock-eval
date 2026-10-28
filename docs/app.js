@@ -433,6 +433,161 @@ function renderEtfSummary(list) {
   }).join("");
 }
 
+function buildEtfInfoCardHtml(etfId, idx, isHover) {
+  if (!currentSnapshot || !currentSnapshot.etfs) return "";
+  const data = currentSnapshot.etfs[etfId];
+  if (!data) return "";
+  const rows = etfHistoryRows(etfId);
+  const stats = historyStats(rows);
+  const dec = computeEtfDecision(data, stats);
+  const inZone = dec.distancePct !== null && dec.distancePct <= 0;
+  const backfilledUntil = etfHistory && etfHistory.backfilled_until;
+
+  if (isHover && rows && rows[idx]) {
+    const r = rows[idx];
+    const dateStr = r[0];
+    const intrinsic = r[1];
+    const premium = r[2];
+    const covered = r[3];
+    const isReconstructed = backfilledUntil && dateStr <= backfilledUntil;
+    const premColor = premium < 0 ? "#16a34a" : "#cf222e";
+    const diff = typeof data.market_premium_pct === "number" ? premium - data.market_premium_pct : null;
+    const diffSign = diff !== null && diff >= 0 ? "+" : "";
+
+    return `
+      <div class="chart-card-header">
+        <span class="chart-card-date">${escapeHtml(dateStr)}</span>
+        <span class="chart-card-badge" style="${isReconstructed ? 'background:#fef3c7; color:#92400e;' : 'background:#e0f2fe; color:#0284c7;'}">
+          ${isReconstructed ? "RECONSTRUCTED" : "INSPECTING"}
+        </span>
+      </div>
+      <div class="chart-card-primary-val" style="color: ${premColor};">
+        ${fmtPct(premium)}
+        <span style="font-size: 0.76rem; font-weight: 600; color: #64748b; margin-left: 4px;">Prem vs DCF</span>
+      </div>
+      <div class="chart-card-sub-val">
+        Intrinsic: <strong>$${fmtNum(intrinsic, 4)}</strong> per $1 NAV
+      </div>
+
+      <div class="chart-card-section-divider">
+        <div class="chart-card-row">
+          <span>Historical Premium:</span>
+          <strong style="color: ${premColor};">${fmtPct(premium)}</strong>
+        </div>
+        ${diff !== null ? `
+          <div class="chart-card-row">
+            <span>Diff vs Today:</span>
+            <span><strong>${diffSign}${fmtNum(diff, 1)}%</strong> pts</span>
+          </div>
+        ` : ""}
+        <div class="chart-card-row">
+          <span>Valued Holdings:</span>
+          <span>${fmtNum(covered, 1)}% of fund</span>
+        </div>
+        <div class="chart-card-row">
+          <span>1-Yr Median Prem:</span>
+          <span>${stats ? fmtPct(stats.median) : "-"}</span>
+        </div>
+      </div>
+
+      <div class="chart-card-section-divider">
+        <div class="chart-card-row">
+          <span>Market Price Today:</span>
+          <strong>${dec.marketPrice !== null ? `$${fmtNum(dec.marketPrice, 2)} ${escapeHtml(dec.currency)}` : "-"}</strong>
+        </div>
+        <div class="chart-card-row">
+          <span>Fair Value Today:</span>
+          <strong>${dec.fairValuePrice !== null ? `$${fmtNum(dec.fairValuePrice, 2)} ${escapeHtml(dec.currency)}` : "-"}</strong>
+        </div>
+        <div class="chart-card-row">
+          <span>Current Stance:</span>
+          <span class="stance-badge ${dec.stance.cls}" style="font-size:0.72rem; padding:1px 6px;">${dec.stance.icon} ${dec.stance.label}</span>
+        </div>
+      </div>
+
+      <div class="chart-card-footer">
+        Point ${idx + 1} of ${rows.length} &bull; Release cursor to reset
+      </div>
+    `;
+  }
+
+  // Default: LATEST snapshot
+  const premium = data.market_premium_pct;
+  const premColor = typeof premium === "number" ? (premium < 0 ? "#16a34a" : "#cf222e") : "#1e293b";
+  const dateStr = currentSnapshot.date || (rows.length ? rows[rows.length - 1][0] : "-");
+
+  const priceText = dec.marketPrice !== null && dec.marketPrice !== undefined
+    ? `$${fmtNum(dec.marketPrice, 2)} ${escapeHtml(dec.currency)}`
+    : "N/A";
+
+  const fairValueText = dec.fairValuePrice !== null && dec.fairValuePrice !== undefined
+    ? `$${fmtNum(dec.fairValuePrice, 2)}`
+    : (data.intrinsic_per_dollar ? `$${fmtNum(data.intrinsic_per_dollar, 4)} / $1` : "N/A");
+
+  const buyTargetText = dec.buyBelowPrice !== null && dec.buyBelowPrice !== undefined
+    ? `&le; $${fmtNum(dec.buyBelowPrice, 2)}`
+    : (dec.targetPremium !== null ? `Prem &le; ${fmtPct(dec.targetPremium)}` : "N/A");
+
+  const fcfText = typeof dec.fcfYield === "number" ? `${fmtNum(dec.fcfYield, 2)}%` : "-";
+  const growthText = typeof dec.impliedGrowth === "number" ? `${fmtNum(dec.impliedGrowth, 1)}% / yr` : "-";
+
+  return `
+    <div class="chart-card-header">
+      <span class="chart-card-date">${escapeHtml(dateStr)}</span>
+      <span class="chart-card-badge">LATEST</span>
+    </div>
+    <div class="chart-card-primary-val" style="color: ${premColor};">
+      ${fmtPct(premium)}
+      <span style="font-size: 0.76rem; font-weight: 600; color: #64748b; margin-left: 4px;">Prem vs DCF</span>
+    </div>
+    <div class="chart-card-sub-val">
+      DCF Fair Value: <strong>${fairValueText}</strong> <span class="muted">($${fmtNum(data.intrinsic_per_dollar, 2)} / $1)</span>
+    </div>
+
+    <div class="chart-card-section-divider">
+      <div class="chart-card-row">
+        <span>Market Price:</span>
+        <strong>${priceText}</strong>
+      </div>
+      <div class="chart-card-row">
+        <span>Buy-Below Target:</span>
+        <span><strong>${buyTargetText}</strong> ${dec.distancePct !== null ? `<span class="distance-tag ${inZone ? 'distance-in-zone' : 'distance-above'}" style="font-size:0.7rem; padding:1px 5px;">${inZone ? 'In Zone!' : `+${fmtNum(dec.distancePct, 1)}%`}</span>` : ''}</span>
+      </div>
+      <div class="chart-card-row">
+        <span>Decision Stance:</span>
+        <span class="stance-badge ${dec.stance.cls}" style="font-size:0.72rem; padding:1px 6px;">${dec.stance.icon} ${dec.stance.label}</span>
+      </div>
+    </div>
+
+    <div class="chart-card-section-divider">
+      <div class="chart-card-row">
+        <span>Portfolio FCF Yield:</span>
+        <strong class="${dec.fcfYield >= 5 ? 'fcf-highlight' : ''}">${fcfText}</strong>
+      </div>
+      <div class="chart-card-row">
+        <span>Implied Growth Hurdle:</span>
+        <strong class="${dec.impliedGrowth <= 10 ? 'hurdle-low' : (dec.impliedGrowth >= 25 ? 'hurdle-high' : '')}">${growthText}</strong>
+      </div>
+      <div class="chart-card-row">
+        <span>1-Yr Valuation Range:</span>
+        <span>${stats ? `${fmtPct(stats.min)} to ${fmtPct(stats.max)}` : "-"}</span>
+      </div>
+      <div class="chart-card-row">
+        <span>1-Yr %ile &bull; Median:</span>
+        <span><strong>${stats ? `${Math.round(stats.percentile)}th` : "-"}</strong> %ile &bull; ${stats ? fmtPct(stats.median) : "-"}</span>
+      </div>
+      <div class="chart-card-row">
+        <span>Valued Holdings:</span>
+        <span>${fmtNum(data.covered_weight_pct, 1)}% of fund</span>
+      </div>
+    </div>
+
+    <div class="chart-card-footer">
+      💡 Hover over graph to inspect historical valuation
+    </div>
+  `;
+}
+
 function renderEtfCards(list) {
   const container = document.getElementById("etf-cards-container");
   if (!list.length) {
@@ -441,36 +596,14 @@ function renderEtfCards(list) {
   }
 
   container.innerHTML = list.map(({ id, data, stats, dec, catInfo }) => {
-    const premium = data.market_premium_pct;
-    const premiumClass = typeof premium === "number" ? (premium < 0 ? "premium-discount" : "premium-expensive") : "muted";
-
+    const safeId = id.replace(/[^a-zA-Z0-9]/g, "_");
     const inZone = dec.distancePct !== null && dec.distancePct <= 0;
     const distanceBadge = dec.distancePct !== null
       ? `<span class="distance-tag ${inZone ? "distance-in-zone" : "distance-above"}">${inZone ? "Currently in Buy Zone!" : `+${fmtNum(dec.distancePct, 1)}% to target`}</span>`
       : "";
 
-    const priceText = dec.marketPrice !== null && dec.marketPrice !== undefined
-      ? `$${fmtNum(dec.marketPrice, 2)} ${escapeHtml(dec.currency)}`
-      : "N/A";
-
-    const fairValueText = dec.fairValuePrice !== null && dec.fairValuePrice !== undefined
-      ? `$${fmtNum(dec.fairValuePrice, 2)} ${escapeHtml(dec.currency)}`
-      : (data.intrinsic_per_dollar ? `$${fmtNum(data.intrinsic_per_dollar, 4)} / $1` : "N/A");
-
-    const buyTargetText = dec.buyBelowPrice !== null && dec.buyBelowPrice !== undefined
-      ? `&le; $${fmtNum(dec.buyBelowPrice, 2)} ${escapeHtml(dec.currency)}`
-      : (dec.targetPremium !== null ? `Prem &le; ${fmtPct(dec.targetPremium)}` : "N/A");
-
-    const fcfSub = typeof dec.fcfYield === "number"
-      ? (dec.fcfYield >= 7.0 ? "Strong cash backing" : (dec.fcfYield >= 4.0 ? "Solid cash generation" : "Low cash yield"))
-      : "-";
-
-    const growthSub = typeof dec.impliedGrowth === "number"
-      ? (dec.impliedGrowth <= 10.0 ? "Low hurdle (high safety)" : (dec.impliedGrowth <= 20.0 ? "Moderate expectations" : "Demanding growth required"))
-      : "-";
-
     return `
-      <div class="etf-card">
+      <div class="etf-card" id="card-${safeId}">
         <div class="etf-card-header">
           <div>
             <div class="etf-card-title-row">
@@ -482,7 +615,9 @@ function renderEtfCards(list) {
               <span class="badge etf-ccy">${escapeHtml(dec.currency)}</span>
             </div>
           </div>
-          <span class="badge" title="Share of portfolio weight with a valid DCF valuation">${fmtNum(data.covered_weight_pct, 1)}% Valued</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="badge" title="Share of portfolio weight with a valid DCF valuation">${fmtNum(data.covered_weight_pct, 1)}% Valued</span>
+          </div>
         </div>
 
         <div class="stance-banner ${dec.stance.cls}">
@@ -490,48 +625,20 @@ function renderEtfCards(list) {
           ${distanceBadge}
         </div>
 
-        <div class="etf-metrics-grid">
-          <div class="etf-metric-box">
-            <span class="metric-label">Market Price</span>
-            <span class="metric-val">${priceText}</span>
+        <div class="chart-layout-grid">
+          <div class="chart-canvas-col">
+            <div class="chart-container-rel">
+              <div class="etf-chart" data-etf="${escapeHtml(id)}" id="chart-${safeId}"></div>
+            </div>
+            <div class="chart-card-footer" style="margin-top: 6px; border-top: none; justify-content: space-between; font-size: 0.74rem; color: #64748b;">
+              <span><span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#0969da; margin-right:4px;"></span> Premium vs DCF (Past 1 Year)</span>
+              <span>Baseline (0%): DCF Fair Value</span>
+            </div>
           </div>
-          <div class="etf-metric-box">
-            <span class="metric-label">DCF Fair Value</span>
-            <span class="metric-val">${fairValueText}</span>
-            <span class="muted" style="font-size:0.75rem;">$${fmtNum(data.intrinsic_per_dollar, 2)} intrinsic per $1</span>
-          </div>
-          <div class="etf-metric-box">
-            <span class="metric-label">Buy-Below Target</span>
-            <span class="metric-val">${buyTargetText}</span>
-            <span class="muted" style="font-size:0.75rem;">Target prem &le; ${fmtPct(dec.targetPremium)}</span>
-          </div>
-          <div class="etf-metric-box">
-            <span class="metric-label">Premium vs DCF</span>
-            <span class="metric-val ${premiumClass}">${fmtPct(premium)}</span>
-            <span class="muted" style="font-size:0.75rem;">${stats ? `${Math.round(stats.percentile)}th %ile (med ${fmtPct(stats.median)})` : ""}</span>
-          </div>
-          <div class="etf-metric-box">
-            <span class="metric-label">Portfolio FCF Yield</span>
-            <span class="metric-val ${dec.fcfYield >= 5 ? "fcf-highlight" : ""}">${typeof dec.fcfYield === "number" ? `${fmtNum(dec.fcfYield, 2)}%` : "N/A"}</span>
-            <span class="muted" style="font-size:0.75rem;">${fcfSub}</span>
-          </div>
-          <div class="etf-metric-box">
-            <span class="metric-label">Implied Growth Hurdle</span>
-            <span class="metric-val ${dec.impliedGrowth <= 10 ? "hurdle-low" : (dec.impliedGrowth >= 25 ? "hurdle-high" : "")}">${typeof dec.impliedGrowth === "number" ? `${fmtNum(dec.impliedGrowth, 1)}% / yr` : "N/A"}</span>
-            <span class="muted" style="font-size:0.75rem;">${growthSub}</span>
+          <div class="chart-info-card" id="info-card-${safeId}">
+            ${buildEtfInfoCardHtml(id, -1, false)}
           </div>
         </div>
-
-        ${typeof data.listed_weight_pct === "number" ? `
-          <p class="muted etf-coverage">Published holdings cover ${fmtNum(data.listed_weight_pct, 1)}% of fund; ${fmtNum(data.covered_weight_pct, 1)}% has DCF valuation.</p>
-        ` : ""}
-
-        ${etfHistoryRows(id).length > 1 ? `
-          <div class="etf-chart-block">
-            <div class="etf-chart-title">Premium vs DCF, past year (lower = cheaper)</div>
-            <div class="etf-chart" data-etf="${escapeHtml(id)}"></div>
-          </div>
-        ` : ""}
       </div>
     `;
   }).join("");
@@ -866,38 +973,74 @@ function drawEtfCharts() {
 
 function drawEtfChart(container, rows) {
   container.textContent = "";
-  if (rows.length < 2) return;
-  const width = container.clientWidth || 360;
-  const height = 170;
-  const m = { top: 10, right: 12, bottom: 22, left: 46 };
+  const etfId = container.dataset.etf;
+  if (!etfId) return;
+  const safeId = etfId.replace(/[^a-zA-Z0-9]/g, "_");
+  const infoCard = document.getElementById(`info-card-${safeId}`);
+
+  if (rows.length < 2) {
+    container.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; height:240px; color:#94a3b8; font-size:0.85rem;">Historical data not available for this ETF.</div>`;
+    return;
+  }
+
+  const width = 1000;
+  const height = 240;
+  const m = { top: 16, right: 24, bottom: 28, left: 56 };
   const w = width - m.left - m.right;
   const h = height - m.top - m.bottom;
 
   const times = rows.map(r => Date.parse(r[0]));
   const values = rows.map(r => r[2]);
   const vMin = Math.min(...values), vMax = Math.max(...values);
-  const pad = (Math.max(vMax, 0) - Math.min(vMin, 0)) * 0.08 || 5;
+  const pad = (Math.max(vMax, 0) - Math.min(vMin, 0)) * 0.10 || 5;
   let lo = vMin < 0 ? vMin - pad : 0;
   let hi = vMax > 0 ? vMax + pad : 0;
   const step = niceStep(hi - lo, 4);
-  lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+  lo = Math.floor(lo / step) * step;
+  hi = Math.ceil(hi / step) * step;
 
   const t0 = times[0], t1 = times[times.length - 1];
   const x = t => m.left + ((t - t0) / (t1 - t0)) * w;
   const y = v => m.top + (1 - (v - lo) / (hi - lo)) * h;
 
-  const svg = svgEl("svg", { width, height, role: "img", "aria-label": "Premium versus DCF over the past year" });
+  const svg = svgEl("svg", {
+    viewBox: `0 0 ${width} ${height}`,
+    style: "width: 100%; max-height: 250px; display: block; overflow: visible;",
+    role: "img",
+    "aria-label": `Premium versus DCF over the past year for ${etfId}`
+  });
+
+  // Unique Gradient Def
+  const defs = svgEl("defs", {});
+  const grad = svgEl("linearGradient", {
+    id: `area-grad-${safeId}`,
+    x1: "0", y1: "0", x2: "0", y2: "1"
+  });
+  const stop1 = svgEl("stop", { offset: "0%", "stop-color": "#0969da", "stop-opacity": "0.32" });
+  const stop2 = svgEl("stop", { offset: "100%", "stop-color": "#0969da", "stop-opacity": "0.02" });
+  grad.append(stop1, stop2);
+  defs.appendChild(grad);
+  svg.appendChild(defs);
 
   const backfilledUntil = etfHistory && etfHistory.backfilled_until;
   if (backfilledUntil) {
     const bx = x(Math.min(Date.parse(backfilledUntil), t1));
-    svg.appendChild(svgEl("rect", { x: m.left, y: m.top, width: Math.max(bx - m.left, 0), height: h, class: "chart-backfill" }));
+    svg.appendChild(svgEl("rect", {
+      x: m.left, y: m.top, width: Math.max(bx - m.left, 0), height: h,
+      class: "chart-backfill"
+    }));
   }
 
   // Gridlines and y ticks
   for (let v = lo; v <= hi + 1e-9; v += step) {
-    svg.appendChild(svgEl("line", { x1: m.left, x2: m.left + w, y1: y(v), y2: y(v), class: v === 0 ? "chart-zero" : "chart-grid" }));
-    const label = svgEl("text", { x: m.left - 6, y: y(v) + 3, "text-anchor": "end", class: "chart-tick" });
+    svg.appendChild(svgEl("line", {
+      x1: m.left, x2: m.left + w, y1: y(v), y2: y(v),
+      class: v === 0 ? "chart-zero" : "chart-grid"
+    }));
+    const label = svgEl("text", {
+      x: m.left - 8, y: y(v) + 3.5,
+      "text-anchor": "end", class: "chart-tick"
+    });
     label.textContent = `${v > 0 ? "+" : ""}${Math.round(v)}%`;
     svg.appendChild(label);
   }
@@ -907,9 +1050,12 @@ function drawEtfChart(container, rows) {
   d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + 1);
   let monthIdx = 0;
   while (d.getTime() <= t1) {
-    if (monthIdx % 3 === 0) {
+    if (monthIdx % 2 === 0) {
       const tx = x(d.getTime());
-      const label = svgEl("text", { x: tx, y: height - 6, "text-anchor": "middle", class: "chart-tick" });
+      const label = svgEl("text", {
+        x: tx, y: height - 8,
+        "text-anchor": "middle", class: "chart-tick"
+      });
       label.textContent = d.toLocaleDateString("en-CA", { month: "short", year: "2-digit", timeZone: "UTC" });
       svg.appendChild(label);
     }
@@ -920,50 +1066,86 @@ function drawEtfChart(container, rows) {
   const points = rows.map((r, i) => [x(times[i]), y(values[i])]);
   const linePath = points.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join("");
   const base = y(Math.max(lo, Math.min(0, hi)));
-  svg.appendChild(svgEl("path", { d: `${linePath}L${points[points.length - 1][0]},${base}L${points[0][0]},${base}Z`, class: "chart-area" }));
-  svg.appendChild(svgEl("path", { d: linePath, class: "chart-line" }));
+  svg.appendChild(svgEl("path", {
+    d: `${linePath}L${points[points.length - 1][0].toFixed(1)},${base}L${points[0][0].toFixed(1)},${base}Z`,
+    fill: `url(#area-grad-${safeId})`
+  }));
+  svg.appendChild(svgEl("path", {
+    d: linePath,
+    class: "chart-line"
+  }));
 
   // End dot
   const last = points[points.length - 1];
-  svg.appendChild(svgEl("circle", { cx: last[0], cy: last[1], r: 4, class: "chart-dot" }));
+  svg.appendChild(svgEl("circle", { cx: last[0], cy: last[1], r: 4.5, class: "chart-dot" }));
 
-  // Crosshair + tooltip
-  const cross = svgEl("line", { y1: m.top, y2: m.top + h, class: "chart-cross", visibility: "hidden" });
-  const hoverDot = svgEl("circle", { r: 4, class: "chart-dot", visibility: "hidden" });
-  svg.appendChild(cross);
+  // Crosshair vertical line + hover dot
+  const cursorLine = svgEl("line", {
+    y1: m.top, y2: m.top + h,
+    stroke: "#94a3b8", "stroke-width": "1.5", "stroke-dasharray": "4,4",
+    visibility: "hidden", "pointer-events": "none"
+  });
+  const hoverDot = svgEl("circle", {
+    r: 5.5, fill: "#0969da", stroke: "#ffffff", "stroke-width": "2",
+    visibility: "hidden", "pointer-events": "none"
+  });
+  svg.appendChild(cursorLine);
   svg.appendChild(hoverDot);
-  const tip = document.createElement("div");
-  tip.className = "chart-tooltip";
-  tip.hidden = true;
-  const tipValue = document.createElement("strong");
-  const tipDetail = document.createElement("span");
-  tip.append(tipValue, tipDetail);
 
-  const hit = svgEl("rect", { x: m.left, y: m.top, width: w, height: h, fill: "transparent" });
+  // Full interactive tracking overlay
+  const hit = svgEl("rect", {
+    x: m.left, y: m.top, width: w, height: h,
+    fill: "transparent",
+    style: "cursor: crosshair; pointer-events: all;"
+  });
+
   const show = evt => {
-    const rect = svg.getBoundingClientRect();
-    const px = evt.clientX - rect.left;
-    const t = t0 + ((px - m.left) / w) * (t1 - t0);
-    let i = 0;
-    for (let j = 1; j < times.length; j++) if (Math.abs(times[j] - t) < Math.abs(times[i] - t)) i = j;
-    const [cx, cy] = points[i];
-    cross.setAttribute("x1", cx); cross.setAttribute("x2", cx); cross.setAttribute("visibility", "visible");
-    hoverDot.setAttribute("cx", cx); hoverDot.setAttribute("cy", cy); hoverDot.setAttribute("visibility", "visible");
-    tipValue.textContent = fmtPct(values[i]);
-    const reconstructed = backfilledUntil && rows[i][0] <= backfilledUntil ? " (reconstructed)" : "";
-    tipDetail.textContent = `${rows[i][0]} \u00b7 $${fmtNum(rows[i][1])} per $1${reconstructed}`;
-    tip.hidden = false;
-    tip.style.left = `${Math.min(Math.max(cx - 70, 0), width - 150)}px`;
-    tip.style.top = `${Math.max(cy - 52, 0)}px`;
+    let svgX = m.left;
+    if (typeof svg.getScreenCTM === "function") {
+      const ctm = svg.getScreenCTM();
+      if (ctm) {
+        const pt = svg.createSVGPoint();
+        pt.x = evt.clientX;
+        pt.y = evt.clientY;
+        const svgP = pt.matrixTransform(ctm.inverse());
+        svgX = svgP.x;
+      }
+    } else {
+      const rect = svg.getBoundingClientRect();
+      svgX = (evt.clientX - (rect.left || 0)) * (width / (rect.width || 1));
+    }
+
+    const clampedX = Math.max(m.left, Math.min(m.left + w, svgX));
+    const frac = (clampedX - m.left) / w;
+    const idx = Math.max(0, Math.min(rows.length - 1, Math.round(frac * (rows.length - 1))));
+
+    const [cx, cy] = points[idx];
+    cursorLine.setAttribute("x1", cx.toFixed(1));
+    cursorLine.setAttribute("x2", cx.toFixed(1));
+    cursorLine.setAttribute("visibility", "visible");
+
+    hoverDot.setAttribute("cx", cx.toFixed(1));
+    hoverDot.setAttribute("cy", cy.toFixed(1));
+    hoverDot.setAttribute("visibility", "visible");
+
+    if (infoCard) {
+      infoCard.innerHTML = buildEtfInfoCardHtml(etfId, idx, true);
+      infoCard.classList.add("active");
+    }
   };
+
   const hide = () => {
-    cross.setAttribute("visibility", "hidden");
+    cursorLine.setAttribute("visibility", "hidden");
     hoverDot.setAttribute("visibility", "hidden");
-    tip.hidden = true;
+    if (infoCard) {
+      infoCard.innerHTML = buildEtfInfoCardHtml(etfId, rows.length - 1, false);
+      infoCard.classList.remove("active");
+    }
   };
+
   hit.addEventListener("pointermove", show);
   hit.addEventListener("pointerleave", hide);
   svg.appendChild(hit);
 
-  container.append(svg, tip);
+  container.appendChild(svg);
 }
