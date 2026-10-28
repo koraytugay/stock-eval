@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stock & ETF Fundamental Valuation Engine</title>
+  <title>StockEval - ETF Fundamental Valuation Engine</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
     <div class="header-container">
       <div class="brand">
         <h1>StockEval</h1>
-        <p class="subtitle">Intrinsic DCF & Reverse DCF Look-Through Engine</p>
+        <p class="subtitle">ETF Fundamental Look-Through Valuation &amp; Decision Engine</p>
       </div>
       <div class="header-controls">
         <label for="snapshot-select">Snapshot Date:</label>
@@ -25,155 +25,92 @@
     <!-- Top KPI Cards -->
     <section class="kpi-grid">
       <div class="kpi-card">
-        <h3>Total Equities Tracked</h3>
-        <p id="kpi-stocks-count" class="kpi-value">-</p>
-        <span id="kpi-stocks-sub" class="kpi-sub">S&P 500, QQQ, TSX Composite</span>
+        <h3>Tracked ETFs</h3>
+        <p id="kpi-etf-count" class="kpi-value">-</p>
+        <span id="kpi-etf-sub" class="kpi-sub">Look-through DCF valuation</span>
       </div>
       <div class="kpi-card">
-        <h3>Median Premium vs DCF</h3>
+        <h3>Median ETF Premium</h3>
         <p id="kpi-median-val" class="kpi-value">-</p>
-        <span id="kpi-median-sub" class="kpi-sub">Across valued equities</span>
+        <span id="kpi-median-sub" class="kpi-sub">Across all tracked funds</span>
       </div>
       <div class="kpi-card">
-        <h3>Cheapest vs Intrinsic</h3>
-        <p id="kpi-cheapest-ticker" class="kpi-value">-</p>
-        <span id="kpi-cheapest-val" class="kpi-sub">-</span>
+        <h3>Top Value Opportunity</h3>
+        <p id="kpi-best-relative" class="kpi-value">-</p>
+        <span id="kpi-best-relative-sub" class="kpi-sub">Lowest vs 1-year history</span>
       </div>
       <div class="kpi-card">
-        <h3>Highest Growth Priced</h3>
-        <p id="kpi-growth-ticker" class="kpi-value">-</p>
-        <span id="kpi-growth-val" class="kpi-sub">-</span>
+        <h3>Deepest DCF Discount</h3>
+        <p id="kpi-deepest-discount" class="kpi-value">-</p>
+        <span id="kpi-deepest-discount-sub" class="kpi-sub">Highest intrinsic value per $1</span>
       </div>
     </section>
 
-    <!-- Navigation Tabs -->
-    <nav class="nav-tabs">
-      <button class="tab-btn active" data-tab="tab-stocks">Individual Equities</button>
-      <button class="tab-btn" data-tab="tab-etfs">ETF Look-Through</button>
-      <button class="tab-btn" data-tab="tab-accuracy">Model Accuracy Backtest</button>
-    </nav>
-
-    <!-- TAB 1: Individual Equities -->
-    <section id="tab-stocks" class="tab-content active">
-      <div class="table-controls">
-        <input type="text" id="search-input" placeholder="Search ticker, index or sector..." />
-        <div class="filter-group">
-          <label>Filter Index:</label>
-          <select id="filter-index">
-            <option value="ALL">All Indices</option>
-            <option value="SP500">S&P 500</option>
-            <option value="QQQ">QQQ (Nasdaq 100)</option>
-            <option value="XIC">TSX Composite</option>
-            <option value="MYETFS">Held by my ETFs</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label for="filter-sector">Sector:</label>
-          <select id="filter-sector">
-            <option value="ALL">All Sectors</option>
-          </select>
-        </div>
-        <label class="checkbox-label">
-          <input type="checkbox" id="valued-only" checked />
-          Valued only
-        </label>
-        <div class="filter-group">
-          <label>Sort By:</label>
-          <select id="sort-by">
-            <option value="premium_asc">Cheapest (Lowest Premium)</option>
-            <option value="premium_desc">Most Expensive (Highest Premium)</option>
-            <option value="growth_desc">Highest Implied Growth</option>
-            <option value="price_desc">Highest Price</option>
-            <option value="ticker_asc">Ticker (A-Z)</option>
-          </select>
-        </div>
-      </div>
-
-      <p class="table-hint"><span id="result-count"></span> Click a row to see the inputs behind its valuation.</p>
-      <div class="table-wrapper">
-        <table id="stocks-table">
-          <thead>
-            <tr>
-              <th>Ticker</th>
-              <th>Index</th>
-              <th>Currency</th>
-              <th>Market Price</th>
-              <th>Intrinsic DCF</th>
-              <th>Market Premium (%)</th>
-              <th>Implied Growth (Rev. DCF)</th>
-              <th>Growth / WACC Used</th>
-              <th>FCF (B)</th>
-              <th>Net Debt (B)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td colspan="10" class="loading">Loading equities...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- TAB 2: Custom ETFs Look-Through -->
-    <section id="tab-etfs" class="tab-content">
+    <!-- Main ETF Dashboard -->
+    <section class="etf-dashboard-section">
       <div class="etf-intro">
-        <h2>My ETFs: Look-Through Valuation</h2>
-        <p>Each ETF is valued through its published top holdings (funds of funds such as XEQT are expanded into their underlying ETFs). Every valued holding contributes its weight &times; (DCF value / price), giving the intrinsic value of $1 invested in the valued part of the fund. Banks and insurers are not valued, and a DCF value below zero counts as zero.</p>
+        <h2>ETF Look-Through Valuations</h2>
+        <p>Each ETF is valued through its published top holdings (funds of funds such as XEQT are expanded into their underlying ETFs). Every valued holding contributes its weight &times; (DCF value / price), giving the intrinsic value of $1 invested in the valued part of the fund. Percentiles compare today's valuation against its past year of history (lower = cheaper than usual for this ETF).</p>
       </div>
+
+      <div class="table-controls">
+        <input type="text" id="etf-search-input" placeholder="Search ETF name or ticker (e.g. XEQT, CAUV)..." />
+        <div class="filter-group">
+          <label for="filter-category">Category:</label>
+          <select id="filter-category">
+            <option value="ALL">All Categories</option>
+            <option value="GLOBAL">All-in-One Global</option>
+            <option value="US">US Equities</option>
+            <option value="INTL">International Developed</option>
+            <option value="EM">Emerging Markets</option>
+            <option value="FACTOR">Factors &amp; Value</option>
+            <option value="CANADA">Canada</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="etf-sort-by">Sort By:</label>
+          <select id="etf-sort-by">
+            <option value="percentile_asc">Best Relative Value (Lowest %ile)</option>
+            <option value="premium_asc">Deepest DCF Discount (Lowest Premium)</option>
+            <option value="intrinsic_desc">Highest Intrinsic per $1</option>
+            <option value="premium_desc">Highest Premium (Priciest)</option>
+            <option value="name_asc">Name / Ticker (A-Z)</option>
+          </select>
+        </div>
+      </div>
+
+      <p class="table-hint"><span id="etf-result-count"></span> History before <span id="etf-backfill-date">-</span> is a reconstruction using today's holdings.</p>
+
+      <!-- ETF Summary Table -->
       <div class="table-wrapper etf-summary">
         <table id="etf-summary-table">
           <thead>
             <tr>
               <th>ETF</th>
+              <th>Category</th>
               <th>Premium vs DCF</th>
-              <th>Past-year range</th>
-              <th>Past-year median</th>
+              <th>Intrinsic / $1</th>
+              <th>Past-Year Range</th>
+              <th>Past-Year Median</th>
               <th>Percentile</th>
-              <th>Versus its past year</th>
-              <th>Fund weight valued</th>
+              <th>Versus Past Year</th>
+              <th>Fund Weight Valued</th>
             </tr>
           </thead>
-          <tbody><tr><td colspan="7" class="loading">Loading valuation history...</td></tr></tbody>
+          <tbody>
+            <tr><td colspan="9" class="loading">Loading valuation history...</td></tr>
+          </tbody>
         </table>
       </div>
-      <p class="table-hint etf-summary-hint">Percentile = share of the past year's daily readings that were cheaper than or equal to today's. Low = cheaper than usual for this ETF. History before <span id="etf-backfill-date">-</span> is a reconstruction using today's holdings.</p>
-      <div id="etf-cards-container" class="etf-grid"></div>
-    </section>
 
-    <!-- TAB 3: Model Accuracy Backtest -->
-    <section id="tab-accuracy" class="tab-content">
-      <div class="backtest-controls">
-        <h2>Historical Accuracy & Returns Tracker</h2>
-        <p>Buy the cheapest and the most expensive stocks (by premium vs DCF) on the base date and compare their price returns with the average of every stock valued that day.</p>
-        <div class="backtest-selectors">
-          <div>
-            <label for="backtest-base-date">Base Snapshot Date:</label>
-            <select id="backtest-base-date"></select>
-          </div>
-          <div>
-            <label for="backtest-target-date">Evaluation Date:</label>
-            <select id="backtest-target-date"></select>
-          </div>
-          <div>
-            <label for="backtest-size">Basket Size:</label>
-            <select id="backtest-size">
-              <option value="5">5</option>
-              <option value="10" selected>10</option>
-              <option value="20">20</option>
-              <option value="50">50</option>
-            </select>
-          </div>
-          <button id="run-backtest-btn" class="btn-primary">Compute Performance</button>
-        </div>
-      </div>
-      <div id="backtest-results" class="backtest-wrapper">
-        <p class="placeholder-text">Select two dates to run a performance backtest.</p>
-      </div>
+      <!-- ETF Cards Grid -->
+      <div id="etf-cards-container" class="etf-grid"></div>
     </section>
   </main>
 
   <footer>
     <div class="footer-container">
-      <p>Fundamentals from SEC EDGAR 10-K/10-Q filings (Yahoo Finance for non-SEC listings); prices from Yahoo Finance. Not investment advice. Automated via GitHub Actions &amp; GitHub Pages.</p>
+      <p>Fundamentals from SEC EDGAR 10-K/10-Q filings (Yahoo Finance for non-SEC listings); prices from Yahoo Finance. Intrinsic valuations computed via multi-stage DCF look-through. Not investment advice.</p>
     </div>
   </footer>
 

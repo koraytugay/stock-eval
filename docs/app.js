@@ -1,38 +1,37 @@
-// StockEval Dashboard Frontend Engine
+// StockEval - ETF Fundamental Valuation & Decision Engine
 
 let currentSnapshot = null;
 let allHistoryDates = [];
-let expandedTicker = null;
 let etfHistory = null;
 
 // The dashboard lives in docs/ and reads data/ from the repo root; "data/" is kept as a fallback for other layouts.
 const DATA_ROOTS = ["../data/", "data/"];
 let dataRoot = null;
 
-const STATUS_LABELS = {
-  ok: "Valued",
-  no_fundamentals: "No fundamentals",
-  no_shares: "Share count missing",
-  negative_fcf: "Negative FCF",
-  no_fx_rate: "FX rate unavailable",
-  no_price: "No price",
-  sector_excluded: "Sector excluded (FCFF N/A)",
-  debt_exceeds_value: "Debt exceeds value",
-  model_not_applicable: "Model not applicable"
+const ETF_CATEGORIES = {
+  "TSE:XEQT": { category: "GLOBAL", label: "All-in-One Global", region: "Global" },
+  "TSE:XUU":  { category: "US",     label: "US Total Market",  region: "US" },
+  "TSE:XMC":  { category: "US",     label: "US Mid-Cap",       region: "US" },
+  "TSE:XSMC": { category: "US",     label: "US Small-Cap",     region: "US" },
+  "TSE:CAUS": { category: "FACTOR", label: "US All-Cap Value", region: "US" },
+  "TSE:CAUV": { category: "FACTOR", label: "US Small-Cap Value", region: "US" },
+  "TSE:ZLU":  { category: "FACTOR", label: "US Low Volatility",region: "US" },
+  "TSE:XEF":  { category: "INTL",   label: "Int'l Developed",  region: "Developed ex-NA" },
+  "TSE:CADE": { category: "INTL",   label: "Int'l Value Tilt", region: "Developed ex-NA" },
+  "TSE:VIDY": { category: "INTL",   label: "Int'l High Dividend", region: "Developed ex-NA" },
+  "TSE:ZLI":  { category: "FACTOR", label: "Int'l Low Volatility", region: "Developed ex-NA" },
+  "VXUS":     { category: "INTL",   label: "Total World ex-US",region: "Global ex-US" },
+  "TSE:XEC":  { category: "EM",     label: "Emerging Markets", region: "Emerging" },
+  "TSE:CAEM": { category: "EM",     label: "EM Value Tilt",    region: "Emerging" },
+  "TSE:CASV": { category: "FACTOR", label: "Global Small-Cap Value", region: "Global" },
+  "TSE:CACE": { category: "CANADA", label: "Canadian Value",   region: "Canada" },
 };
 
-const STATUS_EXPLANATIONS = {
-  no_fundamentals: "No usable cash flow data was found in SEC filings or Yahoo Finance.",
-  no_shares: "The share count could not be determined, so a per-share value cannot be computed.",
-  negative_fcf: "Average free cash flow over recent years is zero or negative, so a cash-flow DCF gives no meaningful value.",
-  no_fx_rate: "The exchange rate between the reporting and listing currency was unavailable.",
-  sector_excluded: "Free cash flow to the firm is not a meaningful measure for banks and insurers, so this sector is not valued.",
-  debt_exceeds_value: "Net debt is larger than the modelled value of the whole business, so nothing is left for shareholders and the equity value is shown as zero.",
-  model_not_applicable: "The discount rate is not above terminal growth, so the model cannot produce a value."
-};
+function getEtfCategory(id) {
+  return ETF_CATEGORIES[id] || { category: "OTHER", label: "Equity ETF", region: "Other" };
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
-  setupTabs();
   setupEventListeners();
   await loadHistoryIndex();
   etfHistory = await fetchData("etf_history.json").catch(() => null);
@@ -58,6 +57,13 @@ function fmtPct(n, digits = 1) {
   return typeof n === "number" && isFinite(n) ? `${n > 0 ? "+" : ""}${n.toFixed(digits)}%` : "N/A";
 }
 
+function median(values) {
+  if (!values || !values.length) return null;
+  const sorted = values.slice().sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
 async function fetchData(path) {
   const roots = dataRoot ? [dataRoot] : DATA_ROOTS;
   for (const root of roots) {
@@ -70,35 +76,13 @@ async function fetchData(path) {
   throw new Error(`Could not load ${path}`);
 }
 
-function setupTabs() {
-  const tabs = document.querySelectorAll(".tab-btn");
-  tabs.forEach(tab => {
-    tab.addEventListener("click", () => {
-      tabs.forEach(t => t.classList.remove("active"));
-      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-      tab.classList.add("active");
-      const targetId = tab.getAttribute("data-tab");
-      document.getElementById(targetId).classList.add("active");
-    });
-  });
-}
-
 function setupEventListeners() {
-  document.getElementById("search-input").addEventListener("input", renderStocksTable);
-  document.getElementById("filter-index").addEventListener("change", renderStocksTable);
-  document.getElementById("filter-sector").addEventListener("change", renderStocksTable);
-  document.getElementById("valued-only").addEventListener("change", renderStocksTable);
-  document.querySelector("#stocks-table tbody").addEventListener("click", (e) => {
-    const row = e.target.closest("tr[data-ticker]");
-    if (!row) return;
-    expandedTicker = expandedTicker === row.dataset.ticker ? null : row.dataset.ticker;
-    renderStocksTable();
-  });
-  document.getElementById("sort-by").addEventListener("change", renderStocksTable);
+  document.getElementById("etf-search-input").addEventListener("input", renderEtfs);
+  document.getElementById("filter-category").addEventListener("change", renderEtfs);
+  document.getElementById("etf-sort-by").addEventListener("change", renderEtfs);
   document.getElementById("snapshot-select").addEventListener("change", (e) => {
     loadSnapshot(e.target.value);
   });
-  document.getElementById("run-backtest-btn").addEventListener("click", runBacktest);
 }
 
 async function loadHistoryIndex() {
@@ -107,13 +91,6 @@ async function loadHistoryIndex() {
     const options = allHistoryDates.slice().reverse()
       .map(date => `<option value="${escapeHtml(date)}">${escapeHtml(date)}</option>`).join("");
     document.getElementById("snapshot-select").innerHTML = `<option value="latest">Latest Snapshot</option>${options}`;
-
-    // Populate backtest selectors
-    const last = allHistoryDates.length - 1;
-    document.getElementById("backtest-base-date").innerHTML = allHistoryDates
-      .map((d, idx) => `<option value="${escapeHtml(d)}" ${idx === 0 ? "selected" : ""}>${escapeHtml(d)}</option>`).join("");
-    document.getElementById("backtest-target-date").innerHTML = allHistoryDates
-      .map((d, idx) => `<option value="${escapeHtml(d)}" ${idx === last ? "selected" : ""}>${escapeHtml(d)}</option>`).join("");
   } catch (err) {
     console.warn("Could not load history index, fallback to latest:", err);
   }
@@ -125,214 +102,21 @@ async function loadSnapshot(dateOrLatest) {
     currentSnapshot = await fetchData(path);
     document.getElementById("last-updated").textContent = `Snapshot: ${currentSnapshot.date || dateOrLatest}`;
     updateKPIs();
-    populateSectorFilter();
-    renderStocksTable();
-    renderETFs();
+    renderEtfs();
   } catch (err) {
     console.error("Failed to load snapshot:", err);
     document.getElementById("last-updated").textContent = "Error loading snapshot";
-    document.querySelector("#stocks-table tbody").innerHTML =
-      `<tr><td colspan="10" class="loading">Could not load snapshot data.</td></tr>`;
+    document.querySelector("#etf-summary-table tbody").innerHTML =
+      `<tr><td colspan="9" class="loading">Could not load snapshot data.</td></tr>`;
   }
-}
-
-function populateSectorFilter() {
-  const select = document.getElementById("filter-sector");
-  const current = select.value;
-  const sectors = [...new Set(Object.values(currentSnapshot.stocks).map(s => s.sector).filter(Boolean))].sort();
-  select.innerHTML = `<option value="ALL">All Sectors</option>` +
-    sectors.map(sec => `<option value="${escapeHtml(sec)}">${escapeHtml(sec)}</option>`).join("");
-  if (sectors.includes(current)) select.value = current;
-}
-
-function median(values) {
-  const sorted = values.slice().sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-}
-
-function isValued(s) {
-  return s.valuation && typeof s.valuation.market_premium_pct === "number";
-}
-
-function impliedGrowthText(val) {
-  if (typeof val.implied_growth_reverse_dcf === "number") return `${(val.implied_growth_reverse_dcf * 100).toFixed(1)}%`;
-  if (val.implied_growth_status === "above_range") return "&gt;150%";
-  if (val.implied_growth_status === "below_range") return "&lt;-50%";
-  return "N/A";
-}
-
-function updateKPIs() {
-  if (!currentSnapshot || !currentSnapshot.stocks) return;
-  const stocks = Object.values(currentSnapshot.stocks);
-  const valued = stocks.filter(isValued);
-
-  document.getElementById("kpi-stocks-count").textContent = stocks.length;
-  document.getElementById("kpi-stocks-sub").textContent = `${valued.length} with a DCF valuation`;
-  const medianPremium = valued.length ? median(valued.map(s => s.valuation.market_premium_pct)) : null;
-  document.getElementById("kpi-median-val").textContent = fmtPct(medianPremium);
-  document.getElementById("kpi-median-sub").textContent = valued.length
-    ? `${valued.filter(s => s.valuation.market_premium_pct < 0).length} trade below their DCF value`
-    : "Across valued equities";
-
-  const setKpi = (tickerId, valId, ticker, text) => {
-    document.getElementById(tickerId).textContent = ticker;
-    document.getElementById(valId).textContent = text;
-  };
-  setKpi("kpi-cheapest-ticker", "kpi-cheapest-val", "-", "-");
-  setKpi("kpi-growth-ticker", "kpi-growth-val", "-", "-");
-
-  if (valued.length > 0) {
-    const cheapest = valued.reduce((a, b) => (b.valuation.market_premium_pct < a.valuation.market_premium_pct ? b : a));
-    setKpi("kpi-cheapest-ticker", "kpi-cheapest-val", cheapest.ticker, `${fmtPct(cheapest.valuation.market_premium_pct)} vs DCF`);
-
-    const withGrowth = valued.filter(s => typeof s.valuation.implied_growth_reverse_dcf === "number");
-    if (withGrowth.length > 0) {
-      const top = withGrowth.reduce((a, b) => (b.valuation.implied_growth_reverse_dcf > a.valuation.implied_growth_reverse_dcf ? b : a));
-      setKpi("kpi-growth-ticker", "kpi-growth-val", top.ticker, `${(top.valuation.implied_growth_reverse_dcf * 100).toFixed(1)}% / yr implied`);
-    }
-  }
-}
-
-function renderStocksTable() {
-  if (!currentSnapshot || !currentSnapshot.stocks) return;
-  const tbody = document.querySelector("#stocks-table tbody");
-  const searchQuery = document.getElementById("search-input").value.trim().toUpperCase();
-  const filterIndex = document.getElementById("filter-index").value;
-  const filterSector = document.getElementById("filter-sector").value;
-  const valuedOnly = document.getElementById("valued-only").checked;
-  const sortBy = document.getElementById("sort-by").value;
-
-  let list = Object.values(currentSnapshot.stocks);
-
-  // Search filter
-  if (searchQuery) {
-    list = list.filter(s => s.ticker.includes(searchQuery)
-      || (s.indices && s.indices.join(" ").includes(searchQuery))
-      || (s.sector && s.sector.toUpperCase().includes(searchQuery)));
-  }
-
-  // Index, sector and valuation filters
-  if (filterIndex === "MYETFS") {
-    const held = new Set(Object.values(currentSnapshot.etfs || {}).flatMap(e => (e.holdings || []).map(h => h.ticker)));
-    list = list.filter(s => held.has(s.ticker));
-  } else if (filterIndex !== "ALL") {
-    list = list.filter(s => s.indices && s.indices.includes(filterIndex));
-  }
-  if (filterSector !== "ALL") {
-    list = list.filter(s => s.sector === filterSector);
-  }
-  if (valuedOnly) {
-    list = list.filter(isValued);
-  }
-  const total = Object.keys(currentSnapshot.stocks).length;
-  document.getElementById("result-count").textContent = `Showing ${list.length} of ${total} equities.`;
-
-  // Sort
-  list.sort((a, b) => {
-    const valA = a.valuation || {};
-    const valB = b.valuation || {};
-    if (sortBy === "premium_asc") {
-      return (valA.market_premium_pct ?? 9999) - (valB.market_premium_pct ?? 9999);
-    } else if (sortBy === "premium_desc") {
-      return (valB.market_premium_pct ?? -9999) - (valA.market_premium_pct ?? -9999);
-    } else if (sortBy === "growth_desc") {
-      return (valB.implied_growth_reverse_dcf ?? -9999) - (valA.implied_growth_reverse_dcf ?? -9999);
-    } else if (sortBy === "price_desc") {
-      return b.market_price - a.market_price;
-    } else if (sortBy === "ticker_asc") {
-      return a.ticker.localeCompare(b.ticker);
-    }
-    return 0;
-  });
-
-  if (list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10" class="loading">No equities match the selected filters.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = list.map(s => {
-    const val = s.valuation || {};
-    const raw = s.raw || {};
-    const premium = val.market_premium_pct;
-    const premiumClass = typeof premium === "number" ? (premium < 0 ? "premium-discount" : "premium-expensive") : "muted";
-    const status = s.valuation_status || (s.valuation ? "ok" : "no_fundamentals");
-    const statusNote = status === "ok" ? "" : `<span class="status-note">${escapeHtml(STATUS_LABELS[status] || status)}</span>`;
-    const assumptions = typeof val.growth_rate_assumed === "number"
-      ? `${(val.growth_rate_assumed * 100).toFixed(1)}% / ${(val.wacc * 100).toFixed(1)}%`
-      : "-";
-    const fundCcy = raw.currency && raw.currency !== s.currency ? ` ${escapeHtml(raw.currency)}` : "";
-    const basis = raw.fcf_basis ? ` <span class="muted">${escapeHtml(raw.fcf_basis)}</span>` : "";
-
-    const expanded = expandedTicker === s.ticker;
-    return `
-      <tr data-ticker="${escapeHtml(s.ticker)}" class="stock-row${expanded ? " expanded" : ""}">
-        <td><strong>${escapeHtml(s.ticker)}</strong>${s.sector ? `<span class="status-note">${escapeHtml(s.sector)}</span>` : ""}</td>
-        <td>${escapeHtml((s.indices || []).join(", ")) || "-"}</td>
-        <td>${escapeHtml(s.currency || "USD")}</td>
-        <td>${fmtNum(s.market_price)}</td>
-        <td>${fmtNum(val.intrinsic_dcf)}${statusNote}</td>
-        <td class="${premiumClass}">${fmtPct(premium)}</td>
-        <td>${impliedGrowthText(val)}</td>
-        <td title="${val.growth_source === "historical" ? "Growth from historical FCF CAGR" : "Default growth"}">${assumptions}</td>
-        <td>${fmtNum(raw.free_cash_flow)}${fundCcy}${basis}</td>
-        <td>${fmtNum(raw.net_debt)}${fundCcy}</td>
-      </tr>
-      ${expanded ? `<tr class="detail-row"><td colspan="10">${stockDetailHtml(s)}</td></tr>` : ""}
-    `;
-  }).join("");
-}
-
-function stockDetailHtml(s) {
-  const val = s.valuation || {};
-  const raw = s.raw || {};
-  const model = currentSnapshot.model || {};
-  const status = s.valuation_status || (s.valuation ? "ok" : "no_fundamentals");
-  const ccy = escapeHtml(raw.currency || s.currency || "");
-  const money = n => (typeof n === "number" ? `${fmtNum(n)}B ${ccy}` : "-");
-  const pct = n => (typeof n === "number" ? `${(n * 100).toFixed(1)}%` : "-");
-  const item = (label, value) => `<div class="detail-item"><span class="detail-label">${label}</span><span>${value}</span></div>`;
-
-  const history = (raw.fcf_history || []).slice(-6)
-    .map(([end, v]) => `<span class="history-chip">${escapeHtml(end.slice(0, 4))}: ${fmtNum(v)}</span>`).join("");
-  const warnings = (raw.warnings || []).map(w => escapeHtml(w.replace(/_/g, " "))).join(", ");
-  const explanation = STATUS_EXPLANATIONS[status];
-
-  return `
-    <div class="stock-detail">
-      ${explanation ? `<p class="detail-explanation">${escapeHtml(explanation)}</p>` : ""}
-      <div class="detail-grid">
-        ${item("Data source", escapeHtml(raw.source || "-"))}
-        ${item("Cash flow period", `${escapeHtml(raw.fcf_basis || "-")} to ${escapeHtml(raw.fcf_period_end || "-")}`)}
-        ${item("Filed / fetched", `${escapeHtml(raw.filed || "-")} / ${escapeHtml(raw.fetched_at || "-")}`)}
-        ${item("Operating cash flow", money(raw.operating_cash_flow))}
-        ${item("Capital expenditure", money(raw.capex))}
-        ${item("Free cash flow (latest)", money(raw.free_cash_flow))}
-        ${item("FCF used in DCF (avg)", money(val.fcf_used))}
-        ${item("Cash", money(raw.total_cash))}
-        ${item("Debt", money(raw.total_debt))}
-        ${item("Net debt", money(raw.net_debt))}
-        ${item("Shares outstanding", typeof raw.shares_outstanding === "number" ? `${fmtNum(raw.shares_outstanding, 3)}B` : "-")}
-        ${item("Enterprise value (DCF)", money(val.enterprise_value))}
-        ${item("Forecast growth", `${pct(val.growth_rate_assumed)}${val.growth_source ? ` (${escapeHtml(val.growth_source)})` : ""}`)}
-        ${item("Discount rate (WACC)", pct(val.wacc))}
-        ${item("Terminal growth", pct(model.terminal_growth))}
-        ${item("FX rate to listing currency", typeof val.fx_rate === "number" && val.fx_rate !== 1 ? fmtNum(val.fx_rate, 4) : "-")}
-        ${val.adr_ratio ? item("Shares per ADR (inferred)", fmtNum(val.adr_ratio, 2)) : ""}
-      </div>
-      ${history ? `<div class="detail-history"><span class="detail-label">Annual FCF history (B ${ccy})</span>${history}</div>` : ""}
-      ${warnings ? `<p class="muted">Data gaps: ${warnings}</p>` : ""}
-    </div>
-  `;
 }
 
 function etfHistoryRows(etfId) {
-  // Rows: [date, intrinsic per $1, premium %, valued weight %]; only rows with a premium are usable
   return ((etfHistory && etfHistory.etfs && etfHistory.etfs[etfId]) || []).filter(r => typeof r[2] === "number");
 }
 
 function historyStats(rows) {
-  if (rows.length < 20) return null;
+  if (!rows || rows.length < 5) return null;
   const premiums = rows.map(r => r[2]);
   const current = premiums[premiums.length - 1];
   const percentile = (premiums.filter(p => p <= current).length / premiums.length) * 100;
@@ -340,105 +124,221 @@ function historyStats(rows) {
 }
 
 function verdict(percentile) {
+  if (typeof percentile !== "number") return null;
   if (percentile <= 20) return { label: "Cheaper than usual", cls: "verdict-cheap", icon: "\u2193" };
   if (percentile >= 80) return { label: "Pricier than usual", cls: "verdict-pricey", icon: "\u2191" };
   return { label: "Typical", cls: "verdict-typical", icon: "\u2013" };
 }
 
-function renderEtfSummary() {
-  const tbody = document.querySelector("#etf-summary-table tbody");
+function updateKPIs() {
+  if (!currentSnapshot || !currentSnapshot.etfs) return;
+  const etfs = Object.entries(currentSnapshot.etfs);
+  const etfRows = etfs.map(([id, data]) => ({
+    id,
+    data,
+    stats: historyStats(etfHistoryRows(id)),
+    catInfo: getEtfCategory(id)
+  }));
+
+  // 1. Total ETFs
+  document.getElementById("kpi-etf-count").textContent = `${etfs.length} ETFs`;
+  const avgCovered = etfs.reduce((s, [, d]) => s + (d.covered_weight_pct || 0), 0) / (etfs.length || 1);
+  document.getElementById("kpi-etf-sub").textContent = `Avg ${fmtNum(avgCovered, 0)}% look-through valued`;
+
+  // 2. Median Premium vs DCF
+  const premiums = etfs.map(([, d]) => d.market_premium_pct).filter(p => typeof p === "number");
+  const med = premiums.length ? median(premiums) : null;
+  const medEl = document.getElementById("kpi-median-val");
+  medEl.textContent = fmtPct(med);
+  medEl.className = `kpi-value ${med !== null ? (med < 0 ? "premium-discount" : "premium-expensive") : ""}`;
+  const discountsCount = premiums.filter(p => p < 0).length;
+  document.getElementById("kpi-median-sub").textContent = `${discountsCount} of ${premiums.length} trade below intrinsic DCF`;
+
+  // 3. Best Relative Value (Lowest percentile vs 1-year history)
+  const withStats = etfRows.filter(e => e.stats !== null);
+  if (withStats.length > 0) {
+    const bestRel = withStats.reduce((a, b) => (b.stats.percentile < a.stats.percentile ? b : a));
+    const sym = bestRel.id.replace("TSE:", "");
+    document.getElementById("kpi-best-relative").textContent = `${sym} (${Math.round(bestRel.stats.percentile)}th %)`;
+    document.getElementById("kpi-best-relative-sub").textContent = `${bestRel.data.name || sym} · ${fmtPct(bestRel.data.market_premium_pct)}`;
+  } else {
+    document.getElementById("kpi-best-relative").textContent = "-";
+    document.getElementById("kpi-best-relative-sub").textContent = "Awaiting history";
+  }
+
+  // 4. Deepest DCF Discount (Lowest premium vs DCF)
+  const valuedEtfs = etfRows.filter(e => typeof e.data.market_premium_pct === "number");
+  if (valuedEtfs.length > 0) {
+    const deepest = valuedEtfs.reduce((a, b) => (b.data.market_premium_pct < a.data.market_premium_pct ? b : a));
+    const sym = deepest.id.replace("TSE:", "");
+    const dEl = document.getElementById("kpi-deepest-discount");
+    dEl.textContent = `${sym} (${fmtPct(deepest.data.market_premium_pct)})`;
+    dEl.className = `kpi-value ${deepest.data.market_premium_pct < 0 ? "premium-discount" : "premium-expensive"}`;
+    document.getElementById("kpi-deepest-discount-sub").textContent = `$${fmtNum(deepest.data.intrinsic_per_dollar, 2)} intrinsic per $1 invested`;
+  } else {
+    document.getElementById("kpi-deepest-discount").textContent = "-";
+    document.getElementById("kpi-deepest-discount-sub").textContent = "-";
+  }
+}
+
+function getFilteredAndSortedEtfs() {
+  if (!currentSnapshot || !currentSnapshot.etfs) return [];
+  const searchQuery = (document.getElementById("etf-search-input").value || "").trim().toUpperCase();
+  const categoryFilter = document.getElementById("filter-category").value;
+  const sortBy = document.getElementById("etf-sort-by").value;
+
+  let list = Object.entries(currentSnapshot.etfs).map(([id, data]) => ({
+    id,
+    data,
+    stats: historyStats(etfHistoryRows(id)),
+    catInfo: getEtfCategory(id)
+  }));
+
+  if (searchQuery) {
+    list = list.filter(e =>
+      e.id.toUpperCase().includes(searchQuery) ||
+      (e.data.name && e.data.name.toUpperCase().includes(searchQuery)) ||
+      e.catInfo.label.toUpperCase().includes(searchQuery)
+    );
+  }
+
+  if (categoryFilter !== "ALL") {
+    list = list.filter(e => e.catInfo.category === categoryFilter);
+  }
+
+  list.sort((a, b) => {
+    if (sortBy === "percentile_asc") {
+      const pA = a.stats ? a.stats.percentile : 999;
+      const pB = b.stats ? b.stats.percentile : 999;
+      return pA - pB;
+    } else if (sortBy === "premium_asc") {
+      return (a.data.market_premium_pct ?? 9999) - (b.data.market_premium_pct ?? 9999);
+    } else if (sortBy === "intrinsic_desc") {
+      return (b.data.intrinsic_per_dollar ?? -9999) - (a.data.intrinsic_per_dollar ?? -9999);
+    } else if (sortBy === "premium_desc") {
+      return (b.data.market_premium_pct ?? -9999) - (a.data.market_premium_pct ?? -9999);
+    } else if (sortBy === "name_asc") {
+      return (a.data.name || a.id).localeCompare(b.data.name || b.id);
+    }
+    return 0;
+  });
+
+  return list;
+}
+
+function renderEtfs() {
+  if (!currentSnapshot || !currentSnapshot.etfs) return;
+  const list = getFilteredAndSortedEtfs();
+  const total = Object.keys(currentSnapshot.etfs).length;
+  document.getElementById("etf-result-count").textContent = `Showing ${list.length} of ${total} tracked ETFs.`;
   document.getElementById("etf-backfill-date").textContent = (etfHistory && etfHistory.backfilled_until) || "-";
-  const etfs = Object.entries(currentSnapshot.etfs || {});
-  if (!etfHistory || etfs.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="loading">No valuation history available yet.</td></tr>`;
+
+  renderEtfSummary(list);
+  renderEtfCards(list);
+}
+
+function renderEtfSummary(list) {
+  const tbody = document.querySelector("#etf-summary-table tbody");
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="9" class="loading">No ETFs match the selected filters.</td></tr>`;
     return;
   }
-  const rows = etfs.map(([id, data]) => ({ id, data, stats: historyStats(etfHistoryRows(id)) }))
-    .sort((a, b) => (a.stats ? a.stats.percentile : 999) - (b.stats ? b.stats.percentile : 999));
-  tbody.innerHTML = rows.map(({ id, data, stats }) => {
+
+  tbody.innerHTML = list.map(({ id, data, stats, catInfo }) => {
     const v = stats ? verdict(stats.percentile) : null;
+    const premium = data.market_premium_pct;
+    const premiumClass = typeof premium === "number" ? (premium < 0 ? "premium-discount" : "premium-expensive") : "muted";
+    const intrinsic = data.intrinsic_per_dollar !== undefined && data.intrinsic_per_dollar !== null
+      ? `$${fmtNum(data.intrinsic_per_dollar, 4)}`
+      : "-";
+
     return `
       <tr>
-        <td><strong>${escapeHtml(id)}</strong><span class="status-note">${escapeHtml(data.name || "")}</span></td>
-        <td>${fmtPct(data.market_premium_pct)}</td>
+        <td>
+          <strong>${escapeHtml(id)}</strong>
+          <span class="status-note">${escapeHtml(data.name || "")}</span>
+        </td>
+        <td><span class="category-badge">${escapeHtml(catInfo.label)}</span></td>
+        <td class="${premiumClass}"><strong>${fmtPct(premium)}</strong></td>
+        <td>${intrinsic}</td>
         <td>${stats ? `${fmtPct(stats.min)} to ${fmtPct(stats.max)}` : "-"}</td>
         <td>${stats ? fmtPct(stats.median) : "-"}</td>
-        <td>${stats ? `${Math.round(stats.percentile)}th` : "-"}</td>
-        <td>${v ? `<span class="verdict ${v.cls}"><span aria-hidden="true">${v.icon}</span> ${v.label}</span>` : "Not enough history"}</td>
+        <td><strong>${stats ? `${Math.round(stats.percentile)}th` : "-"}</strong></td>
+        <td>${v ? `<span class="verdict ${v.cls}"><span aria-hidden="true">${v.icon}</span> ${v.label}</span>` : `<span class="muted">-</span>`}</td>
         <td>${fmtNum(data.covered_weight_pct, 1)}%</td>
       </tr>
     `;
   }).join("");
 }
 
-function renderETFs() {
-  if (!currentSnapshot || !currentSnapshot.etfs) return;
-  renderEtfSummary();
+function renderEtfCards(list) {
   const container = document.getElementById("etf-cards-container");
-  const etfs = Object.entries(currentSnapshot.etfs);
-
-  if (etfs.length === 0) {
-    container.innerHTML = `<p class="placeholder-text">No custom ETFs found. Define them in <code>config/custom_etfs.json</code>.</p>`;
+  if (!list.length) {
+    container.innerHTML = `<p class="placeholder-text">No ETFs match the selected search or filters.</p>`;
     return;
   }
 
-  container.innerHTML = etfs.map(([etfId, data]) => {
-    const holdings = (data.holdings || []).slice().sort((a, b) => b.weight - a.weight);
-    const holdingRow = h => {
-      const stock = (currentSnapshot.stocks || {})[h.ticker] || {};
-      const val = stock.valuation || {};
-      const status = !stock.ticker ? "no_price" : stock.valuation_status || (stock.valuation ? "ok" : "no_fundamentals");
-      const premium = val.market_premium_pct;
-      const premiumClass = typeof premium === "number" ? (premium < 0 ? "premium-discount" : "premium-expensive") : "muted";
-      return `
-        <tr>
-          <td><strong>${escapeHtml(h.ticker)}</strong>${h.name ? `<span class="status-note">${escapeHtml(h.name)}</span>` : ""}</td>
-          <td>${fmtNum(h.weight * 100, 2)}%</td>
-          <td>${fmtNum(stock.market_price)} ${escapeHtml(stock.currency || "")}</td>
-          <td>${status === "ok" ? fmtNum(val.intrinsic_dcf) : `<span class="muted">${escapeHtml(STATUS_LABELS[status] || status)}</span>`}</td>
-          <td class="${premiumClass}">${fmtPct(premium)}</td>
-        </tr>
-      `;
-    };
-    const VISIBLE = 15;
-    const holdingsTable = rows => `
-      <table class="etf-holdings-table">
-        <thead><tr><th>Holding</th><th>Fund Weight</th><th>Price</th><th>DCF</th><th>Premium</th></tr></thead>
-        <tbody>${rows.map(holdingRow).join("")}</tbody>
-      </table>`;
-    const rest = holdings.slice(VISIBLE);
-    const coverage = typeof data.listed_weight_pct === "number"
-      ? `<p class="muted etf-coverage">Published holdings cover ${fmtNum(data.listed_weight_pct, 1)}% of the fund;
-         ${fmtNum(data.covered_weight_pct, 1)}% has a DCF valuation and drives the figures above.</p>`
-      : "";
-
-    // Snapshots written before the look-through rework only have weighted per-share sums
-    const summary = data.intrinsic_per_dollar !== undefined
-      ? `<p><strong>Intrinsic value per $1 invested:</strong> ${data.intrinsic_per_dollar === null ? "N/A" : `$${fmtNum(data.intrinsic_per_dollar)}`}</p>
-         <p><strong>Market premium vs DCF:</strong> <span class="${data.market_premium_pct < 0 ? "premium-discount" : "premium-expensive"}">${fmtPct(data.market_premium_pct)}</span></p>`
-      : `<p class="muted">Legacy snapshot: weighted price ${fmtNum(data.weighted_market_price)}, weighted DCF ${fmtNum(data.weighted_intrinsic_dcf)}</p>`;
+  container.innerHTML = list.map(({ id, data, stats, catInfo }) => {
+    const v = stats ? verdict(stats.percentile) : null;
+    const premium = data.market_premium_pct;
+    const premiumClass = typeof premium === "number" ? (premium < 0 ? "premium-discount" : "premium-expensive") : "muted";
+    const intrinsic = data.intrinsic_per_dollar !== undefined && data.intrinsic_per_dollar !== null
+      ? `$${fmtNum(data.intrinsic_per_dollar, 4)}`
+      : "N/A";
 
     return `
       <div class="etf-card">
         <div class="etf-card-header">
           <div>
-            <h3>${escapeHtml(data.name || etfId)}</h3>
-            <span class="etf-sym">${escapeHtml(etfId)}</span>
+            <div class="etf-card-title-row">
+              <h3>${escapeHtml(data.name || id)}</h3>
+              <span class="category-badge">${escapeHtml(catInfo.label)}</span>
+            </div>
+            <div class="etf-card-sub-row">
+              <span class="etf-sym">${escapeHtml(id)}</span>
+              <span class="badge etf-ccy">${escapeHtml(data.currency || "CAD")}</span>
+            </div>
           </div>
-          <span class="badge" title="Share of portfolio weight with a valid DCF valuation">${escapeHtml(data.covered_weight_pct)}% Valued</span>
+          <span class="badge" title="Share of portfolio weight with a valid DCF valuation">${fmtNum(data.covered_weight_pct, 1)}% Valued</span>
         </div>
-        ${summary}
-        ${coverage}
-        ${etfHistoryRows(etfId).length > 1 ? `
+
+        <div class="etf-metrics-grid">
+          <div class="etf-metric-box">
+            <span class="metric-label">Market Premium vs DCF</span>
+            <span class="metric-val ${premiumClass}">${fmtPct(premium)}</span>
+          </div>
+          <div class="etf-metric-box">
+            <span class="metric-label">Intrinsic Value per $1</span>
+            <span class="metric-val">${intrinsic}</span>
+          </div>
+          <div class="etf-metric-box">
+            <span class="metric-label">Versus Past Year</span>
+            <span class="metric-val">
+              ${v ? `<span class="verdict ${v.cls}"><span aria-hidden="true">${v.icon}</span> ${v.label} (${Math.round(stats.percentile)}th %)</span>` : `<span class="muted">-</span>`}
+            </span>
+          </div>
+          <div class="etf-metric-box">
+            <span class="metric-label">Past-Year Range</span>
+            <span class="metric-val-sub">
+              ${stats ? `${fmtPct(stats.min)} to ${fmtPct(stats.max)} (med ${fmtPct(stats.median)})` : "-"}
+            </span>
+          </div>
+        </div>
+
+        ${typeof data.listed_weight_pct === "number" ? `
+          <p class="muted etf-coverage">Published holdings cover ${fmtNum(data.listed_weight_pct, 1)}% of fund; ${fmtNum(data.covered_weight_pct, 1)}% has DCF valuation.</p>
+        ` : ""}
+
+        ${etfHistoryRows(id).length > 1 ? `
           <div class="etf-chart-block">
-            <div class="etf-chart-title">Premium vs DCF, past year</div>
-            <div class="etf-chart" data-etf="${escapeHtml(etfId)}"></div>
-          </div>` : ""}
-        ${holdingsTable(holdings.slice(0, VISIBLE))}
-        ${rest.length ? `<details class="etf-more"><summary>Show ${rest.length} more holdings</summary>${holdingsTable(rest)}</details>` : ""}
+            <div class="etf-chart-title">Premium vs DCF, past year (lower = cheaper)</div>
+            <div class="etf-chart" data-etf="${escapeHtml(id)}"></div>
+          </div>
+        ` : ""}
       </div>
     `;
   }).join("");
+
   drawEtfCharts();
 }
 
@@ -471,7 +371,6 @@ function drawEtfChart(container, rows) {
 
   const times = rows.map(r => Date.parse(r[0]));
   const values = rows.map(r => r[2]);
-  // Keep 0% (fair value) in view, but only pad the side that holds data
   const vMin = Math.min(...values), vMax = Math.max(...values);
   const pad = (Math.max(vMax, 0) - Math.min(vMin, 0)) * 0.08 || 5;
   let lo = vMin < 0 ? vMin - pad : 0;
@@ -485,7 +384,6 @@ function drawEtfChart(container, rows) {
 
   const svg = svgEl("svg", { width, height, role: "img", "aria-label": "Premium versus DCF over the past year" });
 
-  // Reconstructed (backfilled) period
   const backfilledUntil = etfHistory && etfHistory.backfilled_until;
   if (backfilledUntil) {
     const bx = x(Math.min(Date.parse(backfilledUntil), t1));
@@ -521,7 +419,7 @@ function drawEtfChart(container, rows) {
   svg.appendChild(svgEl("path", { d: `${linePath}L${points[points.length - 1][0]},${base}L${points[0][0]},${base}Z`, class: "chart-area" }));
   svg.appendChild(svgEl("path", { d: linePath, class: "chart-line" }));
 
-  // End dot and value
+  // End dot
   const last = points[points.length - 1];
   svg.appendChild(svgEl("circle", { cx: last[0], cy: last[1], r: 4, class: "chart-dot" }));
 
@@ -564,93 +462,4 @@ function drawEtfChart(container, rows) {
   svg.appendChild(hit);
 
   container.append(svg, tip);
-}
-
-function knownBy(stock, date) {
-  // Exclude valuations built from data that was filed or fetched after the base date (look-ahead bias)
-  const raw = stock.raw || {};
-  return (!raw.filed || raw.filed <= date) && (!raw.fetched_at || raw.fetched_at <= date);
-}
-
-async function runBacktest() {
-  const baseDate = document.getElementById("backtest-base-date").value;
-  const targetDate = document.getElementById("backtest-target-date").value;
-  const size = parseInt(document.getElementById("backtest-size").value, 10);
-  const resultsDiv = document.getElementById("backtest-results");
-
-  if (!baseDate || !targetDate || baseDate >= targetDate) {
-    resultsDiv.innerHTML = `<p class="placeholder-text">Please select a base date earlier than the evaluation date.</p>`;
-    return;
-  }
-
-  resultsDiv.innerHTML = `<p class="placeholder-text">Computing historical performance...</p>`;
-
-  try {
-    const [baseData, targetData] = await Promise.all([
-      fetchData(`snapshots/${baseDate}.json`),
-      fetchData(`snapshots/${targetDate}.json`)
-    ]);
-
-    const baseStocks = baseData.stocks || {};
-    const targetStocks = targetData.stocks || {};
-    const returnOf = s => ((targetStocks[s.ticker].market_price - s.market_price) / s.market_price) * 100;
-    const avg = list => (list.length ? list.reduce((sum, s) => sum + returnOf(s), 0) / list.length : null);
-
-    const candidates = Object.values(baseStocks).filter(s => isValued(s) && targetStocks[s.ticker]?.market_price);
-    const eligible = candidates.filter(s => knownBy(s, baseDate))
-      .sort((a, b) => a.valuation.market_premium_pct - b.valuation.market_premium_pct);
-    const excluded = candidates.length - eligible.length;
-
-    if (eligible.length < size * 2) {
-      resultsDiv.innerHTML = `<p class="placeholder-text">Only ${eligible.length} stocks have valuations on both dates; pick a smaller basket.</p>`;
-      return;
-    }
-
-    const cheapest = eligible.slice(0, size);
-    const priciest = eligible.slice(-size).reverse();
-    const cheapAvg = avg(cheapest), priceyAvg = avg(priciest), marketAvg = avg(eligible);
-    const cls = n => (n >= 0 ? "premium-discount" : "premium-expensive");
-
-    const row = s => {
-      const ret = returnOf(s);
-      return `
-        <tr>
-          <td><strong>${escapeHtml(s.ticker)}</strong></td>
-          <td>${fmtPct(s.valuation.market_premium_pct)}</td>
-          <td>${fmtNum(s.market_price)}</td>
-          <td>${fmtNum(targetStocks[s.ticker].market_price)}</td>
-          <td class="${cls(ret)}">${fmtPct(ret, 2)}</td>
-        </tr>
-      `;
-    };
-    const basketTable = (title, list) => `
-      <div class="backtest-basket">
-        <h4>${title}</h4>
-        <table>
-          <thead><tr><th>Ticker</th><th>Premium</th><th>${escapeHtml(baseDate)}</th><th>${escapeHtml(targetDate)}</th><th>Return</th></tr></thead>
-          <tbody>${list.map(row).join("")}</tbody>
-        </table>
-      </div>
-    `;
-
-    resultsDiv.innerHTML = `
-      <h3>${escapeHtml(baseDate)} &rarr; ${escapeHtml(targetDate)}</h3>
-      <div class="kpi-grid">
-        <div class="kpi-card"><h3>${size} Cheapest</h3><p class="kpi-value ${cls(cheapAvg)}">${fmtPct(cheapAvg, 2)}</p><span class="kpi-sub">average price return</span></div>
-        <div class="kpi-card"><h3>All Valued (${eligible.length})</h3><p class="kpi-value ${cls(marketAvg)}">${fmtPct(marketAvg, 2)}</p><span class="kpi-sub">equal-weight benchmark</span></div>
-        <div class="kpi-card"><h3>${size} Most Expensive</h3><p class="kpi-value ${cls(priceyAvg)}">${fmtPct(priceyAvg, 2)}</p><span class="kpi-sub">average price return</span></div>
-      </div>
-      <p class="muted backtest-note">
-        Cheapest minus benchmark: <strong class="${cls(cheapAvg - marketAvg)}">${fmtPct(cheapAvg - marketAvg, 2)}</strong>.
-        Price returns only (dividends excluded).
-        ${excluded > 0 ? ` ${excluded} stocks excluded because their fundamentals were filed or fetched after ${escapeHtml(baseDate)}.` : ""}
-      </p>
-      <div class="backtest-baskets">
-        ${basketTable(`${size} Cheapest`, cheapest)}
-        ${basketTable(`${size} Most Expensive`, priciest)}
-      </div>
-    `;
-  } catch (err) {
-    resultsDiv.innerHTML = `<p class="placeholder-text">Error running backtest: ${escapeHtml(err.message)}</p>`;
-  }
 }

@@ -393,10 +393,78 @@ tbody tr:hover td {
   color: var(--text-main);
 }
 
+.etf-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.etf-card-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.category-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-color);
+  border: 1px solid #c8e1ff;
+  white-space: nowrap;
+}
+
 .etf-card-header .etf-sym {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
   font-weight: 600;
+}
+
+.etf-ccy {
+  font-size: 0.72rem;
+  padding: 2px 6px;
+}
+
+.etf-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 12px 0;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #edf2f7;
+}
+
+.etf-metric-box {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metric-label {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.metric-val {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.metric-val-sub {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
 }
 
 .etf-holdings-table {
