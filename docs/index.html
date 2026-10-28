@@ -46,6 +46,57 @@
       </div>
     </section>
 
+    <!-- Next Contribution Allocator -->
+    <section class="allocator-card" id="allocator-card">
+      <div class="allocator-header" id="allocator-header">
+        <div>
+          <h3>💰 Next Contribution Allocator</h3>
+          <p class="allocator-sub">Deploy new cash into the ETFs offering the highest margin of safety and cash flow backing today.</p>
+        </div>
+        <button type="button" id="allocator-toggle-btn" class="btn-toggle-subtle">Collapse</button>
+      </div>
+
+      <div id="allocator-body" class="allocator-body">
+        <div class="allocator-controls">
+          <div class="allocator-cash-group">
+            <label for="allocator-cash-input">Cash to Invest ($ CAD):</label>
+            <div class="cash-input-wrap">
+              <span class="currency-symbol">$</span>
+              <input type="number" id="allocator-cash-input" value="1000" min="20" step="50" />
+            </div>
+            <div class="quick-cash-pills">
+              <button type="button" class="quick-cash-btn" data-amount="500">$500</button>
+              <button type="button" class="quick-cash-btn active" data-amount="1000">$1,000</button>
+              <button type="button" class="quick-cash-btn" data-amount="2500">$2,500</button>
+              <button type="button" class="quick-cash-btn" data-amount="5000">$5,000</button>
+            </div>
+          </div>
+
+          <div class="allocator-strategy-group">
+            <label for="allocator-strategy-select">Allocation Strategy:</label>
+            <select id="allocator-strategy-select">
+              <option value="value_top">Value Opportunistic (Top Margin of Safety)</option>
+              <option value="buy_zone">All Active Buy Zone ETFs</option>
+              <option value="high_fcf">Cash Generation (Highest FCF Yields)</option>
+              <option value="core_tilt">Balanced: Global Core (XEQT) + Value Tilts</option>
+              <option value="custom">Custom ETF Selection</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Custom Selection Chips (Hidden unless custom strategy selected) -->
+        <div id="allocator-custom-chips" class="allocator-chips-wrap" style="display: none;">
+          <span class="control-label">Select ETFs to Include:</span>
+          <div id="allocator-chips-container" class="allocator-chips-grid"></div>
+        </div>
+
+        <!-- Allocator Results Summary & Orders -->
+        <div id="allocator-results" class="allocator-results">
+          <!-- Populated by app.js -->
+        </div>
+      </div>
+    </section>
+
     <!-- Main ETF Dashboard -->
     <section class="etf-dashboard-section">
       <div class="etf-intro">

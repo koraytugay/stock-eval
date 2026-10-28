@@ -33,6 +33,7 @@ function getEtfCategory(id) {
 
 document.addEventListener("DOMContentLoaded", async () => {
   setupEventListeners();
+  setupAllocator();
   await loadHistoryIndex();
   etfHistory = await fetchData("etf_history.json").catch(() => null);
   await loadSnapshot("latest");
@@ -103,6 +104,8 @@ async function loadSnapshot(dateOrLatest) {
     document.getElementById("last-updated").textContent = `Snapshot: ${currentSnapshot.date || dateOrLatest}`;
     updateKPIs();
     renderEtfs();
+    setupAllocatorChips();
+    renderAllocator();
   } catch (err) {
     console.error("Failed to load snapshot:", err);
     document.getElementById("last-updated").textContent = "Error loading snapshot";
@@ -534,6 +537,304 @@ function renderEtfCards(list) {
   }).join("");
 
   drawEtfCharts();
+}
+
+let allocatorState = {
+  cash: 1000,
+  strategy: "value_top",
+  customSelected: new Set(["TSE:CASV", "TSE:CAUV", "TSE:ZLI"]),
+  collapsed: false
+};
+
+function setupAllocator() {
+  const cashInput = document.getElementById("allocator-cash-input");
+  const strategySelect = document.getElementById("allocator-strategy-select");
+  const toggleBtn = document.getElementById("allocator-toggle-btn");
+  const bodyEl = document.getElementById("allocator-body");
+  const chipsWrap = document.getElementById("allocator-custom-chips");
+
+  if (!cashInput || !strategySelect) return;
+
+  cashInput.addEventListener("input", (e) => {
+    const val = parseFloat(e.target.value);
+    if (!isNaN(val) && val > 0) {
+      allocatorState.cash = val;
+      document.querySelectorAll(".quick-cash-btn").forEach(btn => {
+        btn.classList.toggle("active", parseFloat(btn.dataset.amount) === val);
+      });
+      renderAllocator();
+    }
+  });
+
+  document.querySelectorAll(".quick-cash-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const amt = parseFloat(btn.dataset.amount);
+      allocatorState.cash = amt;
+      cashInput.value = amt;
+      document.querySelectorAll(".quick-cash-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderAllocator();
+    });
+  });
+
+  strategySelect.addEventListener("change", (e) => {
+    allocatorState.strategy = e.target.value;
+    chipsWrap.style.display = allocatorState.strategy === "custom" ? "block" : "none";
+    renderAllocator();
+  });
+
+  toggleBtn.addEventListener("click", () => {
+    allocatorState.collapsed = !allocatorState.collapsed;
+    bodyEl.style.display = allocatorState.collapsed ? "none" : "block";
+    toggleBtn.textContent = allocatorState.collapsed ? "Expand Allocator" : "Collapse";
+  });
+}
+
+function setupAllocatorChips() {
+  const container = document.getElementById("allocator-chips-container");
+  if (!container || !currentSnapshot || !currentSnapshot.etfs) return;
+  const etfs = Object.entries(currentSnapshot.etfs);
+
+  container.innerHTML = etfs.map(([id, data]) => {
+    const isSelected = allocatorState.customSelected.has(id);
+    return `
+      <div class="allocator-chip ${isSelected ? "selected" : "unselected"}" data-etf="${escapeHtml(id)}">
+        <strong>${escapeHtml(id.replace("TSE:", ""))}</strong>
+        <span class="muted" style="font-size:0.7rem;">(${escapeHtml(data.currency || "CAD")})</span>
+      </div>
+    `;
+  }).join("");
+
+  container.querySelectorAll(".allocator-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      const id = chip.dataset.etf;
+      if (allocatorState.customSelected.has(id)) {
+        if (allocatorState.customSelected.size > 1) {
+          allocatorState.customSelected.delete(id);
+        }
+      } else {
+        allocatorState.customSelected.add(id);
+      }
+      setupAllocatorChips();
+      renderAllocator();
+    });
+  });
+}
+
+function renderAllocator() {
+  if (!currentSnapshot || !currentSnapshot.etfs) return;
+  const resultsContainer = document.getElementById("allocator-results");
+  if (!resultsContainer) return;
+
+  const etfs = Object.entries(currentSnapshot.etfs);
+  const etfRows = etfs.map(([id, data]) => {
+    const stats = historyStats(etfHistoryRows(id));
+    return {
+      id,
+      data,
+      stats,
+      dec: computeEtfDecision(data, stats),
+      catInfo: getEtfCategory(id)
+    };
+  });
+
+  // Filter candidates based on strategy
+  let candidates = [];
+  const strat = allocatorState.strategy;
+
+  if (strat === "value_top") {
+    // Top 3 funds by margin of safety / intrinsic per dollar
+    candidates = etfRows
+      .filter(e => typeof e.dec.marketPrice === "number" && typeof e.data.intrinsic_per_dollar === "number")
+      .sort((a, b) => (b.data.intrinsic_per_dollar - a.data.intrinsic_per_dollar))
+      .slice(0, 3);
+  } else if (strat === "buy_zone") {
+    candidates = etfRows.filter(e => e.dec.stance.code === "BUY" && typeof e.dec.marketPrice === "number");
+    if (candidates.length === 0) {
+      candidates = etfRows
+        .filter(e => typeof e.dec.marketPrice === "number")
+        .sort((a, b) => (a.stats ? a.stats.percentile : 999) - (b.stats ? b.stats.percentile : 999))
+        .slice(0, 3);
+    }
+  } else if (strat === "high_fcf") {
+    candidates = etfRows
+      .filter(e => typeof e.dec.marketPrice === "number" && typeof e.dec.fcfYield === "number")
+      .sort((a, b) => b.dec.fcfYield - a.dec.fcfYield)
+      .slice(0, 3);
+  } else if (strat === "core_tilt") {
+    const coreMap = { "TSE:XEQT": 0.40, "TSE:CAUV": 0.25, "TSE:CASV": 0.20, "TSE:XEF": 0.15 };
+    candidates = etfRows.filter(e => e.id in coreMap && typeof e.dec.marketPrice === "number");
+  } else if (strat === "custom") {
+    candidates = etfRows.filter(e => allocatorState.customSelected.has(e.id) && typeof e.dec.marketPrice === "number");
+  }
+
+  if (candidates.length === 0) {
+    resultsContainer.innerHTML = `<p class="muted">Please select at least one ETF with a valid price.</p>`;
+    return;
+  }
+
+  const cash = allocatorState.cash;
+  const coreMap = strat === "core_tilt"
+    ? { "TSE:XEQT": 0.40, "TSE:CAUV": 0.25, "TSE:CASV": 0.20, "TSE:XEF": 0.15 }
+    : null;
+
+  // Compute weights
+  let weights = [];
+  if (coreMap) {
+    weights = candidates.map(c => coreMap[c.id] || 0.1);
+  } else {
+    // Value-weighted by intrinsic value per dollar
+    weights = candidates.map(c => Math.max(c.data.intrinsic_per_dollar || 1.0, 0.2));
+  }
+  const totWeight = weights.reduce((s, w) => s + w, 0) || 1;
+
+  // Initial share allocation
+  let orders = candidates.map((c, i) => {
+    const w = weights[i] / totWeight;
+    const targetDollars = cash * w;
+    const p = c.dec.marketPrice;
+    const shares = Math.floor(targetDollars / p);
+    const cost = shares * p;
+    return {
+      etf: c,
+      targetDollars,
+      shares,
+      price: p,
+      cost,
+      score: weights[i]
+    };
+  });
+
+  // Remainder pass: allocate unspent dollars to candidate with highest value score if price fits
+  let spent = orders.reduce((s, o) => s + o.cost, 0);
+  let rem = cash - spent;
+  const sortedOrdersByScore = orders.slice().sort((a, b) => b.score - a.score);
+
+  for (const o of sortedOrdersByScore) {
+    while (rem >= o.price) {
+      o.shares += 1;
+      o.cost += o.price;
+      rem -= o.price;
+      spent += o.price;
+    }
+  }
+
+  const totalInvested = spent;
+  const unusedCash = Math.max(0, cash - totalInvested);
+
+  // Compute weighted metrics of this purchase
+  let sumFcf = 0;
+  let sumPrem = 0;
+  let costWithStats = 0;
+
+  for (const o of orders) {
+    if (o.cost > 0) {
+      if (typeof o.etf.dec.fcfYield === "number") {
+        sumFcf += o.cost * o.etf.dec.fcfYield;
+      }
+      if (typeof o.etf.data.market_premium_pct === "number") {
+        sumPrem += o.cost * o.etf.data.market_premium_pct;
+        costWithStats += o.cost;
+      }
+    }
+  }
+
+  const weightedFcf = totalInvested > 0 ? (sumFcf / totalInvested) : null;
+  const weightedPrem = costWithStats > 0 ? (sumPrem / costWithStats) : null;
+
+  // Plain-text for clipboard copy
+  const clipText = [
+    `StockEval Execution Orders (Cash: $${fmtNum(cash, 2)} CAD):`,
+    ...orders.filter(o => o.shares > 0).map(o =>
+      `- Buy ${o.shares} shares of ${o.etf.id} @ $${fmtNum(o.price, 2)} = $${fmtNum(o.cost, 2)} CAD`
+    ),
+    `Total Invested: $${fmtNum(totalInvested, 2)} CAD | Unused Cash: $${fmtNum(unusedCash, 2)} CAD`
+  ].join("\n");
+
+  resultsContainer.innerHTML = `
+    <div class="allocator-summary-banner">
+      <div class="allocator-stat-item">
+        <span class="allocator-stat-label">Total to Deploy</span>
+        <span class="allocator-stat-val">$${fmtNum(totalInvested, 2)}</span>
+        <span class="allocator-stat-sub">${fmtNum((totalInvested / cash) * 100, 1)}% of $${fmtNum(cash, 0)}</span>
+      </div>
+      <div class="allocator-stat-item">
+        <span class="allocator-stat-label">Unused Cash</span>
+        <span class="allocator-stat-val">$${fmtNum(unusedCash, 2)}</span>
+        <span class="allocator-stat-sub">Remainder unspent</span>
+      </div>
+      <div class="allocator-stat-item">
+        <span class="allocator-stat-label">Look-Through FCF Yield</span>
+        <span class="allocator-stat-val ${weightedFcf && weightedFcf >= 5 ? "fcf-highlight" : ""}">${weightedFcf ? `${fmtNum(weightedFcf, 2)}%` : "-"}</span>
+        <span class="allocator-stat-sub">Cash generation of buy</span>
+      </div>
+      <div class="allocator-stat-item">
+        <span class="allocator-stat-label">Valuation vs DCF</span>
+        <span class="allocator-stat-val ${weightedPrem && weightedPrem < 0 ? "premium-discount" : "premium-expensive"}">${fmtPct(weightedPrem)}</span>
+        <span class="allocator-stat-sub">Average look-through</span>
+      </div>
+    </div>
+
+    <div class="allocator-table-wrap">
+      <table class="allocator-table">
+        <thead>
+          <tr>
+            <th>ETF &amp; Stance</th>
+            <th>Market Price</th>
+            <th>Action Order</th>
+            <th>Total Cost</th>
+            <th>Allocation %</th>
+            <th>Value Rationale</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${orders.map(o => {
+            const e = o.etf;
+            const pct = totalInvested > 0 ? (o.cost / totalInvested) * 100 : 0;
+            const sharesHtml = o.shares > 0
+              ? `<strong>Buy ${o.shares} shares</strong>`
+              : `<span class="muted">0 shares (price exceeds budget)</span>`;
+
+            return `
+              <tr>
+                <td>
+                  <strong>${escapeHtml(e.id)}</strong>
+                  <span class="stance-badge ${e.dec.stance.cls}" style="margin-left:6px;">${e.dec.stance.icon} ${e.dec.stance.label}</span>
+                  <div class="muted" style="font-size:0.75rem;">${escapeHtml(e.data.name || "")}</div>
+                </td>
+                <td><strong>$${fmtNum(o.price, 2)}</strong> <span class="muted">${escapeHtml(e.dec.currency)}</span></td>
+                <td>${sharesHtml}</td>
+                <td><strong>$${fmtNum(o.cost, 2)}</strong></td>
+                <td>${fmtNum(pct, 1)}%</td>
+                <td>
+                  <span class="muted" style="font-size:0.8rem;">
+                    $${fmtNum(e.data.intrinsic_per_dollar, 2)}/1 · ${typeof e.dec.fcfYield === "number" ? `${fmtNum(e.dec.fcfYield, 1)}% FCF` : ""}
+                  </span>
+                </td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="allocator-actions-row">
+      <span id="copy-feedback-msg" class="copy-feedback" style="display:none;">✓ Copied buy orders to clipboard!</span>
+      <button type="button" id="copy-orders-btn" class="btn-copy-orders">
+        <span>📋</span> Copy Brokerage Orders
+      </button>
+    </div>
+  `;
+
+  document.getElementById("copy-orders-btn").addEventListener("click", () => {
+    navigator.clipboard.writeText(clipText).then(() => {
+      const fb = document.getElementById("copy-feedback-msg");
+      fb.style.display = "inline";
+      setTimeout(() => { fb.style.display = "none"; }, 3000);
+    }).catch(err => {
+      console.error("Clipboard copy failed:", err);
+    });
+  });
 }
 
 const SVG_NS = "http://www.w3.org/2000/svg";
