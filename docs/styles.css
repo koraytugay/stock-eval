@@ -432,13 +432,28 @@ tbody tr:hover td {
 
 .etf-metrics-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 10px;
   margin: 12px 0;
   padding: 12px;
   background: #f8fafc;
   border-radius: 8px;
   border: 1px solid #edf2f7;
+}
+
+.fcf-highlight {
+  color: #1a7f37;
+  font-weight: 700;
+}
+
+.hurdle-low {
+  color: #1a7f37;
+  font-weight: 700;
+}
+
+.hurdle-high {
+  color: #cf222e;
+  font-weight: 700;
 }
 
 .etf-metric-box {

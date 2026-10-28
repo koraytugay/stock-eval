@@ -142,23 +142,46 @@ def etf_look_through(holdings, stocks):
     total_weight = max(listed_weight, 1.0)
     valued_weight = 0.0
     intrinsic_per_dollar = 0.0
+    weighted_fcf_yield = 0.0
+    fcf_weight = 0.0
+    weighted_rev_g = 0.0
+    g_weight = 0.0
 
     for h in holdings:
         w = h.get("weight", 0)
         stock = stocks.get(h.get("ticker")) or {}
         price = stock.get("market_price")
-        intrinsic = (stock.get("valuation") or {}).get("intrinsic_dcf")
+        val = stock.get("valuation") or {}
+        raw = stock.get("raw") or {}
+        intrinsic = val.get("intrinsic_dcf")
         if not price or price <= 0 or intrinsic is None:
             continue
         intrinsic_per_dollar += w * (max(intrinsic, 0.0) / price)
         valued_weight += w
+
+        fcf = val.get("fcf_used") or raw.get("free_cash_flow")
+        shares = raw.get("shares_outstanding")
+        fx = val.get("fx_rate", 1.0) or 1.0
+        adr = val.get("adr_ratio", 1.0) or 1.0
+        if fcf and shares and shares > 0 and price > 0:
+            fcf_per_share = (fcf / shares) * fx * adr
+            fcf_yield = (fcf_per_share / price) * 100.0
+            weighted_fcf_yield += w * fcf_yield
+            fcf_weight += w
+
+        rev_g = val.get("implied_growth_reverse_dcf")
+        if rev_g is not None and isinstance(rev_g, (int, float)):
+            weighted_rev_g += w * rev_g * 100.0
+            g_weight += w
 
     result = {
         "holdings_count": len(holdings),
         "listed_weight_pct": round(listed_weight / total_weight * 100, 1),
         "covered_weight_pct": round(valued_weight / total_weight * 100, 1),
         "intrinsic_per_dollar": None,
-        "market_premium_pct": None
+        "market_premium_pct": None,
+        "fcf_yield_pct": round(weighted_fcf_yield / fcf_weight, 2) if fcf_weight > 0 else None,
+        "implied_growth_pct": round(weighted_rev_g / g_weight, 1) if g_weight > 0 else None
     }
     if valued_weight > 0:
         per_dollar = intrinsic_per_dollar / valued_weight

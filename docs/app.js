@@ -132,6 +132,53 @@ function historyStats(rows) {
   };
 }
 
+function getEtfFundamentals(etfObj) {
+  if (typeof etfObj.fcf_yield_pct === "number" && typeof etfObj.implied_growth_pct === "number") {
+    return {
+      fcfYield: etfObj.fcf_yield_pct,
+      impliedGrowth: etfObj.implied_growth_pct
+    };
+  }
+
+  // Fallback computation from snapshot stocks
+  const stocks = (currentSnapshot && currentSnapshot.stocks) || {};
+  const holdings = etfObj.holdings || [];
+  let totWeight = 0;
+  let weightedYield = 0;
+  let gWeight = 0;
+  let weightedGrowth = 0;
+
+  for (const h of holdings) {
+    const s = stocks[h.ticker];
+    if (!s) continue;
+    const val = s.valuation || {};
+    const raw = s.raw || {};
+    const fcf = val.fcf_used ?? raw.free_cash_flow;
+    const shares = raw.shares_outstanding;
+    const price = s.market_price;
+    const fx = val.fx_rate || 1.0;
+    const adr = val.adr_ratio || 1.0;
+    const revG = val.implied_growth_reverse_dcf;
+
+    if (fcf && shares && shares > 0 && price && price > 0) {
+      const fcfPerShare = (fcf / shares) * fx * adr;
+      const fcfYield = (fcfPerShare / price) * 100.0;
+      weightedYield += h.weight * fcfYield;
+      totWeight += h.weight;
+    }
+
+    if (typeof revG === "number") {
+      weightedGrowth += h.weight * (revG * 100.0);
+      gWeight += h.weight;
+    }
+  }
+
+  return {
+    fcfYield: totWeight > 0 ? (weightedYield / totWeight) : null,
+    impliedGrowth: gWeight > 0 ? (weightedGrowth / gWeight) : null
+  };
+}
+
 function computeEtfDecision(data, stats) {
   const premium = data.market_premium_pct;
   const intrinsicPerDollar = data.intrinsic_per_dollar;
@@ -139,6 +186,7 @@ function computeEtfDecision(data, stats) {
   const currency = data.currency || "CAD";
   const percentile = stats ? stats.percentile : null;
   const p20 = stats ? stats.p20 : null;
+  const funds = getEtfFundamentals(data);
 
   // Target premium threshold for a bargain entry:
   // If the ETF is at an absolute discount (intrinsic >= 1.0), bargain is at least fair value (0% premium).
@@ -181,7 +229,9 @@ function computeEtfDecision(data, stats) {
     distancePct,
     targetPremium,
     marketPrice,
-    currency
+    currency,
+    fcfYield: funds.fcfYield,
+    impliedGrowth: funds.impliedGrowth
   };
 }
 
@@ -211,14 +261,17 @@ function updateKPIs() {
   document.getElementById("kpi-etf-count").textContent = `${buyCount} in Buy Zone`;
   document.getElementById("kpi-etf-sub").textContent = `${buyCount} of ${etfs.length} funds meet buy triggers`;
 
-  // 2. Median Premium vs DCF
-  const premiums = etfs.map(([, d]) => d.market_premium_pct).filter(p => typeof p === "number");
-  const med = premiums.length ? median(premiums) : null;
-  const medEl = document.getElementById("kpi-median-val");
-  medEl.textContent = fmtPct(med);
-  medEl.className = `kpi-value ${med !== null ? (med < 0 ? "premium-discount" : "premium-expensive") : ""}`;
-  const discountsCount = premiums.filter(p => p < 0).length;
-  document.getElementById("kpi-median-sub").textContent = `${discountsCount} of ${premiums.length} trade below intrinsic DCF`;
+  // 2. Median FCF Yield
+  const fcfYields = etfRows.map(e => e.dec.fcfYield).filter(y => typeof y === "number");
+  const medFcf = fcfYields.length ? median(fcfYields) : null;
+  const medFcfEl = document.getElementById("kpi-median-fcf");
+  medFcfEl.textContent = typeof medFcf === "number" ? `${fmtNum(medFcf, 2)}%` : "-";
+  medFcfEl.className = "kpi-value fcf-highlight";
+  const highYield = etfRows.filter(e => typeof e.dec.fcfYield === "number").sort((a, b) => b.dec.fcfYield - a.dec.fcfYield);
+  const topFcf = highYield.length ? highYield[0] : null;
+  document.getElementById("kpi-median-fcf-sub").textContent = topFcf
+    ? `Top: ${topFcf.id.replace("TSE:", "")} (${fmtNum(topFcf.dec.fcfYield, 1)}% cash yield)`
+    : "Look-through cash return";
 
   // 3. Top Value Opportunity (Lowest percentile vs 1-year history)
   const withStats = etfRows.filter(e => e.stats !== null);
@@ -284,6 +337,10 @@ function getFilteredAndSortedEtfs() {
       return (a.stats ? a.stats.percentile : 999) - (b.stats ? b.stats.percentile : 999);
     } else if (sortBy === "distance_asc") {
       return (a.dec.distancePct ?? 9999) - (b.dec.distancePct ?? 9999);
+    } else if (sortBy === "fcf_yield_desc") {
+      return (b.dec.fcfYield ?? -999) - (a.dec.fcfYield ?? -999);
+    } else if (sortBy === "growth_asc") {
+      return (a.dec.impliedGrowth ?? 999) - (b.dec.impliedGrowth ?? 999);
     } else if (sortBy === "percentile_asc") {
       const pA = a.stats ? a.stats.percentile : 999;
       const pB = b.stats ? b.stats.percentile : 999;
@@ -315,7 +372,7 @@ function renderEtfs() {
 function renderEtfSummary(list) {
   const tbody = document.querySelector("#etf-summary-table tbody");
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="9" class="loading">No ETFs match the selected filters.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" class="loading">No ETFs match the selected filters.</td></tr>`;
     return;
   }
 
@@ -344,6 +401,14 @@ function renderEtfSummary(list) {
       buyBelowHtml = `Prem &le; ${fmtPct(dec.targetPremium)}`;
     }
 
+    const fcfCls = typeof dec.fcfYield === "number" && dec.fcfYield >= 5.0 ? "fcf-highlight" : "";
+    const fcfText = typeof dec.fcfYield === "number" ? `<strong class="${fcfCls}">${fmtNum(dec.fcfYield, 2)}%</strong>` : `<span class="muted">-</span>`;
+
+    const gCls = typeof dec.impliedGrowth === "number"
+      ? (dec.impliedGrowth <= 10.0 ? "hurdle-low" : (dec.impliedGrowth >= 25.0 ? "hurdle-high" : ""))
+      : "";
+    const gText = typeof dec.impliedGrowth === "number" ? `<strong class="${gCls}">${fmtNum(dec.impliedGrowth, 1)}%</strong>` : `<span class="muted">-</span>`;
+
     return `
       <tr>
         <td>
@@ -356,6 +421,8 @@ function renderEtfSummary(list) {
         <td>${fairValueHtml}</td>
         <td>${buyBelowHtml}</td>
         <td class="${premiumClass}"><strong>${fmtPct(premium)}</strong></td>
+        <td>${fcfText}</td>
+        <td>${gText}</td>
         <td>${stats ? `${fmtPct(stats.min)} to ${fmtPct(stats.max)}` : "-"}</td>
         <td><strong>${stats ? `${Math.round(stats.percentile)}th` : "-"}</strong></td>
       </tr>
@@ -390,6 +457,14 @@ function renderEtfCards(list) {
     const buyTargetText = dec.buyBelowPrice !== null && dec.buyBelowPrice !== undefined
       ? `&le; $${fmtNum(dec.buyBelowPrice, 2)} ${escapeHtml(dec.currency)}`
       : (dec.targetPremium !== null ? `Prem &le; ${fmtPct(dec.targetPremium)}` : "N/A");
+
+    const fcfSub = typeof dec.fcfYield === "number"
+      ? (dec.fcfYield >= 7.0 ? "Strong cash backing" : (dec.fcfYield >= 4.0 ? "Solid cash generation" : "Low cash yield"))
+      : "-";
+
+    const growthSub = typeof dec.impliedGrowth === "number"
+      ? (dec.impliedGrowth <= 10.0 ? "Low hurdle (high safety)" : (dec.impliedGrowth <= 20.0 ? "Moderate expectations" : "Demanding growth required"))
+      : "-";
 
     return `
       <div class="etf-card">
@@ -431,6 +506,16 @@ function renderEtfCards(list) {
             <span class="metric-label">Premium vs DCF</span>
             <span class="metric-val ${premiumClass}">${fmtPct(premium)}</span>
             <span class="muted" style="font-size:0.75rem;">${stats ? `${Math.round(stats.percentile)}th %ile (med ${fmtPct(stats.median)})` : ""}</span>
+          </div>
+          <div class="etf-metric-box">
+            <span class="metric-label">Portfolio FCF Yield</span>
+            <span class="metric-val ${dec.fcfYield >= 5 ? "fcf-highlight" : ""}">${typeof dec.fcfYield === "number" ? `${fmtNum(dec.fcfYield, 2)}%` : "N/A"}</span>
+            <span class="muted" style="font-size:0.75rem;">${fcfSub}</span>
+          </div>
+          <div class="etf-metric-box">
+            <span class="metric-label">Implied Growth Hurdle</span>
+            <span class="metric-val ${dec.impliedGrowth <= 10 ? "hurdle-low" : (dec.impliedGrowth >= 25 ? "hurdle-high" : "")}">${typeof dec.impliedGrowth === "number" ? `${fmtNum(dec.impliedGrowth, 1)}% / yr` : "N/A"}</span>
+            <span class="muted" style="font-size:0.75rem;">${growthSub}</span>
           </div>
         </div>
 
