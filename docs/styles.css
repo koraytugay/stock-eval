@@ -959,6 +959,13 @@ tbody tr.detail-row:hover td {
   stroke-width: 1;
 }
 
+.chart-zero-price {
+  stroke: #16a34a;
+  stroke-width: 1.2;
+  stroke-dasharray: 4, 3;
+  opacity: 0.65;
+}
+
 .chart-tick {
   font-size: 10px;
   fill: var(--text-muted);
