@@ -51375,5 +51375,245 @@
       ]
     ],
     "warnings": []
+  },
+  "3037.TW": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "TWD",
+    "fetched_at": "2026-10-28",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-06-30",
+    "balance_sheet_date": "2026-06-30",
+    "operating_cash_flow": 19.563,
+    "capex": 24.481,
+    "free_cash_flow": -4.917,
+    "total_cash": 93.096,
+    "total_debt": 46.945,
+    "net_debt": -46.151,
+    "shares_outstanding": 1.59,
+    "market_cap": 1738.813,
+    "market_cap_currency": "TWD",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        28.619
+      ],
+      [
+        "2023-12-31",
+        7.618
+      ],
+      [
+        "2024-12-31",
+        -16.436
+      ],
+      [
+        "2025-12-31",
+        -11.089
+      ]
+    ],
+    "warnings": []
+  },
+  "9532.T": {
+    "schema": 2,
+    "source": "Yahoo Finance",
+    "currency": "JPY",
+    "fetched_at": "2026-10-28",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-03-31",
+    "balance_sheet_date": "2026-03-31",
+    "operating_cash_flow": 340.74,
+    "capex": 251.117,
+    "free_cash_flow": 89.623,
+    "total_cash": 58.981,
+    "total_debt": 794.219,
+    "net_debt": 735.238,
+    "shares_outstanding": 0.384,
+    "market_cap": 2243.724,
+    "market_cap_currency": "JPY",
+    "fcf_history": [
+      [
+        "2023-03-31",
+        -160.576
+      ],
+      [
+        "2024-03-31",
+        125.243
+      ],
+      [
+        "2025-03-31",
+        61.27
+      ],
+      [
+        "2026-03-31",
+        89.623
+      ]
+    ],
+    "warnings": []
+  },
+  "CACE.TO": {
+    "schema": 2,
+    "fetched_at": "2026-10-28",
+    "source": null
+  },
+  "CADE.TO": {
+    "schema": 2,
+    "fetched_at": "2026-10-28",
+    "source": null
+  },
+  "CAEM.TO": {
+    "schema": 2,
+    "fetched_at": "2026-10-28",
+    "source": null
+  },
+  "CASV.TO": {
+    "schema": 2,
+    "fetched_at": "2026-10-28",
+    "source": null
+  },
+  "CAUS.TO": {
+    "schema": 2,
+    "fetched_at": "2026-10-28",
+    "source": null
+  },
+  "CAUV.TO": {
+    "schema": 2,
+    "fetched_at": "2026-10-28",
+    "source": null
+  },
+  "MTSI": {
+    "schema": 2,
+    "source": "SEC EDGAR",
+    "currency": "USD",
+    "fetched_at": "2026-10-28",
+    "filed": "2026-08-06",
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-07-03",
+    "balance_sheet_date": "2026-07-03",
+    "operating_cash_flow": 0.271,
+    "capex": 0.067,
+    "free_cash_flow": 0.204,
+    "total_cash": 0.09,
+    "total_debt": 0.34,
+    "net_debt": 0.251,
+    "shares_outstanding": 0.076,
+    "fcf_history": [
+      [
+        "2010-10-01",
+        0.015
+      ],
+      [
+        "2011-09-30",
+        0.023
+      ],
+      [
+        "2012-09-28",
+        0.015
+      ],
+      [
+        "2013-09-27",
+        0.017
+      ],
+      [
+        "2014-10-03",
+        0.008
+      ],
+      [
+        "2015-10-02",
+        -0.005
+      ],
+      [
+        "2016-09-30",
+        0.048
+      ],
+      [
+        "2017-09-29",
+        0.028
+      ],
+      [
+        "2018-09-28",
+        -0.017
+      ],
+      [
+        "2019-09-27",
+        -0.017
+      ],
+      [
+        "2020-10-02",
+        0.154
+      ],
+      [
+        "2021-10-01",
+        0.13
+      ],
+      [
+        "2022-09-30",
+        0.15
+      ],
+      [
+        "2023-09-29",
+        0.142
+      ],
+      [
+        "2024-09-27",
+        0.14
+      ],
+      [
+        "2025-10-03",
+        0.193
+      ]
+    ],
+    "warnings": []
+  },
+  "VIDY.TO": {
+    "schema": 2,
+    "fetched_at": "2026-10-28",
+    "source": null
+  },
+  "VXUS": {
+    "schema": 2,
+    "fetched_at": "2026-10-28",
+    "source": null
+  },
+  "XEC.TO": {
+    "schema": 2,
+    "fetched_at": "2026-10-28",
+    "source": null
+  },
+  "XEF.TO": {
+    "schema": 2,
+    "fetched_at": "2026-10-28",
+    "source": null
+  },
+  "XEQT.TO": {
+    "schema": 2,
+    "fetched_at": "2026-10-28",
+    "source": null
+  },
+  "XMC.TO": {
+    "schema": 2,
+    "fetched_at": "2026-10-28",
+    "source": null
+  },
+  "XSMC.TO": {
+    "schema": 2,
+    "fetched_at": "2026-10-28",
+    "source": null
+  },
+  "XUU.TO": {
+    "schema": 2,
+    "fetched_at": "2026-10-28",
+    "source": null
+  },
+  "ZLI.TO": {
+    "schema": 2,
+    "fetched_at": "2026-10-28",
+    "source": null
+  },
+  "ZLU.TO": {
+    "schema": 2,
+    "fetched_at": "2026-10-28",
+    "source": null
   }
 }
