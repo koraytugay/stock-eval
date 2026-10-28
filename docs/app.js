@@ -541,8 +541,8 @@ function renderEtfCards(list) {
 
 let allocatorState = {
   cash: 1000,
-  strategy: "value_top",
-  customSelected: new Set(["TSE:CASV", "TSE:CAUV", "TSE:ZLI"]),
+  strategy: "buy_zone",
+  customSelected: new Set(["TSE:CAEM", "TSE:XEC", "TSE:ZLI"]),
   collapsed: false
 };
 
@@ -597,10 +597,12 @@ function setupAllocatorChips() {
 
   container.innerHTML = etfs.map(([id, data]) => {
     const isSelected = allocatorState.customSelected.has(id);
+    const stats = historyStats(etfHistoryRows(id));
+    const dec = computeEtfDecision(data, stats);
     return `
       <div class="allocator-chip ${isSelected ? "selected" : "unselected"}" data-etf="${escapeHtml(id)}">
         <strong>${escapeHtml(id.replace("TSE:", ""))}</strong>
-        <span class="muted" style="font-size:0.7rem;">(${escapeHtml(data.currency || "CAD")})</span>
+        <span class="stance-badge ${dec.stance.cls}" style="font-size:0.68rem; padding:1px 5px; margin-left:4px;">${dec.stance.icon} ${dec.stance.label}</span>
       </div>
     `;
   }).join("");
@@ -642,49 +644,56 @@ function renderAllocator() {
   let candidates = [];
   const strat = allocatorState.strategy;
 
-  if (strat === "value_top") {
-    // Top 3 funds by margin of safety / intrinsic per dollar
+  if (strat === "buy_zone") {
+    // Strictly Buy Zone ETFs only (Stance === BUY)
     candidates = etfRows
-      .filter(e => typeof e.dec.marketPrice === "number" && typeof e.data.intrinsic_per_dollar === "number")
-      .sort((a, b) => (b.data.intrinsic_per_dollar - a.data.intrinsic_per_dollar))
-      .slice(0, 3);
-  } else if (strat === "buy_zone") {
-    candidates = etfRows.filter(e => e.dec.stance.code === "BUY" && typeof e.dec.marketPrice === "number");
-    if (candidates.length === 0) {
-      candidates = etfRows
-        .filter(e => typeof e.dec.marketPrice === "number")
-        .sort((a, b) => (a.stats ? a.stats.percentile : 999) - (b.stats ? b.stats.percentile : 999))
-        .slice(0, 3);
-    }
-  } else if (strat === "high_fcf") {
+      .filter(e => e.dec.stance.code === "BUY" && typeof e.dec.marketPrice === "number")
+      .sort((a, b) => (a.stats ? a.stats.percentile : 999) - (b.stats ? b.stats.percentile : 999));
+  } else if (strat === "buy_and_accumulate") {
+    // Buy Zone + Fair Value Accumulate (strictly NO Wait ETFs)
     candidates = etfRows
-      .filter(e => typeof e.dec.marketPrice === "number" && typeof e.dec.fcfYield === "number")
-      .sort((a, b) => b.dec.fcfYield - a.dec.fcfYield)
-      .slice(0, 3);
-  } else if (strat === "core_tilt") {
-    const coreMap = { "TSE:XEQT": 0.40, "TSE:CAUV": 0.25, "TSE:CASV": 0.20, "TSE:XEF": 0.15 };
-    candidates = etfRows.filter(e => e.id in coreMap && typeof e.dec.marketPrice === "number");
+      .filter(e => (e.dec.stance.code === "BUY" || e.dec.stance.code === "ACCUMULATE") && typeof e.dec.marketPrice === "number")
+      .sort((a, b) => {
+        if (a.dec.stance.rank !== b.dec.stance.rank) return a.dec.stance.rank - b.dec.stance.rank;
+        return (a.stats ? a.stats.percentile : 999) - (b.stats ? b.stats.percentile : 999);
+      });
+  } else if (strat === "buy_and_core") {
+    // 50% Core (XEQT) + 50% Buy Zone funds
+    const buyZoneFunds = etfRows
+      .filter(e => e.dec.stance.code === "BUY" && typeof e.dec.marketPrice === "number")
+      .sort((a, b) => (a.stats ? a.stats.percentile : 999) - (b.stats ? b.stats.percentile : 999));
+    const coreFund = etfRows.find(e => e.id === "TSE:XEQT" && typeof e.dec.marketPrice === "number");
+    candidates = coreFund ? [coreFund, ...buyZoneFunds] : buyZoneFunds;
   } else if (strat === "custom") {
     candidates = etfRows.filter(e => allocatorState.customSelected.has(e.id) && typeof e.dec.marketPrice === "number");
   }
 
   if (candidates.length === 0) {
-    resultsContainer.innerHTML = `<p class="muted">Please select at least one ETF with a valid price.</p>`;
+    resultsContainer.innerHTML = `<p class="muted">No ETFs currently qualify under this strategy. Switch to 'Buy Zone + Fair Value Accumulate' or 'Custom Selection'.</p>`;
     return;
   }
 
   const cash = allocatorState.cash;
-  const coreMap = strat === "core_tilt"
-    ? { "TSE:XEQT": 0.40, "TSE:CAUV": 0.25, "TSE:CASV": 0.20, "TSE:XEF": 0.15 }
-    : null;
 
   // Compute weights
   let weights = [];
-  if (coreMap) {
-    weights = candidates.map(c => coreMap[c.id] || 0.1);
+  if (strat === "buy_and_core" && candidates.some(c => c.id === "TSE:XEQT")) {
+    const coreShare = 0.50;
+    const otherCount = Math.max(candidates.length - 1, 1);
+    const otherShareEach = (1.0 - coreShare) / otherCount;
+    weights = candidates.map(c => c.id === "TSE:XEQT" ? coreShare : otherShareEach);
+  } else if (strat === "buy_and_accumulate") {
+    // Give BUY zone ETFs 2.5x more weight than ACCUMULATE
+    weights = candidates.map(c => {
+      const base = (100.0 - (c.stats ? c.stats.percentile : 50)) * Math.max(c.data.intrinsic_per_dollar || 1.0, 0.4);
+      return c.dec.stance.code === "BUY" ? base * 2.5 : base;
+    });
   } else {
-    // Value-weighted by intrinsic value per dollar
-    weights = candidates.map(c => Math.max(c.data.intrinsic_per_dollar || 1.0, 0.2));
+    // Proportional to bargain opportunity: lower historical percentile & higher intrinsic value get higher weight
+    weights = candidates.map(c => {
+      const pctile = c.stats ? c.stats.percentile : 50;
+      return (100.0 - pctile) * Math.max(c.data.intrinsic_per_dollar || 1.0, 0.5);
+    });
   }
   const totWeight = weights.reduce((s, w) => s + w, 0) || 1;
 

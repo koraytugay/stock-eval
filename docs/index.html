@@ -75,10 +75,9 @@
           <div class="allocator-strategy-group">
             <label for="allocator-strategy-select">Allocation Strategy:</label>
             <select id="allocator-strategy-select">
-              <option value="value_top">Value Opportunistic (Top Margin of Safety)</option>
-              <option value="buy_zone">All Active Buy Zone ETFs</option>
-              <option value="high_fcf">Cash Generation (Highest FCF Yields)</option>
-              <option value="core_tilt">Balanced: Global Core (XEQT) + Value Tilts</option>
+              <option value="buy_zone" selected>Active Buy Zone Only (Recommended)</option>
+              <option value="buy_and_accumulate">Buy Zone + Fair Value Accumulate</option>
+              <option value="buy_and_core">Buy Zone + Core (XEQT)</option>
               <option value="custom">Custom ETF Selection</option>
             </select>
           </div>
