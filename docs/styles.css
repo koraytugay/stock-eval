@@ -984,6 +984,12 @@ tbody tr.detail-row:hover td {
   pointer-events: none;
 }
 
+.chart-wait-zone {
+  fill: #eab308;
+  opacity: 0.14;
+  pointer-events: none;
+}
+
 .chart-area {
   fill: var(--accent-color);
   opacity: 0.1;

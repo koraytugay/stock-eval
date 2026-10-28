@@ -433,43 +433,55 @@ function renderEtfSummary(list) {
   }).join("");
 }
 
-function computeHistoricalBuyWindows(rows) {
-  if (!rows || rows.length < 5) return [];
+function computeHistoricalZoneWindows(rows) {
+  if (!rows || rows.length < 5) return { buy: [], wait: [] };
   const premiums = rows.map(r => r[2]).filter(p => typeof p === "number");
-  if (!premiums.length) return [];
+  if (!premiums.length) return { buy: [], wait: [] };
   const n = premiums.length;
 
   const buyIndices = [];
+  const waitIndices = [];
+
   rows.forEach((r, i) => {
     const iv = r[1];
     const prem = r[2];
     if (typeof prem !== "number") return;
     const pctile = (premiums.filter(p => p <= prem).length / n) * 100;
     const isBuy = (pctile <= 20) || (typeof iv === "number" && iv >= 1.0 && pctile <= 50);
-    if (isBuy) buyIndices.push(i);
+    if (isBuy) {
+      buyIndices.push(i);
+    } else if (pctile > 65) {
+      waitIndices.push(i);
+    }
   });
 
-  if (!buyIndices.length) return [];
+  function groupConsecutive(indices) {
+    if (!indices.length) return [];
+    const windows = [];
+    let startIdx = indices[0];
+    let prevIdx = indices[0];
 
-  const windows = [];
-  let startIdx = buyIndices[0];
-  let prevIdx = buyIndices[0];
-
-  for (let k = 1; k < buyIndices.length; k++) {
-    const currIdx = buyIndices[k];
-    const tPrev = Date.parse(rows[prevIdx][0]);
-    const tCurr = Date.parse(rows[currIdx][0]);
-    const daysDiff = (tCurr - tPrev) / (1000 * 60 * 60 * 24);
-    if (daysDiff <= 4.5) {
-      prevIdx = currIdx;
-    } else {
-      windows.push({ startIdx, endIdx: prevIdx, count: prevIdx - startIdx + 1 });
-      startIdx = currIdx;
-      prevIdx = currIdx;
+    for (let k = 1; k < indices.length; k++) {
+      const currIdx = indices[k];
+      const tPrev = Date.parse(rows[prevIdx][0]);
+      const tCurr = Date.parse(rows[currIdx][0]);
+      const daysDiff = (tCurr - tPrev) / (1000 * 60 * 60 * 24);
+      if (daysDiff <= 4.5) {
+        prevIdx = currIdx;
+      } else {
+        windows.push({ startIdx, endIdx: prevIdx, count: prevIdx - startIdx + 1 });
+        startIdx = currIdx;
+        prevIdx = currIdx;
+      }
     }
+    windows.push({ startIdx, endIdx: prevIdx, count: prevIdx - startIdx + 1 });
+    return windows;
   }
-  windows.push({ startIdx, endIdx: prevIdx, count: prevIdx - startIdx + 1 });
-  return windows;
+
+  return {
+    buy: groupConsecutive(buyIndices),
+    wait: groupConsecutive(waitIndices)
+  };
 }
 
 function buildEtfInfoCardHtml(etfId, idx, isHover) {
@@ -685,7 +697,8 @@ function renderEtfCards(list) {
               <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
                 <span><span style="display:inline-block; width:12px; height:3px; background:#0969da; border-radius:1px; margin-right:5px; vertical-align:middle;"></span><strong>Valuation Prem vs DCF</strong> (Left &bull; <span style="color:#0969da;">&ndash;&ndash;</span> 0% Fair Value)</span>
                 <span><span style="display:inline-block; width:12px; height:3px; background:#16a34a; border-radius:1px; margin-right:5px; vertical-align:middle;"></span><strong>ETF Market Price %</strong> (Right &bull; <span style="color:#16a34a;">&ndash;&ndash;</span> 0% Base)</span>
-                <span><span style="display:inline-block; width:12px; height:10px; background:rgba(22,163,74,0.18); border:1px solid rgba(22,163,74,0.4); border-radius:2px; margin-right:5px; vertical-align:middle;"></span><strong>Buy Zone Window</strong></span>
+                <span><span style="display:inline-block; width:12px; height:10px; background:rgba(22,163,74,0.18); border:1px solid rgba(22,163,74,0.4); border-radius:2px; margin-right:5px; vertical-align:middle;"></span><strong>Buy Zone</strong></span>
+                <span><span style="display:inline-block; width:12px; height:10px; background:rgba(234,179,8,0.22); border:1px solid rgba(234,179,8,0.5); border-radius:2px; margin-right:5px; vertical-align:middle;"></span><strong>Wait / Extended</strong></span>
               </div>
             </div>
           </div>
@@ -1091,10 +1104,25 @@ function drawEtfChart(container, rows) {
     }));
   }
 
-  // Shaded Historical Buy Zone Windows
-  const buyWindows = computeHistoricalBuyWindows(rows);
+  // Shaded Historical Zones (Wait in Yellow, Buy in Green)
+  const zoneWindows = computeHistoricalZoneWindows(rows);
   const dayW = w / Math.max(times.length - 1, 1);
-  buyWindows.forEach(win => {
+
+  zoneWindows.wait.forEach(win => {
+    const x1 = x(times[win.startIdx]);
+    const x2 = x(times[win.endIdx]);
+    const rectX = Math.max(m.left, x1 - dayW * 0.5);
+    const rectW = Math.max(dayW, (x2 - x1) + dayW);
+    svg.appendChild(svgEl("rect", {
+      x: rectX,
+      y: m.top,
+      width: Math.min(rectW, m.left + w - rectX),
+      height: h,
+      class: "chart-wait-zone"
+    }));
+  });
+
+  zoneWindows.buy.forEach(win => {
     const x1 = x(times[win.startIdx]);
     const x2 = x(times[win.endIdx]);
     const rectX = Math.max(m.left, x1 - dayW * 0.5);
