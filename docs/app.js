@@ -125,13 +125,27 @@ function historyStats(rows) {
   const sorted = premiums.slice().sort((a, b) => a - b);
   const percentile = (premiums.filter(p => p <= current).length / premiums.length) * 100;
   const p20 = sorted[Math.floor(sorted.length * 0.20)];
+
+  // Compute 20-day SMA of price if available
+  const prices = rows.map(r => r[4]).filter(p => typeof p === "number");
+  let sma20 = null;
+  let priceTrendUp = false;
+  if (prices.length >= 3) {
+    const window = prices.slice(Math.max(0, prices.length - 20));
+    sma20 = window.reduce((a, b) => a + b, 0) / window.length;
+    const latestPx = prices[prices.length - 1];
+    priceTrendUp = latestPx > sma20;
+  }
+
   return {
     current,
     percentile,
     p20,
     min: Math.min(...premiums),
     max: Math.max(...premiums),
-    median: median(premiums)
+    median: median(premiums),
+    sma20,
+    priceTrendUp
   };
 }
 
@@ -216,12 +230,23 @@ function computeEtfDecision(data, stats) {
   let stance = { code: "WAIT", label: "Wait / Extended", cls: "stance-wait", icon: "⏸", rank: 3 };
 
   if (typeof percentile === "number") {
-    if (percentile <= 20 || (typeof intrinsicPerDollar === "number" && intrinsicPerDollar >= 1.0 && percentile <= 50)) {
+    // 1. Strict Buy Signal: True historical bargain (<=20th percentile)
+    // or <=25th percentile with deep intrinsic discount (IV >= 1.25)
+    // Prevents buying at local swing tops like XSMC at $42.42
+    const isBuy = (percentile <= 20) || (typeof intrinsicPerDollar === "number" && intrinsicPerDollar >= 1.25 && percentile <= 25);
+
+    if (isBuy) {
       stance = { code: "BUY", label: "Strong Value / Buy", cls: "stance-buy", icon: "✓", rank: 1 };
     } else if (percentile <= 65) {
       stance = { code: "ACCUMULATE", label: "Fair / Accumulate", cls: "stance-accumulate", icon: "◈", rank: 2 };
     } else {
-      stance = { code: "WAIT", label: "Wait / Extended", cls: "stance-wait", icon: "⏸", rank: 3 };
+      // Extended valuation (> 65th percentile)
+      // If price is in an active strong uptrend (above 20-day SMA), ride the trend in Accumulate rather than waiting
+      if (stats && stats.priceTrendUp) {
+        stance = { code: "ACCUMULATE", label: "Uptrend / Accumulate", cls: "stance-accumulate", icon: "▲", rank: 2 };
+      } else {
+        stance = { code: "WAIT", label: "Wait / Extended", cls: "stance-wait", icon: "⏸", rank: 3 };
+      }
     }
   }
 
@@ -439,18 +464,42 @@ function computeHistoricalZoneWindows(rows) {
   if (!premiums.length) return { buy: [], wait: [] };
   const n = premiums.length;
 
+  // Precompute 20-day Simple Moving Average for prices
+  const prices = rows.map(r => (typeof r[4] === "number" ? r[4] : null));
+  const sma20 = [];
+  for (let i = 0; i < prices.length; i++) {
+    const window = [];
+    for (let k = Math.max(0, i - 19); k <= i; k++) {
+      if (typeof prices[k] === "number") window.push(prices[k]);
+    }
+    sma20.push(window.length >= 3 ? (window.reduce((a, b) => a + b, 0) / window.length) : null);
+  }
+
   const buyIndices = [];
   const waitIndices = [];
 
   rows.forEach((r, i) => {
     const iv = r[1];
     const prem = r[2];
+    const px = r[4];
+    const sm = sma20[i];
     if (typeof prem !== "number") return;
     const pctile = (premiums.filter(p => p <= prem).length / n) * 100;
-    const isBuy = (pctile <= 20) || (typeof iv === "number" && iv >= 1.0 && pctile <= 50);
+
+    // 1. Strict Buy Signal: True historical bargain (<=20th percentile)
+    // or <=25th percentile with deep intrinsic discount (IV >= 1.25)
+    // Prevents buying at local swing tops like XSMC at $42.42
+    const isBuy = (pctile <= 20) || (typeof iv === "number" && iv >= 1.25 && pctile <= 25);
+
+    // 2. Trend-aware Wait Signal:
+    // If valuation is extended (> 65th percentile), but price is strongly trending above 20-day SMA,
+    // do not flag Wait (ride the trend). Only flag Wait when valuation is extended AND trend has cooled (px <= SMA20).
+    const isTrendUp = (typeof px === "number" && typeof sm === "number" && px > sm);
+    const isWait = (!isBuy) && (pctile > 65) && (!isTrendUp);
+
     if (isBuy) {
       buyIndices.push(i);
-    } else if (pctile > 65) {
+    } else if (isWait) {
       waitIndices.push(i);
     }
   });
@@ -511,11 +560,22 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
 
     const allPrems = rows.map(row => row[2]).filter(p => typeof p === "number");
     const histPctile = (allPrems.filter(p => p <= premium).length / allPrems.length) * 100;
+
+    const histWindow = [];
+    for (let k = Math.max(0, idx - 19); k <= idx; k++) {
+      if (typeof rows[k][4] === "number") histWindow.push(rows[k][4]);
+    }
+    const histSma20 = histWindow.length >= 3 ? (histWindow.reduce((a, b) => a + b, 0) / histWindow.length) : null;
+    const isHistTrendUp = typeof histPrice === "number" && typeof histSma20 === "number" && histPrice > histSma20;
+
     let histStance = { code: "WAIT", label: "Wait / Extended", cls: "stance-wait", icon: "⏸" };
-    if (histPctile <= 20 || (typeof intrinsic === "number" && intrinsic >= 1.0 && histPctile <= 50)) {
+    const isHistBuy = (histPctile <= 20) || (typeof intrinsic === "number" && intrinsic >= 1.25 && histPctile <= 25);
+    if (isHistBuy) {
       histStance = { code: "BUY", label: "Strong Value / Buy", cls: "stance-buy", icon: "✓" };
     } else if (histPctile <= 65) {
       histStance = { code: "ACCUMULATE", label: "Fair / Accumulate", cls: "stance-accumulate", icon: "◈" };
+    } else if (isHistTrendUp) {
+      histStance = { code: "ACCUMULATE", label: "Uptrend / Accumulate", cls: "stance-accumulate", icon: "▲" };
     }
 
     const isReconstructed = backfilledUntil && dateStr <= backfilledUntil;
