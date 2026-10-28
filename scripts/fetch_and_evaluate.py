@@ -48,8 +48,8 @@ def save_json(path, obj, compact=False):
 
 
 def etf_history_row(date, etf):
-    """Compact daily history row: [date, intrinsic per $1, premium %, valued weight %]."""
-    return [date, etf.get("intrinsic_per_dollar"), etf.get("market_premium_pct"), etf.get("covered_weight_pct")]
+    """Compact daily history row: [date, intrinsic per $1, premium %, valued weight %, market_price]."""
+    return [date, etf.get("intrinsic_per_dollar"), etf.get("market_premium_pct"), etf.get("covered_weight_pct"), etf.get("market_price")]
 
 
 def update_etf_history(date, etfs, history=None):

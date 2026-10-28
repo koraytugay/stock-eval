@@ -443,12 +443,21 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
   const inZone = dec.distancePct !== null && dec.distancePct <= 0;
   const backfilledUntil = etfHistory && etfHistory.backfilled_until;
 
+  const basePrice = (rows.find(r => typeof r[4] === "number" && r[4] > 0) || [])[4];
+  const latestPrice = dec.marketPrice || (rows.length && rows[rows.length - 1][4]);
+  const totalReturn = (latestPrice && basePrice) ? ((latestPrice - basePrice) / basePrice) * 100 : null;
+  const totalReturnStr = totalReturn !== null ? `${totalReturn >= 0 ? "+" : ""}${fmtNum(totalReturn, 1)}%` : "-";
+
   if (isHover && rows && rows[idx]) {
     const r = rows[idx];
     const dateStr = r[0];
     const intrinsic = r[1];
     const premium = r[2];
     const covered = r[3];
+    const histPrice = r[4];
+    const histReturn = (histPrice && basePrice) ? ((histPrice - basePrice) / basePrice) * 100 : null;
+    const histReturnStr = histReturn !== null ? `${histReturn >= 0 ? "+" : ""}${fmtNum(histReturn, 1)}%` : "-";
+
     const isReconstructed = backfilledUntil && dateStr <= backfilledUntil;
     const premColor = premium < 0 ? "#16a34a" : "#cf222e";
     const diff = typeof data.market_premium_pct === "number" ? premium - data.market_premium_pct : null;
@@ -475,16 +484,16 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
           <strong style="color: ${premColor};">${fmtPct(premium)}</strong>
         </div>
         <div class="chart-card-row">
+          <span>ETF Market Price:</span>
+          <span><strong>${histPrice ? `$${fmtNum(histPrice, 2)}` : "-"}</strong> <span style="color:#7c3aed; font-weight:700;">(${histReturnStr})</span></span>
+        </div>
+        <div class="chart-card-row">
           <span>Intrinsic / $1 NAV:</span>
           <strong>$${fmtNum(intrinsic, 4)}</strong>
         </div>
         <div class="chart-card-row">
           <span>Diff vs Today:</span>
           <span><strong>${diff !== null ? `${diffSign}${fmtNum(diff, 1)}%` : "-"}</strong> pts</span>
-        </div>
-        <div class="chart-card-row">
-          <span>Valued Holdings:</span>
-          <span>${fmtNum(covered, 1)}% of fund</span>
         </div>
       </div>
 
@@ -502,8 +511,8 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
           <span class="stance-badge ${dec.stance.cls}" style="font-size:0.72rem; padding:1px 6px;">${dec.stance.icon} ${dec.stance.label}</span>
         </div>
         <div class="chart-card-row">
-          <span>1-Yr Median Prem:</span>
-          <span>${stats ? fmtPct(stats.median) : "-"}</span>
+          <span>1-Yr Price Return:</span>
+          <strong style="color:#7c3aed;">${totalReturnStr}</strong>
         </div>
       </div>
 
@@ -549,7 +558,7 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
     <div class="chart-card-section-divider">
       <div class="chart-card-row">
         <span>Market Price:</span>
-        <strong>${priceText}</strong>
+        <span><strong>${priceText}</strong> <span style="color:#7c3aed; font-weight:700;">(${totalReturnStr})</span></span>
       </div>
       <div class="chart-card-row">
         <span>DCF Fair Value:</span>
@@ -585,7 +594,7 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
     </div>
 
     <div class="chart-card-footer">
-      💡 Hover over graph to inspect historical valuation
+      💡 Hover over graph to inspect historical valuation &amp; price
     </div>
   `;
 }
@@ -625,8 +634,11 @@ function renderEtfCards(list) {
               <div class="etf-chart" data-etf="${escapeHtml(id)}" id="chart-${safeId}"></div>
             </div>
             <div class="chart-card-footer" style="margin-top: 6px; border-top: none; justify-content: space-between; font-size: 0.74rem; color: #64748b;">
-              <span><span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#0969da; margin-right:4px;"></span> Premium vs DCF (Past 1 Year)</span>
-              <span>Baseline (0%): DCF Fair Value</span>
+              <div style="display: flex; align-items: center; gap: 14px;">
+                <span><span style="display:inline-block; width:12px; height:3px; background:#0969da; border-radius:1px; margin-right:5px; vertical-align:middle;"></span><strong>Valuation Prem vs DCF</strong> (Left Axis)</span>
+                <span><span style="display:inline-block; width:12px; height:3px; background:#7c3aed; border-radius:1px; margin-right:5px; vertical-align:middle;"></span><strong>ETF Market Price %</strong> (Right Axis)</span>
+              </div>
+              <span>0% Baseline</span>
             </div>
           </div>
           <div class="chart-info-card" id="info-card-${safeId}">
@@ -979,7 +991,7 @@ function drawEtfChart(container, rows) {
 
   const width = 1000;
   const height = 260;
-  const m = { top: 16, right: 24, bottom: 28, left: 56 };
+  const m = { top: 20, right: 58, bottom: 28, left: 56 };
   const w = width - m.left - m.right;
   const h = height - m.top - m.bottom;
 
@@ -997,11 +1009,29 @@ function drawEtfChart(container, rows) {
   const x = t => m.left + ((t - t0) / (t1 - t0)) * w;
   const y = v => m.top + (1 - (v - lo) / (hi - lo)) * h;
 
+  // Price calculations for overlay line
+  const basePrice = (rows.find(r => typeof r[4] === "number" && r[4] > 0) || [])[4];
+  const pricePcts = rows.map(r => (typeof r[4] === "number" && basePrice) ? ((r[4] - basePrice) / basePrice) * 100 : null);
+  const validPcts = pricePcts.filter(v => typeof v === "number");
+
+  let pLo = 0, pHi = 0, pStep = 5, yPrice = null;
+  if (validPcts.length >= 2) {
+    const pMin = Math.min(...validPcts);
+    const pMax = Math.max(...validPcts);
+    const pPad = (Math.max(pMax, 0) - Math.min(pMin, 0)) * 0.12 || 4;
+    pLo = pMin < 0 ? pMin - pPad : 0;
+    pHi = pMax > 0 ? pMax + pPad : 0;
+    pStep = niceStep(pHi - pLo, 4);
+    pLo = Math.floor(pLo / pStep) * pStep;
+    pHi = Math.ceil(pHi / pStep) * pStep;
+    yPrice = v => m.top + (1 - (v - pLo) / (pHi - pLo)) * h;
+  }
+
   const svg = svgEl("svg", {
     viewBox: `0 0 ${width} ${height}`,
     style: "width: 100%; height: 280px; display: block; overflow: visible;",
     role: "img",
-    "aria-label": `Premium versus DCF over the past year for ${etfId}`
+    "aria-label": `Valuation premium and market price return over the past year for ${etfId}`
   });
 
   // Unique Gradient Def
@@ -1010,8 +1040,8 @@ function drawEtfChart(container, rows) {
     id: `area-grad-${safeId}`,
     x1: "0", y1: "0", x2: "0", y2: "1"
   });
-  const stop1 = svgEl("stop", { offset: "0%", "stop-color": "#0969da", "stop-opacity": "0.32" });
-  const stop2 = svgEl("stop", { offset: "100%", "stop-color": "#0969da", "stop-opacity": "0.02" });
+  const stop1 = svgEl("stop", { offset: "0%", "stop-color": "#0969da", "stop-opacity": "0.26" });
+  const stop2 = svgEl("stop", { offset: "100%", "stop-color": "#0969da", "stop-opacity": "0.01" });
   grad.append(stop1, stop2);
   defs.appendChild(grad);
   svg.appendChild(defs);
@@ -1025,7 +1055,16 @@ function drawEtfChart(container, rows) {
     }));
   }
 
-  // Gridlines and y ticks
+  // Left Y-axis header (Prem %)
+  const leftHdr = svgEl("text", {
+    x: m.left - 8, y: m.top - 6,
+    "text-anchor": "end", class: "chart-tick",
+    style: "font-weight: 700; font-size: 9px;"
+  });
+  leftHdr.textContent = "PREM %";
+  svg.appendChild(leftHdr);
+
+  // Left Gridlines and Left Y ticks (Valuation %)
   for (let v = lo; v <= hi + 1e-9; v += step) {
     svg.appendChild(svgEl("line", {
       x1: m.left, x2: m.left + w, y1: y(v), y2: y(v),
@@ -1037,6 +1076,26 @@ function drawEtfChart(container, rows) {
     });
     label.textContent = `${v > 0 ? "+" : ""}${Math.round(v)}%`;
     svg.appendChild(label);
+  }
+
+  // Right Y-axis (Price Return %)
+  if (yPrice) {
+    const rightHdr = svgEl("text", {
+      x: m.left + w + 8, y: m.top - 6,
+      "text-anchor": "start", class: "chart-tick-price",
+      style: "font-weight: 700; font-size: 9px;"
+    });
+    rightHdr.textContent = "PRICE %";
+    svg.appendChild(rightHdr);
+
+    for (let pv = pLo; pv <= pHi + 1e-9; pv += pStep) {
+      const pLabel = svgEl("text", {
+        x: m.left + w + 8, y: yPrice(pv) + 3.5,
+        "text-anchor": "start", class: "chart-tick-price"
+      });
+      pLabel.textContent = `${pv > 0 ? "+" : ""}${Math.round(pv)}%`;
+      svg.appendChild(pLabel);
+    }
   }
 
   // Month ticks
@@ -1057,6 +1116,7 @@ function drawEtfChart(container, rows) {
     monthIdx++;
   }
 
+  // 1. Primary Line: Valuation Premium vs DCF
   const points = rows.map((r, i) => [x(times[i]), y(values[i])]);
   const linePath = points.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join("");
   const base = y(Math.max(lo, Math.min(0, hi)));
@@ -1068,12 +1128,32 @@ function drawEtfChart(container, rows) {
     d: linePath,
     class: "chart-line"
   }));
+  const lastValPt = points[points.length - 1];
+  svg.appendChild(svgEl("circle", { cx: lastValPt[0], cy: lastValPt[1], r: 4.5, class: "chart-dot" }));
 
-  // End dot
-  const last = points[points.length - 1];
-  svg.appendChild(svgEl("circle", { cx: last[0], cy: last[1], r: 4.5, class: "chart-dot" }));
+  // 2. Secondary Overlay Line: ETF Market Price Return %
+  const pricePoints = [];
+  if (yPrice) {
+    rows.forEach((r, i) => {
+      if (pricePcts[i] !== null) {
+        pricePoints.push([x(times[i]), yPrice(pricePcts[i])]);
+      }
+    });
+    if (pricePoints.length >= 2) {
+      const pricePathD = pricePoints.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join("");
+      svg.appendChild(svgEl("path", {
+        d: pricePathD,
+        class: "chart-line-price"
+      }));
+      const lastPricePt = pricePoints[pricePoints.length - 1];
+      svg.appendChild(svgEl("circle", {
+        cx: lastPricePt[0], cy: lastPricePt[1], r: 4.5,
+        class: "chart-dot-price"
+      }));
+    }
+  }
 
-  // Crosshair vertical line + hover dot
+  // Crosshair vertical line + dual hover dots
   const cursorLine = svgEl("line", {
     y1: m.top, y2: m.top + h,
     stroke: "#94a3b8", "stroke-width": "1.5", "stroke-dasharray": "4,4",
@@ -1083,8 +1163,13 @@ function drawEtfChart(container, rows) {
     r: 5.5, fill: "#0969da", stroke: "#ffffff", "stroke-width": "2",
     visibility: "hidden", "pointer-events": "none"
   });
+  const priceHoverDot = svgEl("circle", {
+    r: 5.5, fill: "#7c3aed", stroke: "#ffffff", "stroke-width": "2",
+    visibility: "hidden", "pointer-events": "none"
+  });
   svg.appendChild(cursorLine);
   svg.appendChild(hoverDot);
+  svg.appendChild(priceHoverDot);
 
   // Full interactive tracking overlay
   const hit = svgEl("rect", {
@@ -1122,6 +1207,14 @@ function drawEtfChart(container, rows) {
     hoverDot.setAttribute("cy", cy.toFixed(1));
     hoverDot.setAttribute("visibility", "visible");
 
+    if (yPrice && pricePcts[idx] !== null) {
+      priceHoverDot.setAttribute("cx", cx.toFixed(1));
+      priceHoverDot.setAttribute("cy", yPrice(pricePcts[idx]).toFixed(1));
+      priceHoverDot.setAttribute("visibility", "visible");
+    } else {
+      priceHoverDot.setAttribute("visibility", "hidden");
+    }
+
     if (infoCard) {
       infoCard.innerHTML = buildEtfInfoCardHtml(etfId, idx, true);
       infoCard.classList.add("active");
@@ -1131,6 +1224,7 @@ function drawEtfChart(container, rows) {
   const hide = () => {
     cursorLine.setAttribute("visibility", "hidden");
     hoverDot.setAttribute("visibility", "hidden");
+    priceHoverDot.setAttribute("visibility", "hidden");
     if (infoCard) {
       infoCard.innerHTML = buildEtfInfoCardHtml(etfId, rows.length - 1, false);
       infoCard.classList.remove("active");
