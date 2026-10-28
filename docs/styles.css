@@ -373,8 +373,9 @@ tbody tr:hover td {
   display: grid;
   grid-template-columns: 1fr 320px;
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
   margin: 10px 0;
+  min-height: 345px;
 }
 
 @media (max-width: 960px) {
@@ -382,6 +383,7 @@ tbody tr:hover td {
     grid-template-columns: 1fr;
     gap: 14px;
     align-items: stretch;
+    min-height: auto;
   }
 }
 
@@ -389,15 +391,25 @@ tbody tr:hover td {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  align-self: start;
+  justify-content: space-between;
   width: 100%;
+  height: 345px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 960px) {
+  .chart-canvas-col {
+    height: auto;
+  }
 }
 
 .chart-container-rel {
   width: 100%;
   position: relative;
-  min-height: 240px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-height: 260px;
 }
 
 .chart-info-card {
@@ -412,9 +424,21 @@ tbody tr:hover td {
   color: #1e293b;
   box-sizing: border-box;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
-  min-height: 250px;
+  height: 345px;
+  min-height: 345px;
+  max-height: 345px;
+  overflow: hidden;
   align-self: start;
   position: relative;
+}
+
+@media (max-width: 960px) {
+  .chart-info-card {
+    height: auto;
+    min-height: 320px;
+    max-height: none;
+    overflow: visible;
+  }
 }
 
 .chart-info-card.active {

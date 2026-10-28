@@ -474,19 +474,17 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
           <span>Historical Premium:</span>
           <strong style="color: ${premColor};">${fmtPct(premium)}</strong>
         </div>
-        ${diff !== null ? `
-          <div class="chart-card-row">
-            <span>Diff vs Today:</span>
-            <span><strong>${diffSign}${fmtNum(diff, 1)}%</strong> pts</span>
-          </div>
-        ` : ""}
+        <div class="chart-card-row">
+          <span>Intrinsic / $1 NAV:</span>
+          <strong>$${fmtNum(intrinsic, 4)}</strong>
+        </div>
+        <div class="chart-card-row">
+          <span>Diff vs Today:</span>
+          <span><strong>${diff !== null ? `${diffSign}${fmtNum(diff, 1)}%` : "-"}</strong> pts</span>
+        </div>
         <div class="chart-card-row">
           <span>Valued Holdings:</span>
           <span>${fmtNum(covered, 1)}% of fund</span>
-        </div>
-        <div class="chart-card-row">
-          <span>1-Yr Median Prem:</span>
-          <span>${stats ? fmtPct(stats.median) : "-"}</span>
         </div>
       </div>
 
@@ -502,6 +500,10 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
         <div class="chart-card-row">
           <span>Current Stance:</span>
           <span class="stance-badge ${dec.stance.cls}" style="font-size:0.72rem; padding:1px 6px;">${dec.stance.icon} ${dec.stance.label}</span>
+        </div>
+        <div class="chart-card-row">
+          <span>1-Yr Median Prem:</span>
+          <span>${stats ? fmtPct(stats.median) : "-"}</span>
         </div>
       </div>
 
@@ -550,6 +552,10 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
         <strong>${priceText}</strong>
       </div>
       <div class="chart-card-row">
+        <span>DCF Fair Value:</span>
+        <strong>${fairValueText}</strong>
+      </div>
+      <div class="chart-card-row">
         <span>Buy-Below Target:</span>
         <span><strong>${buyTargetText}</strong> ${dec.distancePct !== null ? `<span class="distance-tag ${inZone ? 'distance-in-zone' : 'distance-above'}" style="font-size:0.7rem; padding:1px 5px;">${inZone ? 'In Zone!' : `+${fmtNum(dec.distancePct, 1)}%`}</span>` : ''}</span>
       </div>
@@ -575,10 +581,6 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
       <div class="chart-card-row">
         <span>1-Yr %ile &bull; Median:</span>
         <span><strong>${stats ? `${Math.round(stats.percentile)}th` : "-"}</strong> %ile &bull; ${stats ? fmtPct(stats.median) : "-"}</span>
-      </div>
-      <div class="chart-card-row">
-        <span>Valued Holdings:</span>
-        <span>${fmtNum(data.covered_weight_pct, 1)}% of fund</span>
       </div>
     </div>
 
@@ -976,7 +978,7 @@ function drawEtfChart(container, rows) {
   }
 
   const width = 1000;
-  const height = 240;
+  const height = 260;
   const m = { top: 16, right: 24, bottom: 28, left: 56 };
   const w = width - m.left - m.right;
   const h = height - m.top - m.bottom;
@@ -997,7 +999,7 @@ function drawEtfChart(container, rows) {
 
   const svg = svgEl("svg", {
     viewBox: `0 0 ${width} ${height}`,
-    style: "width: 100%; max-height: 250px; display: block; overflow: visible;",
+    style: "width: 100%; height: 280px; display: block; overflow: visible;",
     role: "img",
     "aria-label": `Premium versus DCF over the past year for ${etfId}`
   });
