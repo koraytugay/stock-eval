@@ -635,8 +635,8 @@ function renderEtfCards(list) {
             </div>
             <div class="chart-card-footer" style="margin-top: 6px; border-top: none; justify-content: space-between; font-size: 0.74rem; color: #64748b;">
               <div style="display: flex; align-items: center; gap: 14px;">
-                <span><span style="display:inline-block; width:12px; height:2px; border-top:2px dotted #0969da; margin-right:5px; vertical-align:middle;"></span><strong>Valuation Prem vs DCF</strong> (Left &bull; <span style="color:#afb8c1;">&mdash;</span> 0% Fair Value)</span>
-                <span><span style="display:inline-block; width:12px; height:2px; border-top:2px dotted #16a34a; margin-right:5px; vertical-align:middle;"></span><strong>ETF Market Price %</strong> (Right &bull; <span style="color:#16a34a;">&ndash;&ndash;</span> 0% Base)</span>
+                <span><span style="display:inline-block; width:12px; height:3px; background:#0969da; border-radius:1px; margin-right:5px; vertical-align:middle;"></span><strong>Valuation Prem vs DCF</strong> (Left &bull; <span style="color:#0969da;">&ndash;&ndash;</span> 0% Fair Value)</span>
+                <span><span style="display:inline-block; width:12px; height:3px; background:#16a34a; border-radius:1px; margin-right:5px; vertical-align:middle;"></span><strong>ETF Market Price %</strong> (Right &bull; <span style="color:#16a34a;">&ndash;&ndash;</span> 0% Base)</span>
               </div>
             </div>
           </div>

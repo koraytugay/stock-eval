@@ -955,8 +955,10 @@ tbody tr.detail-row:hover td {
 }
 
 .chart-zero {
-  stroke: #afb8c1;
-  stroke-width: 1;
+  stroke: #0969da;
+  stroke-width: 1.2;
+  stroke-dasharray: 4, 3;
+  opacity: 0.65;
 }
 
 .chart-zero-price {
@@ -985,7 +987,6 @@ tbody tr.detail-row:hover td {
   fill: none;
   stroke: var(--accent-color);
   stroke-width: 2.2;
-  stroke-dasharray: 4, 3;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
@@ -1000,7 +1001,6 @@ tbody tr.detail-row:hover td {
   fill: none;
   stroke: #16a34a;
   stroke-width: 2.2;
-  stroke-dasharray: 4, 3;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
