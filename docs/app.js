@@ -485,7 +485,7 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
         </div>
         <div class="chart-card-row">
           <span>ETF Market Price:</span>
-          <span><strong>${histPrice ? `$${fmtNum(histPrice, 2)}` : "-"}</strong> <span style="color:#7c3aed; font-weight:700;">(${histReturnStr})</span></span>
+          <span><strong>${histPrice ? `$${fmtNum(histPrice, 2)}` : "-"}</strong> <span style="color:#16a34a; font-weight:700;">(${histReturnStr})</span></span>
         </div>
         <div class="chart-card-row">
           <span>Intrinsic / $1 NAV:</span>
@@ -512,7 +512,7 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
         </div>
         <div class="chart-card-row">
           <span>1-Yr Price Return:</span>
-          <strong style="color:#7c3aed;">${totalReturnStr}</strong>
+          <strong style="color:#16a34a;">${totalReturnStr}</strong>
         </div>
       </div>
 
@@ -558,7 +558,7 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
     <div class="chart-card-section-divider">
       <div class="chart-card-row">
         <span>Market Price:</span>
-        <span><strong>${priceText}</strong> <span style="color:#7c3aed; font-weight:700;">(${totalReturnStr})</span></span>
+        <span><strong>${priceText}</strong> <span style="color:#16a34a; font-weight:700;">(${totalReturnStr})</span></span>
       </div>
       <div class="chart-card-row">
         <span>DCF Fair Value:</span>
@@ -636,7 +636,7 @@ function renderEtfCards(list) {
             <div class="chart-card-footer" style="margin-top: 6px; border-top: none; justify-content: space-between; font-size: 0.74rem; color: #64748b;">
               <div style="display: flex; align-items: center; gap: 14px;">
                 <span><span style="display:inline-block; width:12px; height:3px; background:#0969da; border-radius:1px; margin-right:5px; vertical-align:middle;"></span><strong>Valuation Prem vs DCF</strong> (Left Axis)</span>
-                <span><span style="display:inline-block; width:12px; height:3px; background:#7c3aed; border-radius:1px; margin-right:5px; vertical-align:middle;"></span><strong>ETF Market Price %</strong> (Right Axis)</span>
+                <span><span style="display:inline-block; width:12px; height:3px; background:#16a34a; border-radius:1px; margin-right:5px; vertical-align:middle;"></span><strong>ETF Market Price %</strong> (Right Axis)</span>
               </div>
               <span>0% Baseline</span>
             </div>
@@ -1164,7 +1164,7 @@ function drawEtfChart(container, rows) {
     visibility: "hidden", "pointer-events": "none"
   });
   const priceHoverDot = svgEl("circle", {
-    r: 5.5, fill: "#7c3aed", stroke: "#ffffff", "stroke-width": "2",
+    r: 5.5, fill: "#16a34a", stroke: "#ffffff", "stroke-width": "2",
     visibility: "hidden", "pointer-events": "none"
   });
   svg.appendChild(cursorLine);

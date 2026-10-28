@@ -990,21 +990,21 @@ tbody tr.detail-row:hover td {
 
 .chart-line-price {
   fill: none;
-  stroke: #7c3aed;
+  stroke: #16a34a;
   stroke-width: 2.2;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
 
 .chart-dot-price {
-  fill: #7c3aed;
+  fill: #16a34a;
   stroke: #ffffff;
   stroke-width: 2;
 }
 
 .chart-tick-price {
   font-size: 10px;
-  fill: #7c3aed;
+  fill: #16a34a;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
