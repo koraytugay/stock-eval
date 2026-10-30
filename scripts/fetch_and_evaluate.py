@@ -331,11 +331,20 @@ def run_daily_evaluation():
                  "Not writing a snapshot.")
     save_json(CACHE_FILE, cache)
 
+    etf_currencies = {etf_obj.get("currency", "CAD") for etf_obj in custom_etfs.values()}
+    fx_rates = {"CADCAD": 1.0}
+    for ccy in sorted(etf_currencies):
+        if ccy != "CAD":
+            rate = fetch_fx_rate(ccy, "CAD")
+            if rate:
+                fx_rates[f"{ccy}CAD"] = rate
+
     today_snapshot = {
         "date": today_str,
         "timestamp": now.isoformat(),
         "model": {k: params.get(k) for k in ("forecast_years", "terminal_growth", "default_wacc", "growth",
                                              "fcf_normalization_years", "excluded_sectors")},
+        "fx_rates": fx_rates,
         "stocks": {},
         "etfs": {}
     }

@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert");
-const { historyStats, chooseStance, DECISION_CONFIG } = require("../docs/decision.js");
+const { historyStats, chooseStance, computeAllocation, DECISION_CONFIG } = require("../docs/decision.js");
 
 const rows = (premiums, prices) => premiums.map((p, i) => ["d" + i, 1, p, 50, prices ? prices[i] : 10]);
 const ramp = n => Array.from({ length: n }, (_, i) => i);  // premiums 0..n-1, current is the highest
@@ -46,4 +46,44 @@ test("detects the latest holdings change", () => {
   rs.forEach((r, i) => { r.push(i < 40 ? "aaa" : i < 80 ? "bbb" : "ccc"); });
   assert.strictEqual(historyStats(rs).holdingsChangedOn, "d80");
   assert.strictEqual(historyStats(rows(ramp(100))).holdingsChangedOn, null);   // rows without hashes
+});
+
+test("computeAllocation with empty or zero cash", () => {
+  assert.strictEqual(computeAllocation([], 1000, "buy_zone").orders.length, 0);
+  assert.strictEqual(computeAllocation([{ id: "A" }], 0, "buy_zone").orders.length, 0);
+});
+
+test("computeAllocation handles multi-currency (USD and CAD) accurately", () => {
+  const candidates = [
+    {
+      id: "TSE:XEQT",
+      data: { currency: "CAD", intrinsic_per_dollar: 1.0, market_premium_pct: 0 },
+      dec: { currency: "CAD", marketPrice: 40.0, stance: { code: "BUY" }, fcfYield: 3.5 },
+      stats: { percentile: 10 }
+    },
+    {
+      id: "VXUS",
+      data: { currency: "USD", intrinsic_per_dollar: 1.0, market_premium_pct: 0 },
+      dec: { currency: "USD", marketPrice: 50.0, stance: { code: "BUY" }, fcfYield: 4.0 },
+      stats: { percentile: 10 }
+    }
+  ];
+
+  // USDCAD rate = 1.40 -> VXUS price in CAD = $50.0 * 1.40 = $70.0 CAD
+  const fxRates = { USDCAD: 1.40 };
+  const alloc = computeAllocation(candidates, 1000, "buy_zone", fxRates);
+
+  assert.strictEqual(alloc.orders.length, 2);
+  const xeqt = alloc.orders.find(o => o.etf.id === "TSE:XEQT");
+  const vxus = alloc.orders.find(o => o.etf.id === "VXUS");
+
+  assert.strictEqual(xeqt.priceCad, 40.0);
+  assert.strictEqual(vxus.priceNative, 50.0);
+  assert.strictEqual(vxus.priceCad, 70.0);
+
+  // Check that total invested + unused cash equals exactly 1000 CAD
+  assert.strictEqual(alloc.totalInvestedCad + alloc.unusedCashCad, 1000);
+  assert.ok(vxus.shares > 0);
+  assert.strictEqual(vxus.costCad, vxus.shares * 70.0);
+  assert.strictEqual(vxus.costNative, vxus.shares * 50.0);
 });

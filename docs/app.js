@@ -875,102 +875,33 @@ function renderAllocator() {
   }
 
   const cash = allocatorState.cash;
-
-  // Compute weights
-  let weights = [];
-  if (strat === "buy_and_core" && candidates.some(c => c.id === "TSE:XEQT")) {
-    const coreShare = 0.50;
-    const otherCount = Math.max(candidates.length - 1, 1);
-    const otherShareEach = (1.0 - coreShare) / otherCount;
-    weights = candidates.map(c => c.id === "TSE:XEQT" ? coreShare : otherShareEach);
-  } else if (strat === "buy_and_accumulate") {
-    // Give BUY zone ETFs 2.5x more weight than ACCUMULATE
-    weights = candidates.map(c => {
-      const base = (100.0 - (c.stats ? c.stats.percentile : 50)) * Math.max(c.data.intrinsic_per_dollar || 1.0, 0.4);
-      return c.dec.stance.code === "BUY" ? base * 2.5 : base;
-    });
-  } else {
-    // Proportional to bargain opportunity: lower historical percentile & higher intrinsic value get higher weight
-    weights = candidates.map(c => {
-      const pctile = c.stats ? c.stats.percentile : 50;
-      return (100.0 - pctile) * Math.max(c.data.intrinsic_per_dollar || 1.0, 0.5);
-    });
-  }
-  const totWeight = weights.reduce((s, w) => s + w, 0) || 1;
-
-  // Initial share allocation
-  let orders = candidates.map((c, i) => {
-    const w = weights[i] / totWeight;
-    const targetDollars = cash * w;
-    const p = c.dec.marketPrice;
-    const shares = Math.floor(targetDollars / p);
-    const cost = shares * p;
-    return {
-      etf: c,
-      targetDollars,
-      shares,
-      price: p,
-      cost,
-      score: weights[i]
-    };
-  });
-
-  // Remainder pass: allocate unspent dollars to candidate with highest value score if price fits
-  let spent = orders.reduce((s, o) => s + o.cost, 0);
-  let rem = cash - spent;
-  const sortedOrdersByScore = orders.slice().sort((a, b) => b.score - a.score);
-
-  for (const o of sortedOrdersByScore) {
-    while (rem >= o.price) {
-      o.shares += 1;
-      o.cost += o.price;
-      rem -= o.price;
-      spent += o.price;
-    }
-  }
-
-  const totalInvested = spent;
-  const unusedCash = Math.max(0, cash - totalInvested);
-
-  // Compute weighted metrics of this purchase
-  let sumFcf = 0;
-  let sumPrem = 0;
-  let costWithStats = 0;
-
-  for (const o of orders) {
-    if (o.cost > 0) {
-      if (typeof o.etf.dec.fcfYield === "number") {
-        sumFcf += o.cost * o.etf.dec.fcfYield;
-      }
-      if (typeof o.etf.data.market_premium_pct === "number") {
-        sumPrem += o.cost * o.etf.data.market_premium_pct;
-        costWithStats += o.cost;
-      }
-    }
-  }
-
-  const weightedFcf = totalInvested > 0 ? (sumFcf / totalInvested) : null;
-  const weightedPrem = costWithStats > 0 ? (sumPrem / costWithStats) : null;
+  const fxRates = (currentSnapshot && currentSnapshot.fx_rates) || {};
+  const { orders, totalInvestedCad, unusedCashCad, weightedFcf, weightedPrem } = computeAllocation(
+    candidates, cash, strat, fxRates
+  );
 
   // Plain-text for clipboard copy
   const clipText = [
     `StockEval Execution Orders (Cash: $${fmtNum(cash, 2)} CAD):`,
-    ...orders.filter(o => o.shares > 0).map(o =>
-      `- Buy ${o.shares} shares of ${o.etf.id} @ $${fmtNum(o.price, 2)} = $${fmtNum(o.cost, 2)} CAD`
-    ),
-    `Total Invested: $${fmtNum(totalInvested, 2)} CAD | Unused Cash: $${fmtNum(unusedCash, 2)} CAD`
+    ...orders.filter(o => o.shares > 0).map(o => {
+      if (o.currency !== "CAD") {
+        return `- Buy ${o.shares} shares of ${o.etf.id} @ $${fmtNum(o.priceNative, 2)} ${o.currency} (~$${fmtNum(o.costCad, 2)} CAD / $${fmtNum(o.costNative, 2)} ${o.currency})`;
+      }
+      return `- Buy ${o.shares} shares of ${o.etf.id} @ $${fmtNum(o.priceNative, 2)} CAD = $${fmtNum(o.costCad, 2)} CAD`;
+    }),
+    `Total Invested: $${fmtNum(totalInvestedCad, 2)} CAD | Unused Cash: $${fmtNum(unusedCashCad, 2)} CAD`
   ].join("\n");
 
   resultsContainer.innerHTML = `
     <div class="allocator-summary-banner">
       <div class="allocator-stat-item">
         <span class="allocator-stat-label">Total to Deploy</span>
-        <span class="allocator-stat-val">$${fmtNum(totalInvested, 2)}</span>
-        <span class="allocator-stat-sub">${fmtNum((totalInvested / cash) * 100, 1)}% of $${fmtNum(cash, 0)}</span>
+        <span class="allocator-stat-val">$${fmtNum(totalInvestedCad, 2)}</span>
+        <span class="allocator-stat-sub">${fmtNum((totalInvestedCad / cash) * 100, 1)}% of $${fmtNum(cash, 0)} CAD</span>
       </div>
       <div class="allocator-stat-item">
         <span class="allocator-stat-label">Unused Cash</span>
-        <span class="allocator-stat-val">$${fmtNum(unusedCash, 2)}</span>
+        <span class="allocator-stat-val">$${fmtNum(unusedCashCad, 2)}</span>
         <span class="allocator-stat-sub">Remainder unspent</span>
       </div>
       <div class="allocator-stat-item">
@@ -1000,10 +931,16 @@ function renderAllocator() {
         <tbody>
           ${orders.map(o => {
             const e = o.etf;
-            const pct = totalInvested > 0 ? (o.cost / totalInvested) * 100 : 0;
+            const pct = totalInvestedCad > 0 ? (o.costCad / totalInvestedCad) * 100 : 0;
             const sharesHtml = o.shares > 0
               ? `<strong>Buy ${o.shares} shares</strong>`
               : `<span class="muted">0 shares (price exceeds budget)</span>`;
+            const priceHtml = o.currency !== "CAD"
+              ? `<strong>$${fmtNum(o.priceNative, 2)}</strong> <span class="muted">${escapeHtml(o.currency)}</span><div class="muted" style="font-size:0.75rem;">~$${fmtNum(o.priceCad, 2)} CAD</div>`
+              : `<strong>$${fmtNum(o.priceNative, 2)}</strong> <span class="muted">CAD</span>`;
+            const costHtml = o.currency !== "CAD" && o.shares > 0
+              ? `<strong>$${fmtNum(o.costCad, 2)} CAD</strong><div class="muted" style="font-size:0.75rem;">$${fmtNum(o.costNative, 2)} ${escapeHtml(o.currency)}</div>`
+              : `<strong>$${fmtNum(o.costCad, 2)} CAD</strong>`;
 
             return `
               <tr>
@@ -1012,9 +949,9 @@ function renderAllocator() {
                   <span class="stance-badge ${e.dec.stance.cls}" style="margin-left:6px;">${e.dec.stance.icon} ${e.dec.stance.label}</span>
                   <div class="muted" style="font-size:0.75rem;">${escapeHtml(e.data.name || "")}</div>
                 </td>
-                <td><strong>$${fmtNum(o.price, 2)}</strong> <span class="muted">${escapeHtml(e.dec.currency)}</span></td>
+                <td>${priceHtml}</td>
                 <td>${sharesHtml}</td>
-                <td><strong>$${fmtNum(o.cost, 2)}</strong></td>
+                <td>${costHtml}</td>
                 <td>${fmtNum(pct, 1)}%</td>
                 <td>
                   <span class="muted" style="font-size:0.8rem;">
