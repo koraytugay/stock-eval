@@ -142,6 +142,8 @@ def model_inputs(fund, sector, params):
                          params.get("fcf_normalization_years", 1))
     if fcf is None:
         return None, "negative_fcf"
+    if fcf <= 0 and fund.get("interest_paid") is None:
+        return None, "negative_fcf"
 
     # Operating cash flow is after interest, but net debt is subtracted separately: add the after-tax interest
     # back so the cash flow is truly "to the firm" and debt is not counted twice

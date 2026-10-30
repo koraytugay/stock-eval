@@ -234,6 +234,12 @@ class InterestAddbackTest(unittest.TestCase):
         self.assertEqual(status, "ok")
         self.assertEqual(inputs["fcf"], 2.0)
 
+    def test_negative_levered_fcf_not_rescued_by_estimated_debt_interest(self):
+        fund = {**FUND, "free_cash_flow": -1.0, "total_debt": 100.0}
+        inputs, status = fe.model_inputs(fund, "Utilities", VALUE_PARAMS)
+        self.assertIsNone(inputs)
+        self.assertEqual(status, "negative_fcf")
+
 
 class GrowerBaseTest(unittest.TestCase):
     PARAMS = {**VALUE_PARAMS, "fcf_normalization_years": 3}
