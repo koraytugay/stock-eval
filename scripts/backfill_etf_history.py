@@ -82,6 +82,8 @@ def main():
         etf_prices = dict(zip(etf_tickers, pool.map(lambda e: fetch_price_history(etf_tickers[e], range_="2y")[1], etf_tickers)))
 
     checkpoints = [d.isoformat() for d in month_starts(start, today)]
+    if checkpoints[-1] < today.isoformat():
+        checkpoints.append(today.isoformat())
     adr_ratios = {t: (s.get("valuation") or {}).get("adr_ratio") for t, s in latest.get("stocks", {}).items()}
 
     # intrinsic[ticker][checkpoint] = (per-share value in reporting currency, reporting currency)
@@ -121,7 +123,13 @@ def main():
     day, last_day = start, None
     while day < today:
         if day.weekday() < 5:
-            cp = max(c for c in checkpoints if c <= day.isoformat()) if checkpoints[0] <= day.isoformat() else None
+            day_iso = day.isoformat()
+            cp0 = max((c for c in checkpoints if c <= day_iso), default=None)
+            cp1 = min((c for c in checkpoints if c > day_iso), default=None)
+            w = 0.0
+            if cp0 and cp1:
+                d0, d1 = datetime.date.fromisoformat(cp0), datetime.date.fromisoformat(cp1)
+                w = (day - d0).days / max((d1 - d0).days, 1)
             stocks = {}
             for t in tickers:
                 price_ccy, series = prices[t]
@@ -129,7 +137,12 @@ def main():
                 if price is None:
                     continue
                 stocks[t] = {"market_price": price}
-                iv = intrinsic[t].get(cp) if cp else None
+                iv0 = intrinsic[t].get(cp0) if cp0 else None
+                iv1 = intrinsic[t].get(cp1) if cp1 else None
+                if iv0 and iv1 and iv0[1] == iv1[1]:
+                    iv = ((1.0 - w) * iv0[0] + w * iv1[0], iv0[1])
+                else:
+                    iv = iv0
                 if iv:
                     rate = 1.0 if iv[1] == price_ccy else value_on_or_before(fx.get((iv[1], price_ccy), {}), day)
                     if rate:
