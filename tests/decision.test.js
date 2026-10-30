@@ -85,3 +85,24 @@ test("computeAllocation handles multi-currency (USD and CAD) accurately", () => 
   assert.strictEqual(vxus.costCad, vxus.shares * 70.0);
   assert.strictEqual(vxus.costNative, vxus.shares * 50.0);
 });
+
+test("computeAllocation deduplicates candidates to prevent duplicate orders in buy_and_core", () => {
+  const fakeXeqt = {
+    id: "TSE:XEQT",
+    data: { currency: "CAD", intrinsic_per_dollar: 1.0, market_premium_pct: 0 },
+    dec: { currency: "CAD", marketPrice: 40.0, stance: { code: "BUY" }, fcfYield: 3.5 },
+    stats: { percentile: 10 }
+  };
+  const fakeOther = {
+    id: "TSE:CAEM",
+    data: { currency: "CAD", intrinsic_per_dollar: 1.0, market_premium_pct: 0 },
+    dec: { currency: "CAD", marketPrice: 20.0, stance: { code: "BUY" }, fcfYield: 4.0 },
+    stats: { percentile: 5 }
+  };
+
+  // Even if caller passed XEQT twice (as core and as buy zone fund):
+  const alloc = computeAllocation([fakeXeqt, fakeXeqt, fakeOther], 1000, "buy_and_core");
+  assert.strictEqual(alloc.orders.length, 2);
+  const ids = alloc.orders.map(o => o.etf.id);
+  assert.deepStrictEqual(ids, ["TSE:XEQT", "TSE:CAEM"]);
+});

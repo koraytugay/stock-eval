@@ -875,12 +875,12 @@ function renderAllocator() {
         return (a.stats ? a.stats.percentile : 999) - (b.stats ? b.stats.percentile : 999);
       });
   } else if (strat === "buy_and_core") {
-    // 50% Core (XEQT) + 50% Buy Zone funds
-    const buyZoneFunds = etfRows
-      .filter(e => e.dec.stance.code === "BUY" && typeof e.dec.marketPrice === "number")
+    // 50% Core (XEQT) + 50% Buy Zone funds (excluding XEQT from the other candidates so it is never duplicated)
+    const buyZoneOther = etfRows
+      .filter(e => e.id !== "TSE:XEQT" && e.dec.stance.code === "BUY" && typeof e.dec.marketPrice === "number")
       .sort((a, b) => (a.stats ? a.stats.percentile : 999) - (b.stats ? b.stats.percentile : 999));
     const coreFund = etfRows.find(e => e.id === "TSE:XEQT" && typeof e.dec.marketPrice === "number");
-    candidates = coreFund ? [coreFund, ...buyZoneFunds] : buyZoneFunds;
+    candidates = coreFund ? [coreFund, ...buyZoneOther] : buyZoneOther;
   } else if (strat === "custom") {
     candidates = etfRows.filter(e => allocatorState.customSelected.has(e.id) && typeof e.dec.marketPrice === "number");
   }

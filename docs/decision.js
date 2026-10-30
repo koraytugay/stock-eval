@@ -83,6 +83,17 @@ function computeAllocation(candidates, cash, strategy, fxRates = {}) {
     };
   }
 
+  // Deduplicate candidates by ID to protect against duplicate purchase orders
+  const seenIds = new Set();
+  const uniqueCandidates = [];
+  for (const c of candidates) {
+    if (!seenIds.has(c.id)) {
+      seenIds.add(c.id);
+      uniqueCandidates.push(c);
+    }
+  }
+  candidates = uniqueCandidates;
+
   // 1. Compute candidate scores / target weights
   let weights = [];
   if (strategy === "buy_and_core" && candidates.some(c => c.id === "TSE:XEQT")) {
