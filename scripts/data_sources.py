@@ -412,8 +412,10 @@ def parse_yahoo_timeseries(data, fetched_at=None, as_of=None, report_lag_days=60
     series = {}
     for res in data.get("timeseries", {}).get("result", []) or []:
         t = (res.get("meta", {}).get("type") or [None])[0]
+        # trailingMarketCap is a live quote metric used to infer ADR ratios against price, not a lagged filing
+        limit = as_of if t == "trailingMarketCap" else cutoff
         points = [p for p in (res.get(t) or []) if p and p.get("reportedValue")
-                  and (cutoff is None or p["asOfDate"] <= cutoff)]
+                  and (limit is None or p["asOfDate"] <= limit)]
         series[t] = sorted(points, key=lambda p: p["asOfDate"])
 
     def latest(*types):

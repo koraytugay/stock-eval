@@ -201,7 +201,7 @@ def etf_look_through(holdings, stocks):
     return result
 
 
-COMMON_ADR_RATIOS = [0.1, 0.2, 0.25, 0.5, 1, 2, 3, 4, 5, 6, 8, 10, 15, 20, 25, 40, 50, 100]
+COMMON_ADR_RATIOS = [0.1, 0.2, 0.25, 0.5, 1, 2, 3, 4, 5, 8, 10, 15, 20, 25, 40, 50, 100]
 
 
 def infer_adr_ratio(price, market_cap, shares):

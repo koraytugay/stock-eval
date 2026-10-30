@@ -143,6 +143,16 @@ class ParseYahooTest(unittest.TestCase):
         early = parse_yahoo_timeseries(data, as_of="2024-03-15")
         self.assertEqual((early["fcf_basis"], early["free_cash_flow"]), ("FY", 6.0))
 
+    def test_trailing_market_cap_not_lagged_by_report_lag(self):
+        data = {"timeseries": {"result": [
+            ts("annualOperatingCashFlow", ("2023-12-31", 8 * B)),
+            ts("annualCapitalExpenditure", ("2023-12-31", -2 * B)),
+            ts("quarterlyOrdinarySharesNumber", ("2023-12-31", 1 * B)),
+            ts("trailingMarketCap", ("2023-10-01", 100 * B), ("2024-08-15", 150 * B)),
+        ]}}
+        r = parse_yahoo_timeseries(data, as_of="2024-09-01")
+        self.assertEqual(r["market_cap"], 150.0)
+
     def test_same_date_as_annual_is_fy_not_ttm(self):
         # When trailing or 4-quarter data ends on the latest fiscal year-end, basis must be "FY"
         # so normalized_fcf does not double-count that year alongside fcf_history[-1]

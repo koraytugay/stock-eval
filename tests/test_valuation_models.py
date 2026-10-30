@@ -128,6 +128,8 @@ class AdrRatioTest(unittest.TestCase):
         self.assertEqual(infer_adr_ratio(108.18, 274.3, 5.542), 2)
         self.assertEqual(infer_adr_ratio(23.5, 258.9, 11.256), 1)
         self.assertEqual(infer_adr_ratio(4.9, 100.0, 2.0), 0.1)
+        # 5:1 ADRs trading at an ADR premium (e.g. TSM at ~16% premium -> raw ~5.8) snap to 5, not 6
+        self.assertEqual(infer_adr_ratio(431.81, 1932.16, 25.932), 5)
 
     def test_unusable_inputs(self):
         self.assertIsNone(infer_adr_ratio(10.0, None, 1.0))
