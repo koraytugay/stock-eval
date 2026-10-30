@@ -184,6 +184,19 @@ class YahooRepairTest(unittest.TestCase):
         ds.repair_with_yahoo(rec, dict(YAHOO))
         self.assertIn("capex_missing", rec["warnings"])
 
+    def test_different_quarter_does_not_overwrite_capex(self):
+        # A 90-day lag between Yahoo (Q2) and SEC (Q3) is a different quarter, not a 52-week calendar offset
+        rec = sec_record(fcf_period_end="2026-09-30", warnings=["capex_missing"])
+        ds.repair_with_yahoo(rec, {**YAHOO, "fcf_period_end": "2026-06-30"})
+        self.assertIn("capex_missing", rec["warnings"])
+
+    def test_secondary_capex_repair_preserves_sec_fcf_history(self):
+        sec_hist = [["2021-12-31", 5.0], ["2022-12-31", 6.0], ["2023-12-31", 7.0], ["2024-12-31", 8.0]]
+        rec = sec_record(capex=8.0, free_cash_flow=12.0, fcf_history=list(sec_hist), warnings=["capex_secondary"])
+        ds.repair_with_yahoo(rec, dict(YAHOO))
+        self.assertEqual(rec["capex"], 11.0)
+        self.assertEqual(rec["fcf_history"], sec_hist)
+
     def test_no_yahoo_data(self):
         self.assertFalse(ds.repair_with_yahoo(sec_record(), None))
 

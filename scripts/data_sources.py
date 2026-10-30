@@ -517,12 +517,13 @@ def repair_with_yahoo(record, yahoo, tolerance=3.0):
     warnings = record["warnings"]
     repaired = False
     same_basis = (yahoo["fcf_basis"] == record["fcf_basis"]
-                  and abs(_days(yahoo["fcf_period_end"], record["fcf_period_end"])) <= 100)
+                  and abs(_days(yahoo["fcf_period_end"], record["fcf_period_end"])) <= 20)
     if ("capex_missing" in warnings or "capex_secondary" in warnings) and same_basis and yahoo["capex"] > 0:
         if yahoo["capex"] > record["capex"]:
             record["capex"] = yahoo["capex"]
             record["free_cash_flow"] = _b((record["operating_cash_flow"] - record["capex"]) * 1e9)
-            record["fcf_history"] = yahoo["fcf_history"]
+            if "capex_missing" in warnings:
+                record["fcf_history"] = yahoo["fcf_history"]
             repaired = True
         if "capex_missing" in warnings:
             warnings.remove("capex_missing")
