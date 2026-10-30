@@ -170,6 +170,22 @@ class ParseYahooTest(unittest.TestCase):
         r = parse_yahoo_timeseries(data)
         self.assertEqual((r["fcf_basis"], r["fcf_period_end"], r["free_cash_flow"]), ("FY", "2023-12-31", 6.0))
 
+    def test_partial_quarterly_window_blends_with_prior_fy(self):
+        # Yahoo retains only ~5 quarters; when `as_of` filters out later quarters leaving 2 consecutive
+        # quarters after the prior FY, blend the 2 reported quarters with 2/4 of the prior FY.
+        data = {"timeseries": {"result": [
+            ts("annualOperatingCashFlow", ("2024-12-31", 8 * B), ("2025-12-31", 16 * B)),
+            ts("annualCapitalExpenditure", ("2024-12-31", -2 * B), ("2025-12-31", -4 * B)),
+            ts("quarterlyOperatingCashFlow", ("2025-06-30", 3 * B), ("2025-09-30", 4 * B),
+               ("2025-12-31", 5 * B), ("2026-03-31", 5 * B), ("2026-06-30", 6 * B)),
+            ts("quarterlyCapitalExpenditure", ("2025-06-30", -1 * B), ("2025-09-30", -1 * B),
+               ("2025-12-31", -1 * B), ("2026-03-31", -1 * B), ("2026-06-30", -1 * B)),
+            ts("quarterlyOrdinarySharesNumber", ("2025-06-30", 1 * B)),
+        ]}}
+        r = parse_yahoo_timeseries(data, as_of="2025-12-01")
+        # 2 quarters <= 2025-10-02 (2025-06-30 FCF=2, 2025-09-30 FCF=3) + 2/4 * FY2024 (FCF=6) = 8.0
+        self.assertEqual((r["fcf_basis"], r["fcf_period_end"], r["free_cash_flow"]), ("TTM", "2025-09-30", 8.0))
+
     def test_empty(self):
         self.assertIsNone(parse_yahoo_timeseries({"timeseries": {"result": []}}))
 

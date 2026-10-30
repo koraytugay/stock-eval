@@ -70,6 +70,23 @@ class EstimateGrowthTest(unittest.TestCase):
         self.assertEqual(estimate_growth([["2022-01-31", 1.0], ["2022-12-31", 2.0], ["2023-06-30", 3.0]], default=0.04),
                          (0.04, "default"))
 
+    def test_three_consecutive_annual_points_qualify_for_min_years_3(self):
+        # 3 annual points (2.0 years between endpoints) represent 3 fiscal years of history
+        hist = [["2022-12-31", 100.0], ["2023-12-31", 120.0], ["2024-12-31", 144.0]]
+        g, src = estimate_growth(hist, default=0.04, cap=0.25, min_years=3)
+        self.assertEqual(src, "historical")
+        self.assertAlmostEqual(g, 0.20, places=2)
+
+    def test_ttm_period_end_rolls_growth_window_smoothly(self):
+        # 6 annual points where year 1 was low (50) and years 2..6 were flat (100)
+        hist = [["2019-12-31", 50.0], ["2020-12-31", 80.0], ["2021-12-31", 100.0],
+                ["2022-12-31", 100.0], ["2023-12-31", 100.0], ["2024-12-31", 100.0]]
+        g_fy, _ = estimate_growth(hist, cap=0.5, basis="FY")
+        g_q2, _ = estimate_growth(hist, cap=0.5, latest_fcf=100.0, period_end="2025-06-30", basis="TTM")
+        g_next_fy, _ = estimate_growth(hist + [["2025-12-31", 100.0]], cap=0.5, basis="FY")
+        self.assertGreater(g_fy, g_q2)
+        self.assertGreater(g_q2, g_next_fy)
+
 
 class NormalizedFcfTest(unittest.TestCase):
     HIST = [["2021-12-31", 3.0], ["2022-12-31", 6.0], ["2023-12-31", 9.0]]
@@ -80,6 +97,15 @@ class NormalizedFcfTest(unittest.TestCase):
 
     def test_ttm_basis_includes_all_fiscal_years_before_it(self):
         self.assertEqual(normalized_fcf(12.0, self.HIST, "TTM", 3), 9.0)
+
+    def test_ttm_period_end_rolls_normalization_window_smoothly(self):
+        # At FY end (6.0) vs full year later (8.0 for latest=9.0), mid-year TTM blends halfway (~7.0)
+        n_fy = normalized_fcf(9.0, self.HIST, "FY", 3, period_end="2023-12-31")
+        n_q2 = normalized_fcf(9.0, self.HIST, "TTM", 3, period_end="2024-06-30")
+        n_next = normalized_fcf(9.0, self.HIST + [["2024-12-31", 9.0]], "FY", 3, period_end="2024-12-31")
+        self.assertEqual(n_fy, 6.0)
+        self.assertAlmostEqual(n_q2, 7.0, places=1)
+        self.assertEqual(n_next, 8.0)
 
     def test_disabled_and_short_history(self):
         self.assertEqual(normalized_fcf(9.0, self.HIST, "FY", 1), 9.0)

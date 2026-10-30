@@ -19,8 +19,8 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
 from data_sources import SCHEMA_VERSION, fetch_market_price, fetch_fx_rate, fetch_fundamentals, fetch_last_trade_date
-from valuation_models import (compute_dcf, compute_reverse_dcf, estimate_growth, normalized_fcf, etf_look_through,
-                              infer_adr_ratio)
+from valuation_models import (compute_dcf, compute_reverse_dcf, estimate_growth, normalized_fcf, _normalized_fcf_raw,
+                              etf_look_through, infer_adr_ratio)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
@@ -138,31 +138,43 @@ def model_inputs(fund, sector, params):
     if "capex_missing" in (fund.get("warnings") or []):
         # Without capex the "free" cash flow is really operating cash flow and would badly overstate value
         return None, "no_capex"
-    fcf = normalized_fcf(fund.get("free_cash_flow"), fund.get("fcf_history"), fund.get("fcf_basis", "FY"),
-                         params.get("fcf_normalization_years", 1))
-    if fcf is None:
+    raw_norm = _normalized_fcf_raw(fund.get("free_cash_flow"), fund.get("fcf_history"), fund.get("fcf_basis", "FY"),
+                                   params.get("fcf_normalization_years", 1), period_end=fund.get("fcf_period_end"))
+    if raw_norm is None:
         return None, "negative_fcf"
+    fcf = round(raw_norm, 3)
     if fcf <= 0 and fund.get("interest_paid") is None:
         return None, "negative_fcf"
 
     # Operating cash flow is after interest, but net debt is subtracted separately: add the after-tax interest
     # back so the cash flow is truly "to the firm" and debt is not counted twice
     addback = interest_addback(fund, params)
-    fcf = round(fcf + addback, 3)
+    raw_firm_norm = raw_norm + addback
+    fcf = round(raw_firm_norm, 3)
     if fcf <= 0:
         return None, "negative_fcf"
 
     g_cfg = params["growth"]
     growth, growth_source = estimate_growth(fund.get("fcf_history"), g_cfg["default"], g_cfg["floor"],
-                                            g_cfg["cap"], g_cfg["min_history_years"])
+                                            g_cfg["cap"], g_cfg["min_history_years"],
+                                            latest_fcf=fund.get("free_cash_flow"),
+                                            period_end=fund.get("fcf_period_end"),
+                                            basis=fund.get("fcf_basis", "FY"))
 
     # Averaging past years understates a business that is genuinely growing: the base then lags the growth
-    # rate applied to it. Growers start from the latest cash flow, unless that is a spike versus the average
-    # (the cyclical-peak case normalization exists for).
+    # rate applied to it. Growers start from the latest cash flow, capped at the continuous spike ceiling L*
+    # (where L* = max_spike * normalized_fcf(L*)) so a one-year surge is dampened without a step-down cliff.
     latest = fund.get("free_cash_flow")
+    max_spike = g_cfg.get("latest_base_max_spike", 1.5)
+    norm_years = params.get("fcf_normalization_years", 1)
     if (growth_source == "historical" and growth >= g_cfg.get("latest_base_min_growth", 1.0)
-            and latest and latest + addback > fcf and latest + addback <= fcf * g_cfg.get("latest_base_max_spike", 1.5)):
-        fcf = round(latest + addback, 3)
+            and latest and latest + addback > fcf):
+        latest_firm = latest + addback
+        if norm_years > max_spike:
+            spike_cap = max(max_spike * (norm_years * raw_firm_norm - latest_firm) / (norm_years - max_spike), raw_firm_norm)
+        else:
+            spike_cap = raw_firm_norm * max_spike
+        fcf = round(min(latest_firm, spike_cap), 3)
     return {
         "fcf": fcf,
         "interest_addback": addback,

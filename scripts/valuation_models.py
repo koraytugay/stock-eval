@@ -87,23 +87,14 @@ def compute_reverse_dcf(market_price, fcf, shares, net_debt, wacc=0.08, terminal
     return {"growth": round((low_g + high_g) / 2.0, 4), "status": "ok"}
 
 
-def estimate_growth(fcf_history, default=0.04, floor=0.0, cap=0.15, min_years=3):
-    """
-    Estimates forecast growth from up to the last 6 annual FCF values as the median of pairwise log-growth
-    rates (Theil-Sen), which ignores a single unusual year instead of letting it set the growth rate the way
-    a point-to-point CAGR does.
-    The result is clamped to [floor, cap]. Falls back to `default` when history is too short or any
-    year has non-positive FCF (growth is not meaningful through a loss year).
-
-    fcf_history: list of [period_end_iso, fcf] sorted ascending.
-    Returns (growth_rate, source) where source is "historical" or "default".
-    """
+def _estimate_growth_points(fcf_history, default=0.04, floor=0.0, cap=0.15, min_years=3):
     points = (fcf_history or [])[-6:]
-    if len(points) < 3 or any(v is None or v <= 0 for _, v in points):
+    if len(points) < max(min_years, 2) or any(v is None or v <= 0 for _, v in points):
         return default, "default"
     t0 = datetime.date.fromisoformat(points[0][0])
     xs = [(datetime.date.fromisoformat(d) - t0).days / 365.25 for d, _ in points]
-    if xs[-1] < min_years - 0.1:
+    # N annual period-ends span N-1 annual intervals (e.g. 3 fiscal years span ~2.0 years between endpoints)
+    if xs[-1] < max(min_years - 1, 1) - 0.1:
         return default, "default"
     ys = [math.log(v) for _, v in points]
     slopes = sorted((ys[j] - ys[i]) / (xs[j] - xs[i])
@@ -114,18 +105,63 @@ def estimate_growth(fcf_history, default=0.04, floor=0.0, cap=0.15, min_years=3)
     return round(min(max(growth, floor), cap), 4), "historical"
 
 
-def normalized_fcf(latest_fcf, fcf_history, basis="FY", years=3):
+def estimate_growth(fcf_history, default=0.04, floor=0.0, cap=0.15, min_years=3,
+                    latest_fcf=None, period_end=None, basis="FY"):
+    """
+    Estimates forecast growth from up to the last 6 annual FCF values as the median of pairwise log-growth
+    rates (Theil-Sen), which ignores a single unusual year instead of letting it set the growth rate the way
+    a point-to-point CAGR does.
+    The result is clamped to [floor, cap]. Falls back to `default` when history is too short or any
+    year has non-positive FCF (growth is not meaningful through a loss year).
+
+    When `basis == "TTM"` and `period_end` is partway through the next fiscal year, blends the FY-anchored
+    window with the TTM-extended window in proportion to the elapsed year so the 6-year window rolls smoothly
+    quarter by quarter instead of jumping all at once on the 10-K filing date.
+    """
+    g0, s0 = _estimate_growth_points(fcf_history, default, floor, cap, min_years)
+    if basis == "TTM" and latest_fcf is not None and latest_fcf > 0 and period_end and fcf_history:
+        days = (datetime.date.fromisoformat(period_end) - datetime.date.fromisoformat(fcf_history[-1][0])).days
+        if 0 < days < 365:
+            g1, s1 = _estimate_growth_points(list(fcf_history) + [[period_end, latest_fcf]],
+                                             default, floor, cap, min_years)
+            if s0 == "historical" and s1 == "historical":
+                alpha = days / 365.25
+                return round((1.0 - alpha) * g0 + alpha * g1, 4), "historical"
+    return g0, s0
+
+
+def _normalized_fcf_raw(latest_fcf, fcf_history, basis="FY", years=3, period_end=None):
+    if latest_fcf is None:
+        return None
+    pts = [(d, v) for d, v in (fcf_history or []) if v is not None]
+    history = [v for _, v in pts]
+    if years <= 1 or not history:
+        return float(latest_fcf)
+    vals_fy = [latest_fcf] + history[:-1][::-1][:max(years - 1, 0)]
+    avg_fy = sum(vals_fy) / len(vals_fy)
+    if basis == "FY":
+        return avg_fy
+    vals_ttm = [latest_fcf] + history[::-1][:max(years - 1, 0)]
+    avg_ttm = sum(vals_ttm) / len(vals_ttm)
+    if period_end and pts:
+        days = (datetime.date.fromisoformat(period_end) - datetime.date.fromisoformat(pts[-1][0])).days
+        if 0 <= days < 365:
+            alpha = days / 365.25
+            return (1.0 - alpha) * avg_fy + alpha * avg_ttm
+    return avg_ttm
+
+
+def normalized_fcf(latest_fcf, fcf_history, basis="FY", years=3, period_end=None):
     """
     Averages the latest FCF (TTM or FY) with the preceding fiscal years so one unusually strong or weak
     year (common for cyclicals) does not drive the whole valuation. years=1 disables normalization.
+
+    When `basis == "TTM"` and `period_end` is provided, rolls the prior-year window forward in proportion to
+    how far `period_end` has advanced past the last fiscal year-end so switching from FY to Q1 TTM does not
+    drop the oldest year all at once on a single day.
     """
-    if latest_fcf is None:
-        return None
-    history = [v for _, v in (fcf_history or []) if v is not None]
-    # With an FY basis the latest value is already the last history point
-    prior = history[:-1] if basis == "FY" else history
-    values = [latest_fcf] + prior[::-1][:max(years - 1, 0)]
-    return round(sum(values) / len(values), 3)
+    raw = _normalized_fcf_raw(latest_fcf, fcf_history, basis, years, period_end)
+    return round(raw, 3) if raw is not None else None
 
 
 def etf_look_through(holdings, stocks):

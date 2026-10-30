@@ -433,8 +433,10 @@ def parse_yahoo_timeseries(data, fetched_at=None, as_of=None, report_lag_days=60
     # Cash flow, freshest first: sum of the last four quarters (consistent between live and point-in-time
     # reads), Yahoo's own trailing figure, then the last fiscal year
     annual_p = latest("annualOperatingCashFlow")
+    ann_capex_p = latest("annualCapitalExpenditure")
     quarters = series.get("quarterlyOperatingCashFlow", [])[-4:]
     q_capex = {p["asOfDate"]: p for p in series.get("quarterlyCapitalExpenditure", [])}
+    valid_q = [q for q in series.get("quarterlyOperatingCashFlow", []) if q["asOfDate"] in q_capex]
     trailing_p = latest("trailingOperatingCashFlow")
     if (len(quarters) == 4 and 250 <= _days(quarters[0]["asOfDate"], quarters[-1]["asOfDate"]) <= 300
             and all(q["asOfDate"] in q_capex for q in quarters)
@@ -443,13 +445,25 @@ def parse_yahoo_timeseries(data, fetched_at=None, as_of=None, report_lag_days=60
         ocf = sum(val(q) for q in quarters)
         capex_p = q_capex[quarters[-1]["asOfDate"]]
         capex = sum(abs(val(q_capex[q["asOfDate"]])) for q in quarters)
+    elif (annual_p and ann_capex_p and 0 < len(valid_q) < 4
+          and valid_q[-1]["asOfDate"] > annual_p["asOfDate"]
+          and _days(annual_p["asOfDate"], valid_q[-1]["asOfDate"]) <= 370
+          and 75 * (len(valid_q) - 1) <= _days(valid_q[0]["asOfDate"], valid_q[-1]["asOfDate"]) <= 105 * (len(valid_q) - 1)
+          and (not trailing_p or valid_q[-1]["asOfDate"] >= trailing_p["asOfDate"])):
+        # Yahoo only retains ~5 quarters; on historical `as_of` reads where the earliest quarters of the
+        # 4-quarter window were truncated by Yahoo, blend the k reported quarters with (4-k)/4 of the prior FY.
+        k = len(valid_q)
+        ocf_p, basis = valid_q[-1], "TTM"
+        capex_p = q_capex[valid_q[-1]["asOfDate"]]
+        ocf = sum(val(q) for q in valid_q) + ((4 - k) / 4.0) * val(annual_p)
+        capex = sum(abs(val(q_capex[q["asOfDate"]])) for q in valid_q) + ((4 - k) / 4.0) * abs(val(ann_capex_p))
     elif trailing_p and (not annual_p or trailing_p["asOfDate"] > annual_p["asOfDate"]):
         ocf_p, basis = trailing_p, "TTM"
         capex_p = latest("trailingCapitalExpenditure", "annualCapitalExpenditure")
         ocf, capex = val(ocf_p), abs(val(capex_p))  # Yahoo reports CapEx as a negative cash flow
     elif annual_p:
         ocf_p, basis = annual_p, "FY"
-        capex_p = latest("annualCapitalExpenditure")
+        capex_p = ann_capex_p
         ocf, capex = val(ocf_p), abs(val(capex_p))
     else:
         return None

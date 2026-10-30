@@ -280,6 +280,14 @@ class GrowerBaseTest(unittest.TestCase):
         inputs, _ = fe.model_inputs(self.fund(hist, 11.0), "Information Technology", self.PARAMS)
         self.assertLess(inputs["fcf"], 11.0)
 
+    def test_grower_fcf_is_monotonic_across_spike_boundary(self):
+        # Increasing latest FCF across the 1.5x spike threshold must never cause used FCF to drop
+        hist = [["2022-12-31", 6.0], ["2023-12-31", 7.2], ["2024-12-31", 8.6], ["2025-12-31", 10.4]]
+        used = [fe.model_inputs(self.fund(hist, latest), "Information Technology", self.PARAMS)[0]["fcf"]
+                for latest in (12.0, 15.0, 18.5, 19.0, 19.5, 22.0, 30.0)]
+        for prev, curr in zip(used, used[1:]):
+            self.assertGreaterEqual(curr, prev)
+
 
 class HoldingsHashTest(unittest.TestCase):
     def test_depends_on_tickers_not_weights(self):
