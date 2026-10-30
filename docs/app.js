@@ -390,7 +390,10 @@ function renderEtfSummary(list) {
     return `
       <tr>
         <td>
-          <strong>${escapeHtml(id)}</strong>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <strong>${escapeHtml(id)}</strong>
+            <span class="badge" style="font-size:0.68rem; padding:1px 5px;" title="${escapeHtml(unvaluedTitle(data))}">${fmtNum(data.covered_weight_pct, 1)}% Valued</span>
+          </div>
           <span class="status-note">${escapeHtml(data.name || "")}</span>
         </td>
         <td><span class="category-badge">${escapeHtml(catInfo.label)}</span></td>
