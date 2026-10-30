@@ -146,5 +146,45 @@ class ValueStockTest(unittest.TestCase):
         self.assertIsNone(valuation["market_premium_pct"])
 
 
+def sec_record(**kw):
+    rec = {"fcf_basis": "TTM", "fcf_period_end": "2026-09-30", "operating_cash_flow": 20.0, "capex": 0.0,
+           "free_cash_flow": 20.0, "total_cash": 2.0, "total_debt": 0.0, "net_debt": -2.0, "fcf_history": [],
+           "warnings": ["capex_missing", "debt_missing"]}
+    rec.update(kw)
+    return rec
+
+
+YAHOO = {"fcf_basis": "TTM", "fcf_period_end": "2026-09-30", "capex": 11.0, "total_debt": 23.0,
+         "fcf_history": [["2025-12-31", 9.0]], "warnings": []}
+
+
+class YahooRepairTest(unittest.TestCase):
+    def test_fills_capex_and_debt(self):
+        rec = sec_record()
+        self.assertTrue(ds.repair_with_yahoo(rec, dict(YAHOO)))
+        self.assertEqual(rec["capex"], 11.0)
+        self.assertEqual(rec["free_cash_flow"], 9.0)
+        self.assertEqual(rec["net_debt"], 21.0)
+        self.assertEqual(rec["fcf_history"], [["2025-12-31", 9.0]])
+        self.assertNotIn("capex_missing", rec["warnings"])
+        self.assertNotIn("debt_missing", rec["warnings"])
+
+    def test_keeps_larger_sec_capex(self):
+        rec = sec_record(capex=15.0, free_cash_flow=5.0, warnings=["capex_secondary"])
+        ds.repair_with_yahoo(rec, dict(YAHOO))
+        self.assertEqual(rec["capex"], 15.0)
+
+    def test_different_basis_leaves_capex_missing(self):
+        rec = sec_record(fcf_basis="FY", warnings=["capex_missing"])
+        ds.repair_with_yahoo(rec, dict(YAHOO))
+        self.assertIn("capex_missing", rec["warnings"])
+
+    def test_no_yahoo_data(self):
+        self.assertFalse(ds.repair_with_yahoo(sec_record(), None))
+
+    def test_unrepaired_capex_means_no_valuation(self):
+        self.assertEqual(ValueStockTest().value({**FUND, "warnings": ["capex_missing"]})[1], "no_capex")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -22,19 +22,34 @@ SEC_USER_AGENT_SET = bool(os.environ.get("SEC_USER_AGENT"))
 SEC_HEADERS = {"User-Agent": os.environ.get("SEC_USER_AGENT") or "StockEvalApp admin@stockeval-research.org"}
 YAHOO_HEADERS = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"}
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 FCF_FLOW_CONCEPTS = {
     "ocf": ["NetCashProvidedByUsedInOperatingActivities",
             "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations"],
+    # Companies switch tags over the years and by industry, so several are tried in priority order. The first
+    # two are the standard ones; the rest are industry-specific and get cross-checked against Yahoo.
     "capex": ["PaymentsToAcquirePropertyPlantAndEquipment",
-              "PaymentsToAcquireProductiveAssets"],
+              "PaymentsToAcquireProductiveAssets",
+              "PaymentsToAcquireOilAndGasPropertyAndEquipment",
+              "PaymentsToExploreAndDevelopOilAndGasProperties",
+              "PaymentsToAcquireOilAndGasProperty",
+              "PaymentsForProceedsFromProductiveAssets",
+              "PaymentsForConstructionInProcess",
+              "PaymentsToDevelopRealEstateAssets",
+              "PaymentsForCapitalImprovements",
+              "PaymentsToAcquireOtherProductiveAssets",
+              "PaymentsToAcquireOtherPropertyPlantAndEquipment",
+              "PaymentsToAcquireMachineryAndEquipment"],
 }
+PRIMARY_CAPEX_CONCEPTS = 2
 CASH_CONCEPTS = ["CashAndCashEquivalentsAtCarryingValue",
                  "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
                  "Cash"]
-LT_DEBT_TOTAL_CONCEPTS = ["LongTermDebt"]
-LT_DEBT_NONCURRENT_CONCEPTS = ["LongTermDebtNoncurrent", "LongTermDebtAndCapitalLeaseObligations"]
+LT_DEBT_TOTAL_CONCEPTS = ["LongTermDebt", "DebtAndCapitalLeaseObligations",
+                          "LongTermDebtAndCapitalLeaseObligationsIncludingCurrentMaturities"]
+LT_DEBT_NONCURRENT_CONCEPTS = ["LongTermDebtNoncurrent", "LongTermDebtAndCapitalLeaseObligations",
+                               "UnsecuredLongTermDebt", "LongTermNotesPayable", "SeniorNotes"]
 LT_DEBT_CURRENT_CONCEPTS = ["LongTermDebtCurrent", "LongTermDebtAndCapitalLeaseObligationsCurrent"]
 SHORT_TERM_DEBT_CONCEPTS = ["ShortTermBorrowings", "CommercialPaper"]
 SHARES_CONCEPTS = [("dei", "EntityCommonStockSharesOutstanding"),
@@ -241,11 +256,13 @@ def parse_sec_companyfacts(data, fetched_at=None):
     fy_end = max(ocf_annual)
 
     capex_entries, capex_annual = [], {}
-    for c in FCF_FLOW_CONCEPTS["capex"]:
+    for i, c in enumerate(FCF_FLOW_CONCEPTS["capex"]):
         entries = _units(facts, "us-gaap", c)
         annual = _annual_flows(entries)
         if fy_end in annual:
             capex_entries, capex_annual = entries, annual
+            if i >= PRIMARY_CAPEX_CONCEPTS:
+                warnings.append("capex_secondary")
             break
     if not capex_annual:
         warnings.append("capex_missing")
@@ -440,6 +457,36 @@ def parse_yahoo_timeseries(data, fetched_at=None, as_of=None, report_lag_days=60
     }
 
 
+def repair_with_yahoo(record, yahoo):
+    """
+    Fills gaps in an SEC record from the Yahoo equivalent: missing or industry-tag capex (the larger figure is
+    kept, since understating capex is the risky error) and missing debt. Returns True if a field was repaired.
+    """
+    if not yahoo:
+        return False
+    warnings = record["warnings"]
+    repaired = False
+    same_basis = (yahoo["fcf_basis"] == record["fcf_basis"]
+                  and abs(_days(yahoo["fcf_period_end"], record["fcf_period_end"])) <= 100)
+    if ("capex_missing" in warnings or "capex_secondary" in warnings) and same_basis and yahoo["capex"] > 0:
+        if yahoo["capex"] > record["capex"]:
+            record["capex"] = yahoo["capex"]
+            record["free_cash_flow"] = _b((record["operating_cash_flow"] - record["capex"]) * 1e9)
+            record["fcf_history"] = yahoo["fcf_history"]
+            repaired = True
+        if "capex_missing" in warnings:
+            warnings.remove("capex_missing")
+            repaired = True
+        warnings.append("capex_from_yahoo" if repaired else "capex_checked")
+    if "debt_missing" in warnings and "debt_missing" not in yahoo["warnings"]:
+        record["total_debt"] = yahoo["total_debt"]
+        record["net_debt"] = _b((yahoo["total_debt"] - record["total_cash"]) * 1e9)
+        warnings.remove("debt_missing")
+        warnings.append("debt_from_yahoo")
+        repaired = True
+    return repaired
+
+
 def fetch_fundamentals(ticker, fetched_at):
     """SEC for US filers, Yahoo timeseries otherwise. Returns a parsed record or None."""
     sec_map = get_sec_ticker_map()  # raises if the SEC is unreachable or rejects our User-Agent
@@ -449,6 +496,14 @@ def fetch_fundamentals(ticker, fetched_at):
         if facts:
             parsed = parse_sec_companyfacts(facts, fetched_at)
             if parsed:
+                needs_check = {"capex_missing", "capex_secondary", "debt_missing"} & set(parsed["warnings"])
+                if needs_check:
+                    try:
+                        yahoo = parse_yahoo_timeseries(fetch_yahoo_timeseries(ticker), fetched_at)
+                    except Exception as e:
+                        print(f"  Yahoo cross-check failed for {ticker}: {e}")
+                        yahoo = None
+                    repair_with_yahoo(parsed, yahoo)
                 return parsed
     except Exception as e:
         print(f"  SEC fetch failed for {ticker}: {e}")

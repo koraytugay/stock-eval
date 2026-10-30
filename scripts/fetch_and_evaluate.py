@@ -118,6 +118,9 @@ def model_inputs(fund, sector, params):
         return None, "no_fundamentals"
     if not fund.get("shares_outstanding"):
         return None, "no_shares"
+    if "capex_missing" in (fund.get("warnings") or []):
+        # Without capex the "free" cash flow is really operating cash flow and would badly overstate value
+        return None, "no_capex"
     fcf = normalized_fcf(fund.get("free_cash_flow"), fund.get("fcf_history"), fund.get("fcf_basis", "FY"),
                          params.get("fcf_normalization_years", 1))
     if fcf is None or fcf <= 0:
