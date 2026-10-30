@@ -112,5 +112,39 @@ class FreshnessTest(unittest.TestCase):
         self.assertTrue(datetime.date(2026, 8, 1) < d < datetime.date(2026, 9, 30))
 
 
+VALUE_PARAMS = {
+    "forecast_years": 5, "terminal_growth": 0.025, "default_wacc": 0.08, "sector_wacc": {},
+    "excluded_sectors": ["Financials"], "fcf_normalization_years": 1,
+    "growth": {"default": 0.04, "floor": 0.0, "cap": 0.15, "min_history_years": 3},
+}
+FUND = {"source": "SEC EDGAR", "currency": "USD", "free_cash_flow": 10.0, "fcf_basis": "FY", "fcf_history": [],
+        "net_debt": 5.0, "shares_outstanding": 2.0}
+
+
+class ValueStockTest(unittest.TestCase):
+    def value(self, fund, sector="Information Technology", price=100.0):
+        return fe.value_stock("AAA", price, "USD", fund, sector, VALUE_PARAMS)
+
+    def test_ok(self):
+        valuation, status = self.value(FUND)
+        self.assertEqual(status, "ok")
+        self.assertGreater(valuation["intrinsic_dcf"], 0)
+        self.assertEqual(valuation["growth_source"], "default")
+
+    def test_excluded_sector(self):
+        self.assertEqual(self.value(FUND, "Financials"), (None, "sector_excluded"))
+
+    def test_missing_data_statuses(self):
+        self.assertEqual(self.value({})[1], "no_fundamentals")
+        self.assertEqual(self.value({**FUND, "shares_outstanding": None})[1], "no_shares")
+        self.assertEqual(self.value({**FUND, "free_cash_flow": -1.0})[1], "negative_fcf")
+
+    def test_debt_exceeding_value_is_floored(self):
+        valuation, status = self.value({**FUND, "net_debt": 10_000.0})
+        self.assertEqual(status, "debt_exceeds_value")
+        self.assertEqual(valuation["intrinsic_dcf"], 0.0)
+        self.assertIsNone(valuation["market_premium_pct"])
+
+
 if __name__ == "__main__":
     unittest.main()
