@@ -109,7 +109,7 @@ def main():
             dcf = compute_dcf(fcf=inputs["fcf"], growth_rate=inputs["growth"], terminal_growth=params["terminal_growth"],
                               wacc=inputs["wacc"], net_debt=inputs["net_debt"], shares=shares,
                               forecast_years=params["forecast_years"])
-            if dcf:
+            if dcf and dcf["intrinsic_value"] > 0:
                 intrinsic[t][cp] = (dcf["intrinsic_value"], fund.get("currency", "USD"))
 
     pairs = {(ccy, prices[t][0]) for t in tickers for _, ccy in intrinsic[t].values()

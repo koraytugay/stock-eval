@@ -134,8 +134,8 @@ def etf_look_through(holdings, stocks):
     w_i * (intrinsic_i / price_i) of intrinsic value, so the ratio is currency-agnostic as long as each
     stock's intrinsic value is expressed in its own price currency.
 
-    Only holdings with a valid valuation count toward coverage and the aggregate. A negative DCF value
-    (debt exceeding enterprise value) counts as zero: shareholders cannot lose more than the share price.
+    Only holdings with a positive DCF valuation count toward coverage and the aggregate; holdings where debt
+    exceeds enterprise value (intrinsic <= 0) are reported in `unvalued_weight_pct["debt_exceeds_value"]`.
     """
     # Holdings may list only the fund's top positions, so coverage is measured against the whole fund
     listed_weight = sum(h.get("weight", 0) for h in holdings)
@@ -155,11 +155,14 @@ def etf_look_through(holdings, stocks):
         val = stock.get("valuation") or {}
         raw = stock.get("raw") or {}
         intrinsic = val.get("intrinsic_dcf")
-        if not price or price <= 0 or intrinsic is None:
-            reason = stock.get("valuation_status") or ("no_valuation" if price else "no_price")
+        if not price or price <= 0 or intrinsic is None or intrinsic <= 0:
+            reason = stock.get("valuation_status") or (
+                "debt_exceeds_value" if intrinsic is not None and intrinsic <= 0
+                else ("no_valuation" if price else "no_price")
+            )
             unvalued[reason] = unvalued.get(reason, 0.0) + w
             continue
-        intrinsic_per_dollar += w * (max(intrinsic, 0.0) / price)
+        intrinsic_per_dollar += w * (intrinsic / price)
         valued_weight += w
 
         fcf = val.get("fcf_used") or raw.get("free_cash_flow")

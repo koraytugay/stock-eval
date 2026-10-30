@@ -101,12 +101,15 @@ class EtfLookThroughTest(unittest.TestCase):
         self.assertAlmostEqual(res["intrinsic_per_dollar"], 1.25)
         self.assertAlmostEqual(res["market_premium_pct"], -20.0)
 
-    def test_negative_value_counts_as_zero(self):
+    def test_non_positive_value_is_excluded_as_debt_exceeds_value(self):
         stocks = {"A": {"market_price": 10.0, "valuation": {"intrinsic_dcf": 20.0}},
-                  "B": {"market_price": 10.0, "valuation": {"intrinsic_dcf": -50.0}}}
+                  "B": {"market_price": 10.0, "valuation_status": "debt_exceeds_value",
+                        "valuation": {"intrinsic_dcf": 0.0}}}
         res = etf_look_through([{"ticker": "A", "weight": 0.5}, {"ticker": "B", "weight": 0.5}], stocks)
-        self.assertAlmostEqual(res["intrinsic_per_dollar"], 1.0)
-        self.assertAlmostEqual(res["market_premium_pct"], 0.0)
+        self.assertEqual(res["covered_weight_pct"], 50.0)
+        self.assertEqual(res["unvalued_weight_pct"], {"debt_exceeds_value": 50.0})
+        self.assertAlmostEqual(res["intrinsic_per_dollar"], 2.0)
+        self.assertAlmostEqual(res["market_premium_pct"], -50.0)
 
     def test_partial_holdings_list_measures_coverage_against_whole_fund(self):
         stocks = {"A": {"market_price": 10.0, "valuation": {"intrinsic_dcf": 5.0}},
