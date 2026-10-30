@@ -2,8 +2,9 @@ name: Daily Fundamental Valuation Engine
 
 on:
   schedule:
-    # Runs at 16:00 UTC on weekdays (12:00 PM EDT / 11:00 AM EST); markets are closed on weekends
-    - cron: '0 16 * * 1-5'
+    # Runs at 21:30 UTC on weekdays (5:30 PM EDT / 4:30 PM EST): after the NYSE and TSX close at 4 PM ET, so
+    # prices are closing prices like the reconstructed history. Weekends and holidays are skipped by the script.
+    - cron: '30 21 * * 1-5'
   workflow_dispatch: # Allows manual trigger anytime from GitHub UI
 
 permissions:

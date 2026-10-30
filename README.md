@@ -74,6 +74,6 @@ The SEC asks automated clients to identify themselves. Set the `SEC_USER_AGENT` 
    ```
 
 ## Automated GitHub Workflow
-* Scheduled via [`.github/workflows/daily_eval.yml`](.github/workflows/daily_eval.yml) to run on weekdays at 16:00 UTC (12:00 PM EDT / 11:00 AM EST).
+* Scheduled via [`.github/workflows/daily_eval.yml`](.github/workflows/daily_eval.yml) to run on weekdays at 21:30 UTC (5:30 PM EDT / 4:30 PM EST, after the NYSE and TSX close).
 * Runs the unit tests, refreshes the universe, collects prices and fundamentals, and commits new snapshot JSONs to `main`.
 * GitHub Pages serves the `main` branch root; `index.html` redirects to the dashboard in `docs/`, which reads `data/` directly.
