@@ -130,24 +130,31 @@ def estimate_growth(fcf_history, default=0.04, floor=0.0, cap=0.15, min_years=3,
     return g0, s0
 
 
-def _normalized_fcf_raw(latest_fcf, fcf_history, basis="FY", years=3, period_end=None):
+def _normalized_fcf_raw(latest_fcf, fcf_history, basis="FY", years=3, period_end=None, max_spike=1.5):
     if latest_fcf is None:
         return None
     pts = [(d, v) for d, v in (fcf_history or []) if v is not None]
     history = [v for _, v in pts]
     if years <= 1 or not history:
         return float(latest_fcf)
+    alpha = None
+    if basis != "FY" and period_end and pts:
+        days = (datetime.date.fromisoformat(period_end) - datetime.date.fromisoformat(pts[-1][0])).days
+        if 0 <= days < 365:
+            alpha = days / 365.25
+            if max_spike and history[-1] > 0:
+                # A TTM window only `alpha` of a year past the last FY still shares (1 - alpha) of its quarters
+                # with that FY; cap any single-period TTM surge proportionally so a 1-quarter cyclical spike
+                # (or half-year YTD filing artifact) cannot multiply the multi-year average in one step.
+                latest_fcf = min(latest_fcf, (1.0 + (max_spike - 1.0) * alpha) * history[-1])
     vals_fy = [latest_fcf] + history[:-1][::-1][:max(years - 1, 0)]
     avg_fy = sum(vals_fy) / len(vals_fy)
     if basis == "FY":
         return avg_fy
     vals_ttm = [latest_fcf] + history[::-1][:max(years - 1, 0)]
     avg_ttm = sum(vals_ttm) / len(vals_ttm)
-    if period_end and pts:
-        days = (datetime.date.fromisoformat(period_end) - datetime.date.fromisoformat(pts[-1][0])).days
-        if 0 <= days < 365:
-            alpha = days / 365.25
-            return (1.0 - alpha) * avg_fy + alpha * avg_ttm
+    if alpha is not None:
+        return (1.0 - alpha) * avg_fy + alpha * avg_ttm
     return avg_ttm
 
 

@@ -107,6 +107,11 @@ class NormalizedFcfTest(unittest.TestCase):
         self.assertAlmostEqual(n_q2, 7.0, places=1)
         self.assertEqual(n_next, 8.0)
 
+    def test_ttm_cyclical_surge_is_dampened_by_elapsed_year_fraction(self):
+        # A 4x TTM surge 6 months after FY end (e.g. 36.0 vs 9.0) is capped at 1.25x * 9.0 = 11.25
+        n_spike = normalized_fcf(36.0, self.HIST, "TTM", 3, period_end="2024-06-30")
+        self.assertLess(n_spike, 8.0)
+
     def test_disabled_and_short_history(self):
         self.assertEqual(normalized_fcf(9.0, self.HIST, "FY", 1), 9.0)
         self.assertEqual(normalized_fcf(4.0, [], "TTM", 3), 4.0)
