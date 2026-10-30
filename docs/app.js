@@ -369,8 +369,20 @@ function renderEtfSummary(list) {
     let buyBelowHtml = "-";
     if (dec.buyBelowPrice !== null && dec.buyBelowPrice !== undefined) {
       const inZone = dec.distancePct <= 0;
-      const tagCls = inZone ? "distance-in-zone" : "distance-above";
-      const tagText = inZone ? "In Buy Zone!" : `+${fmtNum(dec.distancePct, 1)}%`;
+      let tagCls = "distance-above";
+      let tagText = `+${fmtNum(dec.distancePct, 1)}%`;
+      if (inZone) {
+        if (dec.stance.code === "BUY") {
+          tagCls = "distance-in-zone";
+          tagText = "In Buy Zone!";
+        } else if (dec.stance.lowCoverage) {
+          tagCls = "distance-low-cov";
+          tagText = "Target met (low cov)";
+        } else {
+          tagCls = "distance-above";
+          tagText = "Below target";
+        }
+      }
       buyBelowHtml = `
         <strong>&le; $${fmtNum(dec.buyBelowPrice, 2)}</strong>
         <div><span class="distance-tag ${tagCls}">${tagText}</span></div>
@@ -623,7 +635,16 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
       </div>
       <div class="chart-card-row">
         <span>Buy-Below Target:</span>
-        <span><strong>${buyTargetText}</strong> ${dec.distancePct !== null ? `<span class="distance-tag ${inZone ? 'distance-in-zone' : 'distance-above'}" style="font-size:0.7rem; padding:1px 5px;">${inZone ? 'In Zone!' : `+${fmtNum(dec.distancePct, 1)}%`}</span>` : ''}</span>
+        <span><strong>${buyTargetText}</strong> ${dec.distancePct !== null ? (() => {
+          let cCls = "distance-above";
+          let cTxt = `+${fmtNum(dec.distancePct, 1)}%`;
+          if (inZone) {
+            if (dec.stance.code === "BUY") { cCls = "distance-in-zone"; cTxt = "In Buy Zone!"; }
+            else if (dec.stance.lowCoverage) { cCls = "distance-low-cov"; cTxt = "Target met (low cov)"; }
+            else { cTxt = "Below target"; }
+          }
+          return `<span class="distance-tag ${cCls}" style="font-size:0.7rem; padding:1px 5px;">${cTxt}</span>`;
+        })() : ''}</span>
       </div>
       <div class="chart-card-row">
         <span>Decision Stance:</span>

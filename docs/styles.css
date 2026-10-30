@@ -1100,6 +1100,12 @@ tbody tr.detail-row:hover td {
   color: #ffffff;
 }
 
+.distance-low-cov {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
 .distance-above {
   background: #eaeef2;
   color: #57606a;
