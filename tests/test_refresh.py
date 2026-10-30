@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 import fetch_and_evaluate as fe
+import data_sources as ds
 from data_sources import SCHEMA_VERSION
 
 TODAY = datetime.date(2026, 10, 30)
@@ -79,6 +80,16 @@ class MarketClosedTest(unittest.TestCase):
 
     def test_unknown_is_not_closed(self):
         self.assertFalse(fe.is_market_closed_today(TODAY, None))
+
+
+class SecFallbackTest(unittest.TestCase):
+    def test_yahoo_fallback_for_sec_filer_is_flagged(self):
+        with mock.patch.object(ds, "get_sec_ticker_map", return_value={"AAA": "1"}), \
+             mock.patch.object(ds, "fetch_sec_companyfacts", side_effect=RuntimeError("boom")), \
+             mock.patch.object(ds, "fetch_yahoo_timeseries", return_value={}), \
+             mock.patch.object(ds, "parse_yahoo_timeseries", side_effect=lambda *a, **k: {"source": "Yahoo Finance", "warnings": []}):
+            self.assertIn("sec_fallback", ds.fetch_fundamentals("AAA", "2026-10-30")["warnings"])
+            self.assertNotIn("sec_fallback", ds.fetch_fundamentals("ZZZ.TO", "2026-10-30")["warnings"])
 
 
 if __name__ == "__main__":

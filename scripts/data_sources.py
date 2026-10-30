@@ -18,6 +18,7 @@ import urllib.request
 SSL_CTX = ssl.create_default_context()
 # SEC requires a descriptive User-Agent with contact details: https://www.sec.gov/os/accessing-edgar-data
 # Requests without a contact email are rejected with HTTP 403.
+SEC_USER_AGENT_SET = bool(os.environ.get("SEC_USER_AGENT"))
 SEC_HEADERS = {"User-Agent": os.environ.get("SEC_USER_AGENT") or "StockEvalApp admin@stockeval-research.org"}
 YAHOO_HEADERS = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"}
 
@@ -130,6 +131,9 @@ def get_sec_ticker_map():
     global _sec_ticker_map
     if _sec_ticker_map is not None:
         return _sec_ticker_map
+    if not SEC_USER_AGENT_SET:
+        print("::warning::SEC_USER_AGENT is not set; using a placeholder contact. "
+              "The SEC asks clients to identify themselves ('Name email').")
     # Fail hard: silently falling back to Yahoo for every US ticker would degrade the whole snapshot
     data = _http_json("https://www.sec.gov/files/company_tickers.json", SEC_HEADERS)
     _sec_ticker_map = {item['ticker']: str(item['cik_str']).zfill(10) for item in data.values()}
@@ -438,7 +442,8 @@ def parse_yahoo_timeseries(data, fetched_at=None, as_of=None, report_lag_days=60
 
 def fetch_fundamentals(ticker, fetched_at):
     """SEC for US filers, Yahoo timeseries otherwise. Returns a parsed record or None."""
-    get_sec_ticker_map()  # raises if the SEC is unreachable or rejects our User-Agent
+    sec_map = get_sec_ticker_map()  # raises if the SEC is unreachable or rejects our User-Agent
+    is_sec_filer = ticker.upper() in sec_map
     try:
         facts = fetch_sec_companyfacts(ticker)
         if facts:
@@ -448,7 +453,11 @@ def fetch_fundamentals(ticker, fetched_at):
     except Exception as e:
         print(f"  SEC fetch failed for {ticker}: {e}")
     try:
-        return parse_yahoo_timeseries(fetch_yahoo_timeseries(ticker), fetched_at)
+        record = parse_yahoo_timeseries(fetch_yahoo_timeseries(ticker), fetched_at)
     except Exception as e:
         print(f"  Yahoo fundamentals failed for {ticker}: {e}")
         return None
+    if record and is_sec_filer:
+        # FCF definition and TTM/FY basis can differ from the SEC figures; make the substitution visible
+        record["warnings"] = record.get("warnings", []) + ["sec_fallback"]
+    return record
