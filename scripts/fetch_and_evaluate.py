@@ -11,6 +11,7 @@ Exits non-zero without writing a snapshot if too few prices could be fetched.
 
 import sys
 import json
+import zlib
 import datetime
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
@@ -62,19 +63,33 @@ def update_etf_history(date, etfs, history=None):
     return history
 
 
-def is_stale(entry, today, stale_after_days):
+def is_stale(entry, today, stale_after_days, filing=None, ticker=""):
+    """
+    Whether a cache entry should be refetched.
+    Besides the plain age limit (staggered per ticker so refreshes do not all land on one day), an entry is
+    "in its filing window" once a new quarterly report is expected: `filing` = {"lag_days", "window_days",
+    "recheck_days"}; the window runs from fcf_period_end + lag_days for window_days. Inside it the entry is
+    rechecked every recheck_days until the new period appears (which moves the window forward).
+    """
     if not entry or entry.get("schema") != SCHEMA_VERSION or not entry.get("fetched_at"):
         return True
     if entry.get("last_attempt") == today.isoformat():
         return False
     age = (today - datetime.date.fromisoformat(entry["fetched_at"])).days
-    return age >= stale_after_days
+    period_end = entry.get("fcf_period_end")
+    if filing and period_end and entry.get("source"):
+        days_since_period = (today - datetime.date.fromisoformat(period_end)).days
+        if filing["lag_days"] <= days_since_period < filing["lag_days"] + filing["window_days"]:
+            return age >= filing["recheck_days"]
+    jitter = zlib.crc32(ticker.encode()) % max(1, stale_after_days // 3)
+    return age >= stale_after_days + jitter
 
 
 def refresh_fundamentals(tickers, cache, today, params):
     """Refetches missing/stale cache entries, oldest first, up to the per-run budget."""
     cache_cfg = params["fundamentals_cache"]
-    stale = [t for t in tickers if is_stale(cache.get(t), today, cache_cfg["stale_after_days"])]
+    filing = cache_cfg.get("filing_window")
+    stale = [t for t in tickers if is_stale(cache.get(t), today, cache_cfg["stale_after_days"], filing, t)]
     stale.sort(key=lambda t: (cache.get(t) or {}).get("fetched_at") or "")
     budget = stale[:cache_cfg["max_refresh_per_run"]]
     print(f"Fundamentals: {len(stale)} stale/missing, refreshing {len(budget)}")

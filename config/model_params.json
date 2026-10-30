@@ -26,7 +26,8 @@
   },
   "fundamentals_cache": {
     "stale_after_days": 30,
-    "max_refresh_per_run": 600
+    "max_refresh_per_run": 600,
+    "filing_window": { "lag_days": 116, "window_days": 60, "recheck_days": 3 }
   },
   "min_priced_fraction": 0.8
 }

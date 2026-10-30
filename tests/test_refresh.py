@@ -40,5 +40,31 @@ class FailedFetchTest(unittest.TestCase):
         self.assertEqual(cache["AAA"]["free_cash_flow"], 7.0)
 
 
+FILING = {"lag_days": 116, "window_days": 60, "recheck_days": 3}
+
+
+class FilingWindowTest(unittest.TestCase):
+    def test_recheck_inside_window(self):
+        e = entry("2026-10-24", fcf_period_end="2026-06-30")  # window opens Oct 24
+        self.assertTrue(fe.is_stale(e, TODAY, 30, FILING, "AAA"))
+
+    def test_no_recheck_before_window(self):
+        e = entry("2026-10-20", fcf_period_end="2026-09-30")  # next report not due until late January
+        self.assertFalse(fe.is_stale(e, TODAY, 30, FILING, "AAA"))
+
+    def test_recent_check_inside_window_waits(self):
+        e = entry("2026-10-29", fcf_period_end="2026-06-30")
+        self.assertFalse(fe.is_stale(e, TODAY, 30, FILING, "AAA"))
+
+    def test_window_ends(self):
+        e = entry("2026-10-20", fcf_period_end="2026-03-31")  # window over; falls back to the age limit
+        self.assertFalse(fe.is_stale(e, TODAY, 30, FILING, "AAA"))
+
+    def test_age_limit_is_staggered(self):
+        e = entry("2026-09-25", fcf_period_end="2026-09-15")
+        ages = {fe.is_stale(e, TODAY, 30, None, t) for t in ("A", "B", "C", "D", "E", "F", "G", "H")}
+        self.assertEqual(ages, {True, False})
+
+
 if __name__ == "__main__":
     unittest.main()

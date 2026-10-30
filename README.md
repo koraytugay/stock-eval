@@ -24,7 +24,7 @@ Stocks that cannot be valued (negative FCF, missing share count, no fundamentals
 * `fcf_normalization_years`: the DCF uses the average of the latest FCF and the preceding fiscal years (1 = latest only)
 * `terminal_growth`, `forecast_years`
 * `growth`: `default` (used when history is too short or not positive), `floor`, `cap`, `min_history_years`
-* `fundamentals_cache`: entries older than `stale_after_days` are refetched, at most `max_refresh_per_run` per run
+* `fundamentals_cache`: entries older than `stale_after_days` (staggered per ticker) are refetched, at most `max_refresh_per_run` per run. `filing_window` makes refreshes follow the reporting calendar: from `lag_days` after the cached period end (a new 10-Q is due) and for `window_days`, an entry is rechecked every `recheck_days` until the new period appears
 * `min_priced_fraction`: the run fails without writing a snapshot if fewer than this share of tickers get a price
 
 ### ETFs — [`config/custom_etfs.json`](config/custom_etfs.json)
