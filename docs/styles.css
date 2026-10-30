@@ -1374,3 +1374,12 @@ tbody tr.detail-row:hover td {
 }
 
 
+
+.clickable-row:hover td {
+  background-color: #f1f5f9;
+}
+
+.card-highlight {
+  box-shadow: 0 0 0 3px #0969da, var(--card-shadow) !important;
+  transition: box-shadow 0.25s ease-in-out;
+}

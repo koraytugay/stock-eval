@@ -112,7 +112,7 @@ async function loadSnapshot(dateOrLatest) {
     console.error("Failed to load snapshot:", err);
     document.getElementById("last-updated").textContent = "Error loading snapshot";
     document.querySelector("#etf-summary-table tbody").innerHTML =
-      `<tr><td colspan="9" class="loading">Could not load snapshot data.</td></tr>`;
+      `<tr><td colspan="11" class="loading">Could not load snapshot data.</td></tr>`;
   }
 }
 
@@ -399,8 +399,9 @@ function renderEtfSummary(list) {
       : "";
     const gText = typeof dec.impliedGrowth === "number" ? `<strong class="${gCls}">${fmtNum(dec.impliedGrowth, 1)}%</strong>` : `<span class="muted">-</span>`;
 
+    const safeId = id.replace(/[^a-zA-Z0-9]/g, "_");
     return `
-      <tr>
+      <tr class="clickable-row" data-etf="${safeId}" style="cursor: pointer;" title="Click to inspect ${escapeHtml(id)} chart and metrics">
         <td>
           <div style="display:flex; align-items:center; gap:6px;">
             <strong>${escapeHtml(id)}</strong>
@@ -421,6 +422,17 @@ function renderEtfSummary(list) {
       </tr>
     `;
   }).join("");
+
+  tbody.querySelectorAll("tr[data-etf]").forEach(row => {
+    row.addEventListener("click", () => {
+      const targetCard = document.getElementById(`card-${row.dataset.etf}`);
+      if (targetCard) {
+        targetCard.scrollIntoView({ behavior: "smooth", block: "center" });
+        targetCard.classList.add("card-highlight");
+        setTimeout(() => targetCard.classList.remove("card-highlight"), 1800);
+      }
+    });
+  });
 }
 
 function computeHistoricalZoneWindows(rows) {
