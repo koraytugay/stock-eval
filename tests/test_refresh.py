@@ -115,7 +115,8 @@ class FreshnessTest(unittest.TestCase):
 VALUE_PARAMS = {
     "forecast_years": 5, "terminal_growth": 0.025, "default_wacc": 0.08, "sector_wacc": {},
     "excluded_sectors": ["Financials"], "fcf_normalization_years": 1,
-    "growth": {"default": 0.04, "floor": 0.0, "cap": 0.15, "min_history_years": 3},
+    "growth": {"default": 0.04, "floor": 0.0, "cap": 0.15, "min_history_years": 3,
+               "latest_base_min_growth": 0.05, "latest_base_max_spike": 1.5},
     "interest": {"tax_rate": 0.25, "assumed_cost_of_debt": 0.04},
 }
 FUND = {"source": "SEC EDGAR", "currency": "USD", "free_cash_flow": 10.0, "fcf_basis": "FY", "fcf_history": [],
@@ -229,6 +230,28 @@ class InterestAddbackTest(unittest.TestCase):
         inputs, status = fe.model_inputs(fund, "Utilities", VALUE_PARAMS)
         self.assertEqual(status, "ok")
         self.assertEqual(inputs["fcf"], 2.0)
+
+
+class GrowerBaseTest(unittest.TestCase):
+    PARAMS = {**VALUE_PARAMS, "fcf_normalization_years": 3}
+
+    def fund(self, history, latest):
+        return {**FUND, "fcf_basis": "TTM", "free_cash_flow": latest, "fcf_history": history}
+
+    def test_grower_uses_latest(self):
+        hist = [["2022-12-31", 6.0], ["2023-12-31", 7.2], ["2024-12-31", 8.6], ["2025-12-31", 10.4]]
+        inputs, _ = fe.model_inputs(self.fund(hist, 12.0), "Information Technology", self.PARAMS)
+        self.assertEqual(inputs["fcf"], 12.0)
+
+    def test_spike_stays_normalized(self):
+        hist = [["2022-12-31", 6.0], ["2023-12-31", 7.2], ["2024-12-31", 8.6], ["2025-12-31", 10.4]]
+        inputs, _ = fe.model_inputs(self.fund(hist, 30.0), "Information Technology", self.PARAMS)
+        self.assertLess(inputs["fcf"], 20.0)
+
+    def test_flat_company_stays_normalized(self):
+        hist = [["2022-12-31", 10.0], ["2023-12-31", 10.0], ["2024-12-31", 10.0], ["2025-12-31", 10.0]]
+        inputs, _ = fe.model_inputs(self.fund(hist, 11.0), "Information Technology", self.PARAMS)
+        self.assertLess(inputs["fcf"], 11.0)
 
 
 if __name__ == "__main__":

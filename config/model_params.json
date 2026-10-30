@@ -23,7 +23,9 @@
     "default": 0.04,
     "floor": 0.0,
     "cap": 0.15,
-    "min_history_years": 3
+    "min_history_years": 3,
+    "latest_base_min_growth": 0.05,
+    "latest_base_max_spike": 1.5
   },
   "fundamentals_cache": {
     "stale_after_days": 30,

@@ -145,6 +145,14 @@ def model_inputs(fund, sector, params):
     g_cfg = params["growth"]
     growth, growth_source = estimate_growth(fund.get("fcf_history"), g_cfg["default"], g_cfg["floor"],
                                             g_cfg["cap"], g_cfg["min_history_years"])
+
+    # Averaging past years understates a business that is genuinely growing: the base then lags the growth
+    # rate applied to it. Growers start from the latest cash flow, unless that is a spike versus the average
+    # (the cyclical-peak case normalization exists for).
+    latest = fund.get("free_cash_flow")
+    if (growth_source == "historical" and growth >= g_cfg.get("latest_base_min_growth", 1.0)
+            and latest and latest + addback > fcf and latest + addback <= fcf * g_cfg.get("latest_base_max_spike", 1.5)):
+        fcf = round(latest + addback, 3)
     return {
         "fcf": fcf,
         "interest_addback": addback,
