@@ -237,6 +237,18 @@ def facts_as_of(data, as_of):
     return {"facts": facts}
 
 
+def _reconcile_shares(shares, diluted_entry, warnings, tolerance=3.0):
+    """
+    Multi-class filers sometimes report the cover-page count for a single class only (e.g. 1,000x too few).
+    When it disagrees with the weighted-average diluted count by more than `tolerance`x, trust the latter.
+    """
+    diluted = diluted_entry["val"] if diluted_entry else None
+    if diluted and diluted > 0 and not (1 / tolerance <= shares / diluted <= tolerance):
+        warnings.append("shares_mismatch")
+        return diluted
+    return shares
+
+
 def parse_sec_companyfacts(data, fetched_at=None):
     """Extracts FCF, net debt and shares from an SEC companyfacts payload."""
     facts = data.get("facts", {})
@@ -323,6 +335,8 @@ def parse_sec_companyfacts(data, fetched_at=None):
     if share_cands:
         newest = max(e["end"] for e in share_cands)
         shares = next(e["val"] for e in share_cands if _days(e["end"], newest) <= 548)
+        shares = _reconcile_shares(shares, _latest_instant(_units(facts, "us-gaap",
+                                   "WeightedAverageNumberOfDilutedSharesOutstanding", "shares")), warnings)
     else:
         warnings.append("shares_missing")
 

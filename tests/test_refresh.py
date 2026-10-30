@@ -186,5 +186,20 @@ class YahooRepairTest(unittest.TestCase):
         self.assertEqual(ValueStockTest().value({**FUND, "warnings": ["capex_missing"]})[1], "no_capex")
 
 
+class SharesReconcileTest(unittest.TestCase):
+    def test_consistent_counts_kept(self):
+        w = []
+        self.assertEqual(ds._reconcile_shares(1.0e9, {"val": 1.1e9}, w), 1.0e9)
+        self.assertEqual(w, [])
+
+    def test_single_class_count_replaced(self):
+        w = []
+        self.assertEqual(ds._reconcile_shares(1.4e6, {"val": 2.2e9}, w), 2.2e9)
+        self.assertEqual(w, ["shares_mismatch"])
+
+    def test_no_diluted_data(self):
+        self.assertEqual(ds._reconcile_shares(5.0, None, []), 5.0)
+
+
 if __name__ == "__main__":
     unittest.main()
