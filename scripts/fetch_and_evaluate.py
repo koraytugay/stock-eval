@@ -65,6 +65,8 @@ def update_etf_history(date, etfs, history=None):
 def is_stale(entry, today, stale_after_days):
     if not entry or entry.get("schema") != SCHEMA_VERSION or not entry.get("fetched_at"):
         return True
+    if entry.get("last_attempt") == today.isoformat():
+        return False
     age = (today - datetime.date.fromisoformat(entry["fetched_at"])).days
     return age >= stale_after_days
 
@@ -79,8 +81,15 @@ def refresh_fundamentals(tickers, cache, today, params):
 
     for idx, ticker in enumerate(budget, 1):
         record = fetch_fundamentals(ticker, today.isoformat())
-        # Negative-cache tickers with no data so they are retried only once they go stale
-        cache[ticker] = record or {"schema": SCHEMA_VERSION, "fetched_at": today.isoformat(), "source": None}
+        previous = cache.get(ticker)
+        if record:
+            cache[ticker] = record
+        elif previous and previous.get("source"):
+            # A failed fetch must not destroy good data: keep it and retry on the next run
+            previous["last_attempt"] = today.isoformat()
+        else:
+            # Negative-cache tickers with no data so they are retried only once they go stale
+            cache[ticker] = {"schema": SCHEMA_VERSION, "fetched_at": today.isoformat(), "source": None}
         if idx % 50 == 0:
             print(f"  ...{idx}/{len(budget)}")
 
