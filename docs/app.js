@@ -669,6 +669,22 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
   `;
 }
 
+const UNVALUED_LABELS = {
+  sector_excluded: "excluded sector (e.g. Financials)", negative_fcf: "negative free cash flow",
+  debt_exceeds_value: "debt exceeds value", no_fundamentals: "no fundamentals", no_shares: "no share count",
+  no_capex: "no capex data", no_fx_rate: "no FX rate", model_not_applicable: "model not applicable",
+  no_price: "no price", no_valuation: "not valued"
+};
+
+function unvaluedTitle(data) {
+  let text = "Share of portfolio weight with a valid DCF valuation.";
+  const entries = Object.entries(data.unvalued_weight_pct || {});
+  if (entries.length) {
+    text += " Not valued: " + entries.map(([k, v]) => `${v}% ${UNVALUED_LABELS[k] || k}`).join(", ") + ".";
+  }
+  return text;
+}
+
 function renderEtfCards(list) {
   const container = document.getElementById("etf-cards-container");
   if (!list.length) {
@@ -694,7 +710,7 @@ function renderEtfCards(list) {
           </div>
           <div style="display:flex; align-items:center; gap:8px;">
             <span class="stance-badge ${dec.stance.cls}">${dec.stance.icon} ${dec.stance.label}</span>
-            <span class="badge" title="Share of portfolio weight with a valid DCF valuation">${fmtNum(data.covered_weight_pct, 1)}% Valued</span>
+            <span class="badge" title="${escapeHtml(unvaluedTitle(data))}">${fmtNum(data.covered_weight_pct, 1)}% Valued</span>
           </div>
         </div>
 

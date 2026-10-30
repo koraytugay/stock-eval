@@ -146,6 +146,7 @@ def etf_look_through(holdings, stocks):
     fcf_weight = 0.0
     weighted_rev_g = 0.0
     g_weight = 0.0
+    unvalued = {}  # why the rest of the fund is not in the average, as share of the fund by reason
 
     for h in holdings:
         w = h.get("weight", 0)
@@ -155,6 +156,8 @@ def etf_look_through(holdings, stocks):
         raw = stock.get("raw") or {}
         intrinsic = val.get("intrinsic_dcf")
         if not price or price <= 0 or intrinsic is None:
+            reason = stock.get("valuation_status") or ("no_valuation" if price else "no_price")
+            unvalued[reason] = unvalued.get(reason, 0.0) + w
             continue
         intrinsic_per_dollar += w * (max(intrinsic, 0.0) / price)
         valued_weight += w
@@ -183,6 +186,8 @@ def etf_look_through(holdings, stocks):
         "holdings_count": len(holdings),
         "listed_weight_pct": round(listed_weight / total_weight * 100, 1),
         "covered_weight_pct": round(valued_weight / total_weight * 100, 1),
+        "unvalued_weight_pct": {k: round(v / total_weight * 100, 1) for k, v in sorted(unvalued.items(),
+                                                                                       key=lambda kv: -kv[1])},
         "intrinsic_per_dollar": None,
         "market_premium_pct": None,
         "fcf_yield_pct": round(weighted_fcf_yield / fcf_weight, 2) if fcf_weight > 0 else None,

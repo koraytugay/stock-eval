@@ -147,5 +147,18 @@ class ImpliedGrowthBoundsTest(unittest.TestCase):
         self.assertEqual(etf_look_through(holdings, stocks)["implied_growth_pct"], 80.0)
 
 
+class UnvaluedBreakdownTest(unittest.TestCase):
+    def test_reasons_are_reported_as_share_of_fund(self):
+        stocks = {
+            "A": {"market_price": 10.0, "valuation": {"intrinsic_dcf": 10.0}},
+            "B": {"market_price": 10.0, "valuation_status": "sector_excluded"},
+            "C": {"market_price": 10.0, "valuation_status": "negative_fcf"},
+        }
+        holdings = [{"ticker": t, "weight": w} for t, w in (("A", 0.4), ("B", 0.3), ("C", 0.1), ("D", 0.2))]
+        r = etf_look_through(holdings, stocks)
+        self.assertEqual(r["unvalued_weight_pct"], {"sector_excluded": 30.0, "no_price": 20.0, "negative_fcf": 10.0})
+        self.assertEqual(r["covered_weight_pct"], 40.0)
+
+
 if __name__ == "__main__":
     unittest.main()
