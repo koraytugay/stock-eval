@@ -22,7 +22,7 @@ SEC_USER_AGENT_SET = bool(os.environ.get("SEC_USER_AGENT"))
 SEC_HEADERS = {"User-Agent": os.environ.get("SEC_USER_AGENT") or "StockEvalApp admin@stockeval-research.org"}
 YAHOO_HEADERS = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"}
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 FCF_FLOW_CONCEPTS = {
     "ocf": ["NetCashProvidedByUsedInOperatingActivities",

@@ -98,7 +98,8 @@ def refresh_fundamentals(tickers, cache, today, params):
     cache_cfg = params["fundamentals_cache"]
     filing = cache_cfg.get("filing_window")
     stale = [t for t in tickers if is_stale(cache.get(t), today, cache_cfg["stale_after_days"], filing, t)]
-    stale.sort(key=lambda t: (cache.get(t) or {}).get("fetched_at") or "")
+    stale.sort(key=lambda t: ((cache.get(t) or {}).get("schema") == SCHEMA_VERSION,
+                              (cache.get(t) or {}).get("fetched_at") or ""))
     budget = stale[:cache_cfg["max_refresh_per_run"]]
     print(f"Fundamentals: {len(stale)} stale/missing, refreshing {len(budget)}")
 
