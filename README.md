@@ -8,7 +8,7 @@ An automated, serverless equity valuation and look-through ETF engine powered by
   * Prices and FX rates: Yahoo Finance chart endpoint.
   * Fundamentals: SEC EDGAR XBRL `companyfacts` (trailing-twelve-month FCF from 10-K + 10-Q where available); Yahoo Finance fundamentals for non-SEC listings such as `.TO` tickers.
 * **Valuation Models:**
-  * Multi-Stage Free Cash Flow to Firm (FCFF) Discounted Cash Flow (DCF), with sector WACC, normalized (multi-year average) FCF, and growth from a robust (Theil-Sen) fit of historical FCF (clamped).
+  * Multi-Stage Free Cash Flow to Firm (FCFF) Discounted Cash Flow (DCF), with sector WACC, after-tax interest added back to operating cash flow less capex (net debt is subtracted separately), normalized (multi-year average) FCF, and growth from a robust (Theil-Sen) fit of historical FCF (clamped).
   * Reverse DCF (solving for the market-implied growth rate).
   * Look-through valuation for custom ETFs (intrinsic value per $1 invested).
 * **Storage:** Flat historical JSON snapshots (`data/snapshots/YYYY-MM-DD.json`). No external databases or servers needed.

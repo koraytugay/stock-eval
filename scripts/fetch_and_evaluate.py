@@ -110,6 +110,15 @@ def refresh_fundamentals(tickers, cache, today, params):
             print(f"  ...{idx}/{len(budget)}")
 
 
+def interest_addback(fund, params):
+    """After-tax interest paid (billions). Uses the reported figure, else an estimate from total debt."""
+    cfg = params.get("interest", {})
+    interest = fund.get("interest_paid")
+    if interest is None:
+        interest = (fund.get("total_debt") or 0.0) * cfg.get("assumed_cost_of_debt", 0.0)
+    return round(max(interest, 0.0) * (1.0 - cfg.get("tax_rate", 0.0)), 3)
+
+
 def model_inputs(fund, sector, params):
     """DCF inputs for a stock in its reporting currency. Returns (inputs dict or None, status string)."""
     if sector in params.get("excluded_sectors", []):
@@ -123,7 +132,14 @@ def model_inputs(fund, sector, params):
         return None, "no_capex"
     fcf = normalized_fcf(fund.get("free_cash_flow"), fund.get("fcf_history"), fund.get("fcf_basis", "FY"),
                          params.get("fcf_normalization_years", 1))
-    if fcf is None or fcf <= 0:
+    if fcf is None:
+        return None, "negative_fcf"
+
+    # Operating cash flow is after interest, but net debt is subtracted separately: add the after-tax interest
+    # back so the cash flow is truly "to the firm" and debt is not counted twice
+    addback = interest_addback(fund, params)
+    fcf = round(fcf + addback, 3)
+    if fcf <= 0:
         return None, "negative_fcf"
 
     g_cfg = params["growth"]
@@ -131,6 +147,7 @@ def model_inputs(fund, sector, params):
                                             g_cfg["cap"], g_cfg["min_history_years"])
     return {
         "fcf": fcf,
+        "interest_addback": addback,
         "wacc": params["sector_wacc"].get(sector, params["default_wacc"]),
         "growth": growth,
         "growth_source": growth_source,

@@ -116,6 +116,7 @@ VALUE_PARAMS = {
     "forecast_years": 5, "terminal_growth": 0.025, "default_wacc": 0.08, "sector_wacc": {},
     "excluded_sectors": ["Financials"], "fcf_normalization_years": 1,
     "growth": {"default": 0.04, "floor": 0.0, "cap": 0.15, "min_history_years": 3},
+    "interest": {"tax_rate": 0.25, "assumed_cost_of_debt": 0.04},
 }
 FUND = {"source": "SEC EDGAR", "currency": "USD", "free_cash_flow": 10.0, "fcf_basis": "FY", "fcf_history": [],
         "net_debt": 5.0, "shares_outstanding": 2.0}
@@ -207,6 +208,27 @@ class CoverageDropTest(unittest.TestCase):
     def test_flags_big_drop_only(self):
         etfs = {"X": {"covered_weight_pct": 30.0}, "Y": {"covered_weight_pct": 39.0}, "Z": {"covered_weight_pct": 1.0}}
         self.assertEqual(fe.coverage_drops(etfs, self.HISTORY), [("X", 40.0, 30.0)])
+
+
+class InterestAddbackTest(unittest.TestCase):
+    def test_reported_interest_is_added_back_after_tax(self):
+        inputs, _ = fe.model_inputs({**FUND, "interest_paid": 2.0}, "Utilities", VALUE_PARAMS)
+        self.assertEqual(inputs["interest_addback"], 1.5)
+        self.assertEqual(inputs["fcf"], 11.5)
+
+    def test_estimated_from_debt_when_not_reported(self):
+        inputs, _ = fe.model_inputs({**FUND, "total_debt": 100.0}, "Utilities", VALUE_PARAMS)
+        self.assertEqual(inputs["interest_addback"], 3.0)  # 100 * 4% * (1 - 25%)
+
+    def test_no_debt_no_addback(self):
+        inputs, _ = fe.model_inputs(FUND, "Utilities", VALUE_PARAMS)
+        self.assertEqual(inputs["interest_addback"], 0.0)
+
+    def test_negative_levered_fcf_rescued_by_interest(self):
+        fund = {**FUND, "free_cash_flow": -1.0, "interest_paid": 4.0}
+        inputs, status = fe.model_inputs(fund, "Utilities", VALUE_PARAMS)
+        self.assertEqual(status, "ok")
+        self.assertEqual(inputs["fcf"], 2.0)
 
 
 if __name__ == "__main__":

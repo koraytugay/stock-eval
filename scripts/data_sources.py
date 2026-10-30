@@ -43,6 +43,7 @@ FCF_FLOW_CONCEPTS = {
               "PaymentsToAcquireMachineryAndEquipment"],
 }
 PRIMARY_CAPEX_CONCEPTS = 2
+INTEREST_PAID_CONCEPTS = ["InterestPaidNet", "InterestPaid"]
 CASH_CONCEPTS = ["CashAndCashEquivalentsAtCarryingValue",
                  "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
                  "Cash"]
@@ -291,6 +292,16 @@ def parse_sec_companyfacts(data, fetched_at=None):
             capex = capex_ttm[0] if capex_ttm else 0.0
             fcf_end, basis, filed = ocf_ttm[1], "TTM", ocf_ttm[2]
 
+    # Operating cash flow is after interest paid; the DCF needs it back (see model_inputs)
+    interest = None
+    for c in INTEREST_PAID_CONCEPTS:
+        entries = _units(facts, "us-gaap", c)
+        annual = _annual_flows(entries)
+        if annual:
+            ttm = _ttm_flow(entries, annual) if basis == "TTM" else None
+            interest = ttm[0] if ttm else annual[max(annual)]["val"]
+            break
+
     fcf_history = []
     for end in sorted(ocf_annual):
         if capex_annual and end not in capex_annual:
@@ -352,6 +363,7 @@ def parse_sec_companyfacts(data, fetched_at=None):
         "operating_cash_flow": _b(ocf),
         "capex": _b(capex),
         "free_cash_flow": _b(ocf - capex),
+        "interest_paid": _b(interest) if interest is not None else None,
         "total_cash": _b(cash),
         "total_debt": _b(debt),
         "net_debt": _b(debt - cash),

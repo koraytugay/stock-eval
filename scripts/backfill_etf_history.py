@@ -16,7 +16,7 @@ import datetime
 from concurrent.futures import ThreadPoolExecutor
 
 from data_sources import (fetch_price_history, fetch_sec_companyfacts, facts_as_of, parse_sec_companyfacts,
-                          fetch_yahoo_timeseries, parse_yahoo_timeseries, get_sec_ticker_map)
+                          fetch_yahoo_timeseries, parse_yahoo_timeseries, get_sec_ticker_map, repair_with_yahoo)
 from valuation_models import compute_dcf, etf_look_through
 from fetch_and_evaluate import (model_inputs, load_json, save_json, update_etf_history, UNIVERSE_FILE, PARAMS_FILE,
                                 DATA_DIR, ETF_HISTORY_FILE)
@@ -80,6 +80,12 @@ def main():
         for cp in checkpoints:
             if t in raw_sec:
                 fund = parse_sec_companyfacts(facts_as_of(raw_sec[t], cp))
+                if fund and {"capex_missing", "capex_secondary", "debt_missing"} & set(fund["warnings"]):
+                    # Same Yahoo cross-check as the daily run, read as of the checkpoint
+                    if t not in raw_yahoo:
+                        raw_yahoo[t] = _safe(fetch_yahoo_timeseries, t)
+                    if raw_yahoo[t]:
+                        repair_with_yahoo(fund, parse_yahoo_timeseries(raw_yahoo[t], as_of=cp))
             elif raw_yahoo.get(t):
                 fund = parse_yahoo_timeseries(raw_yahoo[t], as_of=cp)
             else:
