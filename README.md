@@ -55,6 +55,7 @@ The SEC asks automated clients to identify themselves. Set the `SEC_USER_AGENT` 
 1. **Run tests:**
    ```bash
    python3 -m unittest discover -s tests
+   node --test tests/decision.test.js   # dashboard stance logic
    ```
 
 2. **Update Universe:**

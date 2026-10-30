@@ -58,13 +58,6 @@ function fmtPct(n, digits = 1) {
   return typeof n === "number" && isFinite(n) ? `${n > 0 ? "+" : ""}${n.toFixed(digits)}%` : "N/A";
 }
 
-function median(values) {
-  if (!values || !values.length) return null;
-  const sorted = values.slice().sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-}
-
 async function fetchData(path) {
   const roots = dataRoot ? [dataRoot] : DATA_ROOTS;
   for (const root of roots) {
@@ -125,37 +118,6 @@ async function loadSnapshot(dateOrLatest) {
 
 function etfHistoryRows(etfId) {
   return ((etfHistory && etfHistory.etfs && etfHistory.etfs[etfId]) || []).filter(r => typeof r[2] === "number");
-}
-
-function historyStats(rows) {
-  if (!rows || rows.length < 5) return null;
-  const premiums = rows.map(r => r[2]);
-  const current = premiums[premiums.length - 1];
-  const sorted = premiums.slice().sort((a, b) => a - b);
-  const percentile = (premiums.filter(p => p <= current).length / premiums.length) * 100;
-  const p20 = sorted[Math.floor(sorted.length * 0.20)];
-
-  // Compute 20-day SMA of price if available
-  const prices = rows.map(r => r[4]).filter(p => typeof p === "number");
-  let sma20 = null;
-  let priceTrendUp = false;
-  if (prices.length >= 3) {
-    const window = prices.slice(Math.max(0, prices.length - 20));
-    sma20 = window.reduce((a, b) => a + b, 0) / window.length;
-    const latestPx = prices[prices.length - 1];
-    priceTrendUp = latestPx > sma20;
-  }
-
-  return {
-    current,
-    percentile,
-    p20,
-    min: Math.min(...premiums),
-    max: Math.max(...premiums),
-    median: median(premiums),
-    sma20,
-    priceTrendUp
-  };
 }
 
 function getEtfFundamentals(etfObj) {
@@ -236,28 +198,7 @@ function computeEtfDecision(data, stats) {
     }
   }
 
-  let stance = { code: "WAIT", label: "Wait / Extended", cls: "stance-wait", icon: "⏸", rank: 3 };
-
-  if (typeof percentile === "number") {
-    // 1. Strict Buy Signal: True historical bargain (<=20th percentile)
-    // or <=25th percentile with deep intrinsic discount (IV >= 1.25)
-    // Prevents buying at local swing tops like XSMC at $42.42
-    const isBuy = (percentile <= 20) || (typeof intrinsicPerDollar === "number" && intrinsicPerDollar >= 1.25 && percentile <= 25);
-
-    if (isBuy) {
-      stance = { code: "BUY", label: "Strong Value / Buy", cls: "stance-buy", icon: "✓", rank: 1 };
-    } else if (percentile <= 65) {
-      stance = { code: "ACCUMULATE", label: "Fair / Accumulate", cls: "stance-accumulate", icon: "◈", rank: 2 };
-    } else {
-      // Extended valuation (> 65th percentile)
-      // If price is in an active strong uptrend (above 20-day SMA), ride the trend in Accumulate rather than waiting
-      if (stats && stats.priceTrendUp) {
-        stance = { code: "ACCUMULATE", label: "Uptrend / Accumulate", cls: "stance-accumulate", icon: "▲", rank: 2 };
-      } else {
-        stance = { code: "WAIT", label: "Wait / Extended", cls: "stance-wait", icon: "⏸", rank: 3 };
-      }
-    }
-  }
+  const stance = chooseStance(percentile, intrinsicPerDollar, stats, data.covered_weight_pct);
 
   return {
     stance,
