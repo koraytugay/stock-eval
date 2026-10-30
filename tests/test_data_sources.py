@@ -143,6 +143,23 @@ class ParseYahooTest(unittest.TestCase):
         early = parse_yahoo_timeseries(data, as_of="2024-03-15")
         self.assertEqual((early["fcf_basis"], early["free_cash_flow"]), ("FY", 6.0))
 
+    def test_same_date_as_annual_is_fy_not_ttm(self):
+        # When trailing or 4-quarter data ends on the latest fiscal year-end, basis must be "FY"
+        # so normalized_fcf does not double-count that year alongside fcf_history[-1]
+        data = {"timeseries": {"result": [
+            ts("annualOperatingCashFlow", ("2022-12-31", 4 * B), ("2023-12-31", 8 * B)),
+            ts("annualCapitalExpenditure", ("2022-12-31", -1 * B), ("2023-12-31", -2 * B)),
+            ts("quarterlyOperatingCashFlow", ("2023-03-31", 2 * B), ("2023-06-30", 2 * B),
+               ("2023-09-30", 2 * B), ("2023-12-31", 2 * B)),
+            ts("quarterlyCapitalExpenditure", ("2023-03-31", -0.5 * B), ("2023-06-30", -0.5 * B),
+               ("2023-09-30", -0.5 * B), ("2023-12-31", -0.5 * B)),
+            ts("trailingOperatingCashFlow", ("2023-12-31", 8 * B)),
+            ts("trailingCapitalExpenditure", ("2023-12-31", -2 * B)),
+            ts("quarterlyOrdinarySharesNumber", ("2023-12-31", 1 * B)),
+        ]}}
+        r = parse_yahoo_timeseries(data)
+        self.assertEqual((r["fcf_basis"], r["fcf_period_end"], r["free_cash_flow"]), ("FY", "2023-12-31", 6.0))
+
     def test_empty(self):
         self.assertIsNone(parse_yahoo_timeseries({"timeseries": {"result": []}}))
 

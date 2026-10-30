@@ -432,12 +432,12 @@ def parse_yahoo_timeseries(data, fetched_at=None, as_of=None, report_lag_days=60
     trailing_p = latest("trailingOperatingCashFlow")
     if (len(quarters) == 4 and 250 <= _days(quarters[0]["asOfDate"], quarters[-1]["asOfDate"]) <= 300
             and all(q["asOfDate"] in q_capex for q in quarters)
-            and (not annual_p or quarters[-1]["asOfDate"] >= annual_p["asOfDate"])):
+            and (not annual_p or quarters[-1]["asOfDate"] > annual_p["asOfDate"])):
         ocf_p, basis = quarters[-1], "TTM"
         ocf = sum(val(q) for q in quarters)
         capex_p = q_capex[quarters[-1]["asOfDate"]]
         capex = sum(abs(val(q_capex[q["asOfDate"]])) for q in quarters)
-    elif trailing_p and (not annual_p or trailing_p["asOfDate"] >= annual_p["asOfDate"]):
+    elif trailing_p and (not annual_p or trailing_p["asOfDate"] > annual_p["asOfDate"]):
         ocf_p, basis = trailing_p, "TTM"
         capex_p = latest("trailingCapitalExpenditure", "annualCapitalExpenditure")
         ocf, capex = val(ocf_p), abs(val(capex_p))  # Yahoo reports CapEx as a negative cash flow
