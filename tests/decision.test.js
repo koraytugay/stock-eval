@@ -13,7 +13,10 @@ test("needs enough history", () => {
 test("percentile of the latest premium", () => {
   const stats = historyStats(rows([...ramp(99).reverse(), 0].map(Number)));  // latest is the lowest
   assert.ok(stats.percentile <= 2);
-  assert.strictEqual(historyStats(rows(ramp(100))).percentile, 100);
+  const upStats = historyStats(rows(ramp(100)));
+  assert.strictEqual(upStats.percentile, 100);
+  assert.strictEqual(upStats.p20, 20);
+  assert.strictEqual(upStats.p25, 25);
 });
 
 test("uptrend flag compares price to its moving average", () => {

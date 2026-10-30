@@ -177,14 +177,18 @@ function computeEtfDecision(data, stats) {
   const currency = data.currency || "CAD";
   const percentile = stats ? stats.percentile : null;
   const p20 = stats ? stats.p20 : null;
+  const p25 = stats ? stats.p25 : null;
   const funds = getEtfFundamentals(data);
 
   // Target premium threshold for a bargain entry:
-  // If the ETF is at an absolute discount (intrinsic >= 1.0), bargain is at least fair value (0% premium).
-  // Otherwise, target is its 20th percentile historical level.
-  let targetPremium = p20;
-  if (typeof intrinsicPerDollar === "number" && intrinsicPerDollar >= 1.0 && typeof p20 === "number") {
-    targetPremium = Math.min(0, p20);
+  // If the ETF is at a deep discount (intrinsic >= 1.25), its buy stance triggers up to p25.
+  // Otherwise, the buy threshold is p20.
+  // If intrinsic >= 1.0, the target is capped at fair value (0% premium).
+  const isDeepDiscount = typeof intrinsicPerDollar === "number" && intrinsicPerDollar >= (DECISION_CONFIG.deepIntrinsicPerDollar || 1.25);
+  const targetThreshold = isDeepDiscount ? p25 : p20;
+  let targetPremium = targetThreshold;
+  if (typeof intrinsicPerDollar === "number" && intrinsicPerDollar >= 1.0 && typeof targetThreshold === "number") {
+    targetPremium = Math.min(0, targetThreshold);
   }
 
   let fairValuePrice = null;
@@ -254,10 +258,16 @@ function updateKPIs() {
     ? `Top: ${topFcf.id.replace("TSE:", "")} (${fmtNum(topFcf.dec.fcfYield, 1)}% cash yield)`
     : "Look-through cash return";
 
-  // 3. Top Value Opportunity (Lowest percentile vs 1-year history)
+  // 3. Top Value Opportunity (Lowest percentile vs 1-year history; tie-broken by deepest DCF discount)
   const withStats = etfRows.filter(e => e.stats !== null);
   if (withStats.length > 0) {
-    const bestRel = withStats.reduce((a, b) => (b.stats.percentile < a.stats.percentile ? b : a));
+    const bestRel = withStats.reduce((a, b) => {
+      if (b.stats.percentile < a.stats.percentile) return b;
+      if (b.stats.percentile === a.stats.percentile) {
+        return (b.data.market_premium_pct ?? Infinity) < (a.data.market_premium_pct ?? Infinity) ? b : a;
+      }
+      return a;
+    });
     const sym = bestRel.id.replace("TSE:", "");
     document.getElementById("kpi-best-relative").textContent = `${sym} (${Math.round(bestRel.stats.percentile)}th %)`;
     document.getElementById("kpi-best-relative-sub").textContent = `${bestRel.data.name || sym} · ${fmtPct(bestRel.data.market_premium_pct)}`;
