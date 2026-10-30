@@ -189,6 +189,18 @@ def value_stock(ticker, price, price_ccy, fund, sector, params):
     }, status
 
 
+def coverage_drops(etfs, history, threshold=3.0):
+    """ETFs whose valued weight fell by more than `threshold` points since the previous history row."""
+    drops = []
+    for etf_id, etf in etfs.items():
+        rows = history.get("etfs", {}).get(etf_id) or []
+        prev = rows[-1][3] if rows else None
+        cur = etf.get("covered_weight_pct")
+        if isinstance(prev, (int, float)) and isinstance(cur, (int, float)) and prev - cur > threshold:
+            drops.append((etf_id, prev, cur))
+    return drops
+
+
 def _median_date(dates):
     dates = sorted(dates)
     return dates[len(dates) // 2] if dates else None
@@ -268,6 +280,11 @@ def run_daily_evaluation():
         quotes = dict(zip(all_tickers, pool.map(fetch_market_price, all_tickers)))
     prices = {t: (p, c or "USD") for t, (p, c) in quotes.items() if p is not None}
 
+    missing = [t for t in all_tickers if t not in prices]
+    if missing:
+        print(f"::warning::No price for {len(missing)} tickers: {', '.join(missing[:60])}"
+              f"{' ...' if len(missing) > 60 else ''}")
+
     min_priced = int(len(all_tickers) * params["min_priced_fraction"])
     if len(prices) < min_priced:
         sys.exit(f"ERROR: only {len(prices)}/{len(all_tickers)} prices fetched (need {min_priced}). "
@@ -337,7 +354,10 @@ def run_daily_evaluation():
     save_json(snapshot_path, slim, compact=True)
     save_json(DATA_DIR / "latest.json", today_snapshot, compact=True)
 
-    save_json(ETF_HISTORY_FILE, update_etf_history(today_str, today_snapshot["etfs"]), compact=True)
+    etf_history = load_json(ETF_HISTORY_FILE, {"backfilled_until": None, "etfs": {}})
+    for etf_id, prev, cur in coverage_drops(today_snapshot["etfs"], etf_history):
+        print(f"::warning::{etf_id} valued coverage fell from {prev}% to {cur}%; its signal may not be comparable")
+    save_json(ETF_HISTORY_FILE, update_etf_history(today_str, today_snapshot["etfs"], etf_history), compact=True)
 
     index_path = DATA_DIR / "history_index.json"
     history = load_json(index_path, [])

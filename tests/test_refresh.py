@@ -201,5 +201,13 @@ class SharesReconcileTest(unittest.TestCase):
         self.assertEqual(ds._reconcile_shares(5.0, None, []), 5.0)
 
 
+class CoverageDropTest(unittest.TestCase):
+    HISTORY = {"etfs": {"X": [["2026-10-29", 1.0, 5.0, 40.0, 10.0]], "Y": [["2026-10-29", 1.0, 5.0, 40.0, 10.0]]}}
+
+    def test_flags_big_drop_only(self):
+        etfs = {"X": {"covered_weight_pct": 30.0}, "Y": {"covered_weight_pct": 39.0}, "Z": {"covered_weight_pct": 1.0}}
+        self.assertEqual(fe.coverage_drops(etfs, self.HISTORY), [("X", 40.0, 30.0)])
+
+
 if __name__ == "__main__":
     unittest.main()
