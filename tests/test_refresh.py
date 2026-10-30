@@ -267,5 +267,18 @@ class HoldingsHashTest(unittest.TestCase):
         self.assertEqual(row[5], "abc")
 
 
+class FxRetryTest(unittest.TestCase):
+    def setUp(self):
+        ds._fx_cache.clear()
+
+    def test_retries_once_and_does_not_cache_failures(self):
+        with mock.patch.object(ds, "fetch_market_price", side_effect=[(None, None), (1.37, "CAD")]) as m:
+            self.assertEqual(ds.fetch_fx_rate("USD", "CAD"), 1.37)
+            self.assertEqual(m.call_count, 2)
+        with mock.patch.object(ds, "fetch_market_price", return_value=(None, None)):
+            self.assertIsNone(ds.fetch_fx_rate("EUR", "CAD"))
+        self.assertNotIn(("EUR", "CAD"), ds._fx_cache)
+
+
 if __name__ == "__main__":
     unittest.main()

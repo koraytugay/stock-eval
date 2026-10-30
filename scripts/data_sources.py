@@ -103,7 +103,7 @@ def fetch_last_trade_date(ticker="SPY"):
     try:
         meta = _http_json(url, YAHOO_HEADERS, timeout=8)['chart']['result'][0]['meta']
         ts = meta['regularMarketTime'] + meta.get('gmtoffset', 0)
-        return datetime.datetime.utcfromtimestamp(ts).date()
+        return datetime.datetime.fromtimestamp(ts, datetime.timezone.utc).date()
     except Exception:
         return None
 
@@ -119,7 +119,7 @@ def fetch_price_history(ticker, range_="1y"):
     except Exception:
         return None, {}
     scale = 100.0 if currency in MINOR_UNIT_CURRENCIES else 1.0
-    history = {datetime.datetime.utcfromtimestamp(ts).date().isoformat(): c / scale
+    history = {datetime.datetime.fromtimestamp(ts, datetime.timezone.utc).date().isoformat(): c / scale
                for ts, c in zip(timestamps, closes) if c is not None}
     return MINOR_UNIT_CURRENCIES.get(currency, currency), history
 
@@ -132,7 +132,10 @@ def fetch_fx_rate(from_ccy, to_ccy):
         return 1.0
     key = (from_ccy, to_ccy)
     if key not in _fx_cache:
-        rate, _ = fetch_market_price(f"{from_ccy}{to_ccy}=X")
+        # One retry: a transient failure must not drop every stock in this currency for the whole run
+        rate = fetch_market_price(f"{from_ccy}{to_ccy}=X")[0] or fetch_market_price(f"{from_ccy}{to_ccy}=X")[0]
+        if rate is None:
+            return None
         _fx_cache[key] = rate
     return _fx_cache[key]
 
