@@ -40,3 +40,10 @@ test("low coverage demotes Buy but not other stances", () => {
   assert.strictEqual(chooseStance(5, 1.5, null, null).code, "BUY");   // unknown coverage is not penalised
   assert.strictEqual(chooseStance(5, 1.5, null, 25).code, "BUY");
 });
+
+test("detects the latest holdings change", () => {
+  const rs = rows(ramp(100));
+  rs.forEach((r, i) => { r.push(i < 40 ? "aaa" : i < 80 ? "bbb" : "ccc"); });
+  assert.strictEqual(historyStats(rs).holdingsChangedOn, "d80");
+  assert.strictEqual(historyStats(rows(ramp(100))).holdingsChangedOn, null);   // rows without hashes
+});

@@ -35,7 +35,14 @@ function historyStats(rows, cfg = DECISION_CONFIG) {
     priceTrendUp = prices[prices.length - 1] > sma20;
   }
 
+  // Latest day on which the set of holdings behind the look-through changed (rows carry a holdings hash)
+  let holdingsChangedOn = null;
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][5] && rows[i - 1][5] && rows[i][5] !== rows[i - 1][5]) holdingsChangedOn = rows[i][0];
+  }
+
   return {
+    holdingsChangedOn,
     current,
     percentile,
     p20,

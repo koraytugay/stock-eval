@@ -11,6 +11,7 @@ Exits non-zero without writing a snapshot if too few prices could be fetched.
 
 import os
 import sys
+import hashlib
 import json
 import zlib
 import datetime
@@ -49,9 +50,15 @@ def save_json(path, obj, compact=False):
             json.dump(obj, f, indent=2)
 
 
+def holdings_hash(holdings):
+    """Short fingerprint of which tickers an ETF's look-through is made of (weights drift daily, tickers rarely)."""
+    return hashlib.md5(",".join(sorted(h["ticker"] for h in holdings if h.get("ticker"))).encode()).hexdigest()[:8]
+
+
 def etf_history_row(date, etf):
-    """Compact daily history row: [date, intrinsic per $1, premium %, valued weight %, market_price]."""
-    return [date, etf.get("intrinsic_per_dollar"), etf.get("market_premium_pct"), etf.get("covered_weight_pct"), etf.get("market_price")]
+    """Compact daily history row: [date, intrinsic per $1, premium %, valued weight %, market_price, holdings hash]."""
+    return [date, etf.get("intrinsic_per_dollar"), etf.get("market_premium_pct"), etf.get("covered_weight_pct"),
+            etf.get("market_price"), etf.get("holdings_hash")]
 
 
 def update_etf_history(date, etfs, history=None):
@@ -368,6 +375,7 @@ def run_daily_evaluation():
             "market_price": p,
             **etf_look_through(holdings, today_snapshot["stocks"]),
             "fundamentals_as_of": etf_fundamentals_as_of(holdings, today_snapshot["stocks"]),
+            "holdings_hash": holdings_hash(holdings),
             "holdings": holdings
         }
 

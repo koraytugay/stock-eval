@@ -254,5 +254,18 @@ class GrowerBaseTest(unittest.TestCase):
         self.assertLess(inputs["fcf"], 11.0)
 
 
+class HoldingsHashTest(unittest.TestCase):
+    def test_depends_on_tickers_not_weights(self):
+        a = fe.holdings_hash([{"ticker": "A", "weight": 0.5}, {"ticker": "B", "weight": 0.5}])
+        b = fe.holdings_hash([{"ticker": "B", "weight": 0.6}, {"ticker": "A", "weight": 0.4}])
+        c = fe.holdings_hash([{"ticker": "A", "weight": 0.5}, {"ticker": "C", "weight": 0.5}])
+        self.assertEqual(a, b)
+        self.assertNotEqual(a, c)
+
+    def test_history_row_carries_hash(self):
+        row = fe.etf_history_row("2026-10-30", {"holdings_hash": "abc"})
+        self.assertEqual(row[5], "abc")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -18,7 +18,7 @@ from concurrent.futures import ThreadPoolExecutor
 from data_sources import (fetch_price_history, fetch_sec_companyfacts, facts_as_of, parse_sec_companyfacts,
                           fetch_yahoo_timeseries, parse_yahoo_timeseries, get_sec_ticker_map, repair_with_yahoo)
 from valuation_models import compute_dcf, etf_look_through
-from fetch_and_evaluate import (model_inputs, load_json, save_json, update_etf_history, UNIVERSE_FILE, PARAMS_FILE,
+from fetch_and_evaluate import (model_inputs, holdings_hash, load_json, save_json, update_etf_history, UNIVERSE_FILE, PARAMS_FILE,
                                 DATA_DIR, ETF_HISTORY_FILE)
 
 MAX_FILL_DAYS = 14  # carry a price or FX rate over exchange holidays (Lunar New Year closes Asian markets ~9 days)
@@ -123,7 +123,9 @@ def main():
                     if rate:
                         stocks[t]["valuation"] = {"intrinsic_dcf": iv[0] * rate}
             if stocks:
-                day_etfs = {etf_id: etf_look_through(e.get("holdings", []), stocks) for etf_id, e in etfs.items()}
+                day_etfs = {etf_id: {**etf_look_through(e.get("holdings", []), stocks),
+                                     "holdings_hash": holdings_hash(e.get("holdings", []))}
+                            for etf_id, e in etfs.items()}
                 history = update_etf_history(day.isoformat(), day_etfs, history)
                 last_day = day.isoformat()
         day += datetime.timedelta(days=1)

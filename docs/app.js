@@ -711,6 +711,7 @@ function renderEtfCards(list) {
           <div style="display:flex; align-items:center; gap:8px;">
             <span class="stance-badge ${dec.stance.cls}">${dec.stance.icon} ${dec.stance.label}</span>
             <span class="badge" title="${escapeHtml(unvaluedTitle(data))}">${fmtNum(data.covered_weight_pct, 1)}% Valued</span>
+            ${stats && stats.holdingsChangedOn ? `<span class="badge" title="The tickers behind this ETF's look-through changed, so earlier history is not exactly comparable">holdings changed ${escapeHtml(stats.holdingsChangedOn)}</span>` : ""}
           </div>
         </div>
 
