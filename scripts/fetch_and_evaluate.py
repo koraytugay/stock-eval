@@ -9,6 +9,7 @@ Core Data Extraction and Valuation Pipeline:
 Exits non-zero without writing a snapshot if too few prices could be fetched.
 """
 
+import os
 import sys
 import json
 import zlib
@@ -16,7 +17,7 @@ import datetime
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
-from data_sources import SCHEMA_VERSION, fetch_market_price, fetch_fx_rate, fetch_fundamentals
+from data_sources import SCHEMA_VERSION, fetch_market_price, fetch_fx_rate, fetch_fundamentals, fetch_last_trade_date
 from valuation_models import (compute_dcf, compute_reverse_dcf, estimate_growth, normalized_fcf, etf_look_through,
                               infer_adr_ratio)
 
@@ -185,6 +186,14 @@ def value_stock(ticker, price, price_ccy, fund, sector, params):
     }, status
 
 
+def is_market_closed_today(today, last_trade_date):
+    """True on weekends, or when the reference market's latest trade is not from today (a holiday).
+    An unknown trade date (fetch failure) is not treated as closed."""
+    if today.weekday() >= 5:
+        return True
+    return last_trade_date is not None and last_trade_date < today
+
+
 def run_daily_evaluation():
     now = datetime.datetime.now(datetime.timezone.utc)
     today = now.date()
@@ -194,6 +203,11 @@ def run_daily_evaluation():
     params = load_json(PARAMS_FILE, None)
     if params is None:
         sys.exit(f"Missing {PARAMS_FILE}")
+
+    # Holidays would repeat the previous close as a new day and skew the history percentiles
+    if not os.environ.get("FORCE_RUN") and is_market_closed_today(today, fetch_last_trade_date("SPY")):
+        print("US market closed today (weekend or holiday); not writing a snapshot. Set FORCE_RUN=1 to override.")
+        return
 
     if not UNIVERSE_FILE.exists():
         import update_universe

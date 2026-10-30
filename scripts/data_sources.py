@@ -80,6 +80,17 @@ def fetch_market_price(ticker):
     return price, currency
 
 
+def fetch_last_trade_date(ticker="SPY"):
+    """Exchange-local date of the ticker's latest trade (so a market holiday shows the prior session), or None."""
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=1d"
+    try:
+        meta = _http_json(url, YAHOO_HEADERS, timeout=8)['chart']['result'][0]['meta']
+        ts = meta['regularMarketTime'] + meta.get('gmtoffset', 0)
+        return datetime.datetime.utcfromtimestamp(ts).date()
+    except Exception:
+        return None
+
+
 def fetch_price_history(ticker, range_="1y"):
     """Daily closes as (currency, {iso_date: close}), or (None, {}) on failure. Minor units are converted."""
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range={range_}"

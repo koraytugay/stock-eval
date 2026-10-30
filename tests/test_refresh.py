@@ -66,5 +66,20 @@ class FilingWindowTest(unittest.TestCase):
         self.assertEqual(ages, {True, False})
 
 
+class MarketClosedTest(unittest.TestCase):
+    def test_open_day(self):
+        self.assertFalse(fe.is_market_closed_today(TODAY, TODAY))  # Friday, traded today
+
+    def test_holiday(self):
+        self.assertTrue(fe.is_market_closed_today(TODAY, TODAY - datetime.timedelta(days=1)))
+
+    def test_weekend(self):
+        sat = datetime.date(2026, 10, 31)
+        self.assertTrue(fe.is_market_closed_today(sat, TODAY))
+
+    def test_unknown_is_not_closed(self):
+        self.assertFalse(fe.is_market_closed_today(TODAY, None))
+
+
 if __name__ == "__main__":
     unittest.main()
