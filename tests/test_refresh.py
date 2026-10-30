@@ -202,6 +202,24 @@ class SharesReconcileTest(unittest.TestCase):
         self.assertEqual(ds._reconcile_shares(1.4e6, {"val": 2.2e9}, w), 2.2e9)
         self.assertEqual(w, ["shares_mismatch"])
 
+    def test_smaller_diluted_count_in_millions_not_trusted(self):
+        # e.g. MCD/NTNX tagging diluted shares in millions/thousands while cover-page count is in raw shares
+        w = []
+        self.assertEqual(ds._reconcile_shares(7.08e8, {"val": 712.3}, w), 7.08e8)
+        self.assertEqual(w, [])
+
+    def test_yahoo_repairs_missing_or_mismatched_shares(self):
+        rec_missing = sec_record(shares_outstanding=0.0, warnings=["shares_missing"])
+        self.assertTrue(ds.repair_with_yahoo(rec_missing, {**YAHOO, "shares_outstanding": 0.17}))
+        self.assertEqual(rec_missing["shares_outstanding"], 0.17)
+        self.assertNotIn("shares_missing", rec_missing["warnings"])
+        self.assertIn("shares_from_yahoo", rec_missing["warnings"])
+
+        rec_mismatch = sec_record(shares_outstanding=90.041, warnings=["shares_mismatch"])
+        self.assertTrue(ds.repair_with_yahoo(rec_mismatch, {**YAHOO, "shares_outstanding": 0.098}))
+        self.assertEqual(rec_mismatch["shares_outstanding"], 0.098)
+        self.assertIn("shares_from_yahoo", rec_mismatch["warnings"])
+
     def test_no_diluted_data(self):
         self.assertEqual(ds._reconcile_shares(5.0, None, []), 5.0)
 

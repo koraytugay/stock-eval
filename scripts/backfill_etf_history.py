@@ -91,7 +91,8 @@ def main():
         for cp in checkpoints:
             if t in raw_sec:
                 fund = parse_sec_companyfacts(facts_as_of(raw_sec[t], cp))
-                if fund and {"capex_missing", "capex_secondary", "debt_missing"} & set(fund["warnings"]):
+                if fund and {"capex_missing", "capex_secondary", "debt_missing",
+                             "shares_missing", "shares_mismatch"} & set(fund["warnings"]):
                     # Same Yahoo cross-check as the daily run, read as of the checkpoint
                     if t not in raw_yahoo:
                         raw_yahoo[t] = _safe(fetch_yahoo_timeseries, t)

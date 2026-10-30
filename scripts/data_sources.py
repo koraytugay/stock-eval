@@ -244,10 +244,12 @@ def facts_as_of(data, as_of):
 def _reconcile_shares(shares, diluted_entry, warnings, tolerance=3.0):
     """
     Multi-class filers sometimes report the cover-page count for a single class only (e.g. 1,000x too few).
-    When it disagrees with the weighted-average diluted count by more than `tolerance`x, trust the latter.
+    When the weighted-average diluted count is larger by more than `tolerance`x, trust the latter (and flag
+    `shares_mismatch` so Yahoo can cross-check against XBRL scale errors). Never replace a cover-page count
+    with a much smaller diluted figure (which happens when diluted shares are tagged in thousands/millions).
     """
     diluted = diluted_entry["val"] if diluted_entry else None
-    if diluted and diluted > 0 and not (1 / tolerance <= shares / diluted <= tolerance):
+    if diluted and diluted > shares * tolerance:
         warnings.append("shares_mismatch")
         return diluted
     return shares
@@ -351,6 +353,8 @@ def parse_sec_companyfacts(data, fetched_at=None):
         shares = next(e["val"] for e in share_cands if _days(e["end"], newest) <= 548)
         shares = _reconcile_shares(shares, _latest_instant(_units(facts, "us-gaap",
                                    "WeightedAverageNumberOfDilutedSharesOutstanding", "shares")), warnings)
+        if _b(shares) <= 0:
+            warnings.append("shares_missing")
     else:
         warnings.append("shares_missing")
 
@@ -488,10 +492,11 @@ def parse_yahoo_timeseries(data, fetched_at=None, as_of=None, report_lag_days=60
     }
 
 
-def repair_with_yahoo(record, yahoo):
+def repair_with_yahoo(record, yahoo, tolerance=3.0):
     """
     Fills gaps in an SEC record from the Yahoo equivalent: missing or industry-tag capex (the larger figure is
-    kept, since understating capex is the risky error) and missing debt. Returns True if a field was repaired.
+    kept, since understating capex is the risky error), missing debt, and missing or scale-mismatched shares.
+    Returns True if a field was repaired.
     """
     if not yahoo:
         return False
@@ -515,6 +520,19 @@ def repair_with_yahoo(record, yahoo):
         warnings.remove("debt_missing")
         warnings.append("debt_from_yahoo")
         repaired = True
+    y_shares = yahoo.get("shares_outstanding") or 0.0
+    if y_shares > 0 and "shares_missing" not in yahoo["warnings"]:
+        if "shares_missing" in warnings:
+            record["shares_outstanding"] = y_shares
+            warnings.remove("shares_missing")
+            warnings.append("shares_from_yahoo")
+            repaired = True
+        elif "shares_mismatch" in warnings:
+            r_shares = record.get("shares_outstanding") or 0.0
+            if r_shares <= 0 or not (1 / tolerance <= r_shares / y_shares <= tolerance):
+                record["shares_outstanding"] = y_shares
+                warnings.append("shares_from_yahoo")
+                repaired = True
     return repaired
 
 
@@ -527,7 +545,8 @@ def fetch_fundamentals(ticker, fetched_at):
         if facts:
             parsed = parse_sec_companyfacts(facts, fetched_at)
             if parsed:
-                needs_check = {"capex_missing", "capex_secondary", "debt_missing"} & set(parsed["warnings"])
+                needs_check = {"capex_missing", "capex_secondary", "debt_missing",
+                               "shares_missing", "shares_mismatch"} & set(parsed["warnings"])
                 if needs_check:
                     try:
                         yahoo = parse_yahoo_timeseries(fetch_yahoo_timeseries(ticker), fetched_at)
