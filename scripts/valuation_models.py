@@ -170,6 +170,11 @@ def etf_look_through(holdings, stocks):
             fcf_weight += w
 
         rev_g = val.get("implied_growth_reverse_dcf")
+        if rev_g is None:
+            # Outside the solver's range the true value is at least as extreme as the bound; counting the bound
+            # keeps these holdings in the average instead of silently dropping the most extreme ones
+            rev_g = {"above_range": REVERSE_DCF_HIGH_G, "below_range": REVERSE_DCF_LOW_G}.get(
+                val.get("implied_growth_status"))
         if rev_g is not None and isinstance(rev_g, (int, float)):
             weighted_rev_g += w * rev_g * 100.0
             g_weight += w

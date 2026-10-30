@@ -134,5 +134,18 @@ class AdrRatioTest(unittest.TestCase):
         self.assertIsNone(infer_adr_ratio(10.0, 5.0, 0.0))
 
 
+class ImpliedGrowthBoundsTest(unittest.TestCase):
+    def test_out_of_range_holdings_count_at_the_bound(self):
+        stocks = {
+            "A": {"market_price": 10.0, "valuation": {"intrinsic_dcf": 10.0, "implied_growth_reverse_dcf": 0.10,
+                                                      "implied_growth_status": "ok"}},
+            "B": {"market_price": 10.0, "valuation": {"intrinsic_dcf": 10.0, "implied_growth_reverse_dcf": None,
+                                                      "implied_growth_status": "above_range"}},
+        }
+        holdings = [{"ticker": "A", "weight": 0.5}, {"ticker": "B", "weight": 0.5}]
+        # (10% + 150%) / 2 = 80%, not 10% from dropping B
+        self.assertEqual(etf_look_through(holdings, stocks)["implied_growth_pct"], 80.0)
+
+
 if __name__ == "__main__":
     unittest.main()
