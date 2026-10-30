@@ -81,9 +81,10 @@ def main():
     with ThreadPoolExecutor(max_workers=8) as pool:
         etf_prices = dict(zip(etf_tickers, pool.map(lambda e: fetch_price_history(etf_tickers[e], range_="2y")[1], etf_tickers)))
 
+    end_day = (today - datetime.timedelta(days=1)).isoformat()
     checkpoints = [d.isoformat() for d in month_starts(start, today)]
-    if checkpoints[-1] < today.isoformat():
-        checkpoints.append(today.isoformat())
+    if checkpoints[-1] < end_day:
+        checkpoints.append(end_day)
     adr_ratios = {t: (s.get("valuation") or {}).get("adr_ratio") for t, s in latest.get("stocks", {}).items()}
 
     # intrinsic[ticker][checkpoint] = (per-share value in reporting currency, reporting currency)
@@ -95,11 +96,12 @@ def main():
                 fund = parse_sec_companyfacts(facts_as_of(raw_sec[t], cp))
                 if fund and {"capex_missing", "capex_secondary", "debt_missing",
                              "shares_missing", "shares_mismatch"} & set(fund["warnings"]):
-                    # Same Yahoo cross-check as the daily run, read as of the checkpoint
+                    # The SEC filing date is already enforced by facts_as_of; align Yahoo to the filed period end
                     if t not in raw_yahoo:
                         raw_yahoo[t] = _safe(fetch_yahoo_timeseries, t)
                     if raw_yahoo[t]:
-                        repair_with_yahoo(fund, parse_yahoo_timeseries(raw_yahoo[t], as_of=cp))
+                        repair_with_yahoo(fund, parse_yahoo_timeseries(
+                            raw_yahoo[t], as_of=fund.get("fcf_period_end") or cp, report_lag_days=0))
             elif raw_yahoo.get(t):
                 fund = parse_yahoo_timeseries(raw_yahoo[t], as_of=cp)
             else:
