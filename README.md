@@ -12,7 +12,10 @@ An automated, serverless equity valuation and look-through ETF engine powered by
   * Reverse DCF (solving for the market-implied growth rate).
   * Look-through valuation for custom ETFs (intrinsic value per $1 invested).
 * **Storage:** Flat historical JSON snapshots (`data/snapshots/YYYY-MM-DD.json`). No external databases or servers needed.
-* **Frontend:** Static HTML/JS/CSS hosted on GitHub Pages: filterable equity table (click a row to see every input behind its valuation), ETF breakdown, and a backtest comparing the cheapest and most expensive stocks against the equal-weight average.
+* **Frontend:** Static HTML/JS/CSS hosted on GitHub Pages:
+  * **Summary Table:** Tracked ETF comparison with decision stances, DCF fair value, buy-below entry targets, FCF yields, and % valued coverage. Click any row to jump directly to its chart and metrics.
+  * **Interactive ETF Cards:** Dual-axis charts showing valuation premium vs DCF alongside ETF market price return %, historical Buy (green) and Wait (yellow) shaded zones, and 20-day trend SMA.
+  * **Next Contribution Allocator:** Automated whole-share order sizing for new cash deposits (CAD/USD multi-currency aware), remainder optimization, and 1-click clipboard brokerage orders.
 
 Stocks that cannot be valued (negative FCF, missing share count, no fundamentals) are shown with a reason instead of a number. When debt exceeds the modelled enterprise value, the equity value is floored at zero. An FCFF DCF is not meaningful for banks and insurers, so the Financials sector is excluded by default (`excluded_sectors`).
 
@@ -44,7 +47,7 @@ Each ETF is valued by look-through. With `holdings_page` (a stockanalysis.com pa
 Free holdings pages only list the top 10–25 positions, so each ETF card reports how much of the fund the published holdings cover and how much of it is actually valued. International holdings are priced and valued through Yahoo Finance (London prices are converted from pence; ADR share ratios are inferred from market cap).
 
 ### Valuation history
-`data/etf_history.json` holds one row per ETF per trading day (intrinsic value per $1, premium vs DCF, valued weight). The daily run appends the day's values; the ETF tab charts the past year and labels each ETF *cheaper than usual*, *typical* or *pricier than usual* from the percentile of today's premium within that history (bottom/top 20%).
+`data/etf_history.json` holds one row per ETF per trading day (`[date, intrinsic per $1, premium %, valued weight %, market_price, holdings_hash]`). The daily run appends the day's values. The dashboard charts the past year with dual-axis overlay (valuation premium vs DCF and market price return %), shades historical Buy and Wait zones, assigns decision stances (`BUY`, `ACCUMULATE`, `WAIT`), and alerts if the fund's holdings composition has changed.
 
 The first year was reconstructed with `python3 scripts/backfill_etf_history.py`, which replays historical prices and point-in-time fundamentals (SEC facts filed by each month start; Yahoo periods ending 60+ days earlier) against **today's** holdings. That part of the chart is shaded and marked as reconstructed. Re-run it after adding an ETF to give the new one a history.
 
