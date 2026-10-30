@@ -70,6 +70,11 @@ def main():
     with ThreadPoolExecutor(max_workers=4) as pool:
         raw_yahoo = dict(zip(other, pool.map(lambda t: _safe(fetch_yahoo_timeseries, t), other)))
 
+    # The ETFs' own prices feed the dashboard's trend signal and price overlay
+    etf_tickers = {etf_id: etf_id.replace("TSE:", "") + (".TO" if etf_id.startswith("TSE:") else "") for etf_id in etfs}
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        etf_prices = dict(zip(etf_tickers, pool.map(lambda e: fetch_price_history(etf_tickers[e])[1], etf_tickers)))
+
     checkpoints = [d.isoformat() for d in month_starts(start, today)]
     adr_ratios = {t: (s.get("valuation") or {}).get("adr_ratio") for t, s in latest.get("stocks", {}).items()}
 
@@ -124,7 +129,8 @@ def main():
                         stocks[t]["valuation"] = {"intrinsic_dcf": iv[0] * rate}
             if stocks:
                 day_etfs = {etf_id: {**etf_look_through(e.get("holdings", []), stocks),
-                                     "holdings_hash": holdings_hash(e.get("holdings", []))}
+                                     "holdings_hash": holdings_hash(e.get("holdings", [])),
+                                     "market_price": value_on_or_before(etf_prices.get(etf_id, {}), day)}
                             for etf_id, e in etfs.items()}
                 history = update_etf_history(day.isoformat(), day_etfs, history)
                 last_day = day.isoformat()
