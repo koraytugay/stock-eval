@@ -144,8 +144,8 @@ function getEtfFundamentals(etfObj) {
 
   for (const h of holdings) {
     const s = stocks[h.ticker];
-    if (!s) continue;
-    const val = s.valuation || {};
+    if (!s || !s.valuation || typeof s.valuation.intrinsic_dcf !== "number" || s.valuation.intrinsic_dcf <= 0) continue;
+    const val = s.valuation;
     const raw = s.raw || {};
     const fcf = val.fcf_used ?? raw.free_cash_flow;
     const shares = raw.shares_outstanding;
@@ -515,7 +515,8 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
   const latestPrice = dec.marketPrice || (rows.length && rows[rows.length - 1][4]);
   const totalReturn = (latestPrice && basePrice) ? ((latestPrice - basePrice) / basePrice) * 100 : null;
   const totalReturnStr = totalReturn !== null ? `${totalReturn >= 0 ? "+" : ""}${fmtNum(totalReturn, 1)}%` : "-";
-  const totalReturnColor = totalReturn !== null && totalReturn < 0 ? "#cf222e" : "#16a34a";
+  const totalReturnColor = totalReturn === null ? "#64748b" : (totalReturn < 0 ? "#cf222e" : "#16a34a");
+  const totalReturnBadge = totalReturn !== null ? ` <span style="color:${totalReturnColor}; font-weight:700;">(${totalReturnStr})</span>` : "";
 
   if (isHover && rows && rows[idx]) {
     const r = rows[idx];
@@ -526,7 +527,8 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
     const histPrice = r[4];
     const histReturn = (histPrice && basePrice) ? ((histPrice - basePrice) / basePrice) * 100 : null;
     const histReturnStr = histReturn !== null ? `${histReturn >= 0 ? "+" : ""}${fmtNum(histReturn, 1)}%` : "-";
-    const histReturnColor = histReturn !== null && histReturn < 0 ? "#cf222e" : "#16a34a";
+    const histReturnColor = histReturn === null ? "#64748b" : (histReturn < 0 ? "#cf222e" : "#16a34a");
+    const histReturnBadge = histReturn !== null ? ` <span style="color:${histReturnColor}; font-weight:700;">(${histReturnStr})</span>` : "";
 
     const allPrems = rows.map(row => row[2]).filter(p => typeof p === "number");
     const histPctile = (allPrems.filter(p => p <= premium).length / allPrems.length) * 100;
@@ -567,7 +569,7 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
         </div>
         <div class="chart-card-row">
           <span>ETF Market Price:</span>
-          <span><strong>${histPrice ? `$${fmtNum(histPrice, 2)}` : "-"}</strong> <span style="color:${histReturnColor}; font-weight:700;">(${histReturnStr})</span></span>
+          <span><strong>${histPrice ? `$${fmtNum(histPrice, 2)}` : "-"}</strong>${histReturnBadge}</span>
         </div>
         <div class="chart-card-row">
           <span>Intrinsic / $1 NAV:</span>
@@ -640,7 +642,7 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
     <div class="chart-card-section-divider">
       <div class="chart-card-row">
         <span>Market Price:</span>
-        <span><strong>${priceText}</strong> <span style="color:${totalReturnColor}; font-weight:700;">(${totalReturnStr})</span></span>
+        <span><strong>${priceText}</strong>${totalReturnBadge}</span>
       </div>
       <div class="chart-card-row">
         <span>DCF Fair Value:</span>
