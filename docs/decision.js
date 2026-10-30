@@ -6,7 +6,6 @@ const DECISION_CONFIG = {
   deepBuyPercentile: 25,     // ... or this one when the intrinsic discount is deep
   deepIntrinsicPerDollar: 1.25,
   accumulatePercentile: 65,  // above this the ETF is "extended"
-  minCoveragePct: 25,        // below this share of the fund valued, a Buy is demoted to Accumulate
   smaWindow: 20,
 };
 
@@ -61,11 +60,6 @@ function chooseStance(percentile, intrinsicPerDollar, stats, coveragePct, cfg = 
   const deepDiscount = typeof intrinsicPerDollar === "number" && intrinsicPerDollar >= cfg.deepIntrinsicPerDollar;
   const isBuy = percentile <= cfg.buyPercentile || (deepDiscount && percentile <= cfg.deepBuyPercentile);
   if (isBuy) {
-    // A signal built on a small slice of the fund is not trustworthy enough for a full Buy
-    if (typeof coveragePct === "number" && coveragePct < cfg.minCoveragePct) {
-      return { code: "ACCUMULATE", label: "Low coverage / Accumulate", cls: "stance-accumulate", icon: "\u25c8",
-               rank: 2, lowCoverage: true };
-    }
     return { code: "BUY", label: "Strong Value / Buy", cls: "stance-buy", icon: "\u2713", rank: 1 };
   }
   if (percentile <= cfg.accumulatePercentile) {

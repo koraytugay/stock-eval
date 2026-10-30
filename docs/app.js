@@ -375,9 +375,6 @@ function renderEtfSummary(list) {
         if (dec.stance.code === "BUY") {
           tagCls = "distance-in-zone";
           tagText = "In Buy Zone!";
-        } else if (dec.stance.lowCoverage) {
-          tagCls = "distance-low-cov";
-          tagText = "Target met (low cov)";
         } else {
           tagCls = "distance-above";
           tagText = "Below target";
@@ -652,7 +649,6 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
           let cTxt = `+${fmtNum(dec.distancePct, 1)}%`;
           if (inZone) {
             if (dec.stance.code === "BUY") { cCls = "distance-in-zone"; cTxt = "In Buy Zone!"; }
-            else if (dec.stance.lowCoverage) { cCls = "distance-low-cov"; cTxt = "Target met (low cov)"; }
             else { cTxt = "Below target"; }
           }
           return `<span class="distance-tag ${cCls}" style="font-size:0.7rem; padding:1px 5px;">${cTxt}</span>`;

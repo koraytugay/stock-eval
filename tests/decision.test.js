@@ -33,11 +33,9 @@ test("stances by percentile", () => {
   assert.strictEqual(chooseStance(null, 0.8, null, 50).code, "WAIT");
 });
 
-test("low coverage demotes Buy but not other stances", () => {
-  const s = chooseStance(5, 1.5, null, 4.2);
-  assert.strictEqual(s.code, "ACCUMULATE");
-  assert.strictEqual(s.lowCoverage, true);
-  assert.strictEqual(chooseStance(5, 1.5, null, null).code, "BUY");   // unknown coverage is not penalised
+test("buy stance triggers on historical percentile bargain", () => {
+  assert.strictEqual(chooseStance(5, 1.5, null, 4.2).code, "BUY");
+  assert.strictEqual(chooseStance(5, 1.5, null, null).code, "BUY");
   assert.strictEqual(chooseStance(5, 1.5, null, 25).code, "BUY");
 });
 
