@@ -101,7 +101,16 @@ async function loadSnapshot(dateOrLatest) {
   const path = dateOrLatest === "latest" ? "latest.json" : `snapshots/${dateOrLatest}.json`;
   try {
     currentSnapshot = await fetchData(path);
-    document.getElementById("last-updated").textContent = `Snapshot: ${currentSnapshot.date || dateOrLatest}`;
+    const badge = document.getElementById("last-updated");
+    badge.textContent = `Snapshot: ${currentSnapshot.date || dateOrLatest}`;
+    const fr = currentSnapshot.freshness;
+    if (fr && fr.median_period_end) {
+      badge.textContent += ` · fundamentals as of ${fr.median_period_end} (median)`;
+      const oldShare = fr.valued ? fr.older_count / fr.valued : 0;
+      badge.title = `Oldest fundamentals: ${fr.oldest_period_end}. ${fr.older_count} of ${fr.valued} valued stocks ` +
+        `describe a period more than ${fr.older_than_days} days ago; ${fr.sec_fallback_count} use Yahoo data instead of SEC.`;
+      badge.style.color = oldShare > 0.25 ? "#b45309" : "";
+    }
     updateKPIs();
     renderEtfs();
     setupAllocatorChips();

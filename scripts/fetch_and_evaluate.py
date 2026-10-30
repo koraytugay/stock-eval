@@ -30,7 +30,7 @@ ETF_HISTORY_FILE = DATA_DIR / "etf_history.json"
 PARAMS_FILE = BASE_DIR / "config" / "model_params.json"
 
 # Dated snapshots accumulate in git, so they keep only the raw fields the table and backtest use
-SNAPSHOT_RAW_FIELDS = ("source", "currency", "filed", "fetched_at", "fcf_basis", "free_cash_flow", "net_debt")
+SNAPSHOT_RAW_FIELDS = ("source", "currency", "filed", "fetched_at", "fcf_period_end", "warnings", "fcf_basis", "free_cash_flow", "net_debt")
 
 
 def load_json(path, default):
@@ -186,6 +186,37 @@ def value_stock(ticker, price, price_ccy, fund, sector, params):
     }, status
 
 
+def _median_date(dates):
+    dates = sorted(dates)
+    return dates[len(dates) // 2] if dates else None
+
+
+def freshness_summary(stocks, today, max_age_days=150):
+    """How old the fundamentals behind the valued stocks are (days since the period they describe)."""
+    periods, fallbacks = [], 0
+    for e in stocks.values():
+        raw = e.get("raw") or {}
+        if e.get("valuation") and raw.get("fcf_period_end"):
+            periods.append(raw["fcf_period_end"])
+            fallbacks += "sec_fallback" in (raw.get("warnings") or [])
+    old = sum((today - datetime.date.fromisoformat(p)).days > max_age_days for p in periods)
+    return {"valued": len(periods), "oldest_period_end": min(periods, default=None),
+            "median_period_end": _median_date(periods), "older_than_days": max_age_days,
+            "older_count": old, "sec_fallback_count": fallbacks}
+
+
+def etf_fundamentals_as_of(holdings, stocks):
+    """Weight-averaged period end of the fundamentals behind an ETF's valued holdings (ISO date or None)."""
+    total = acc = 0.0
+    for h in holdings:
+        e = stocks.get(h.get("ticker")) or {}
+        period = (e.get("raw") or {}).get("fcf_period_end")
+        if e.get("valuation") and period and h.get("weight"):
+            total += h["weight"]
+            acc += h["weight"] * datetime.date.fromisoformat(period).toordinal()
+    return datetime.date.fromordinal(round(acc / total)).isoformat() if total else None
+
+
 def is_market_closed_today(today, last_trade_date):
     """True on weekends, or when the reference market's latest trade is not from today (a holiday).
     An unknown trade date (fetch failure) is not treated as closed."""
@@ -279,6 +310,8 @@ def run_daily_evaluation():
         today_snapshot["stocks"][ticker] = entry
 
     print(f"Valuation status: {status_counts}")
+    today_snapshot["freshness"] = freshness_summary(today_snapshot["stocks"], today)
+    print(f"Fundamentals freshness: {today_snapshot['freshness']}")
 
     for etf_id, etf_obj in custom_etfs.items():
         holdings = etf_obj.get("holdings", [])
@@ -289,6 +322,7 @@ def run_daily_evaluation():
             "currency": c or etf_obj.get("currency", "CAD"),
             "market_price": p,
             **etf_look_through(holdings, today_snapshot["stocks"]),
+            "fundamentals_as_of": etf_fundamentals_as_of(holdings, today_snapshot["stocks"]),
             "holdings": holdings
         }
 

@@ -92,5 +92,25 @@ class SecFallbackTest(unittest.TestCase):
             self.assertNotIn("sec_fallback", ds.fetch_fundamentals("ZZZ.TO", "2026-10-30")["warnings"])
 
 
+class FreshnessTest(unittest.TestCase):
+    STOCKS = {
+        "A": {"valuation": {"ok": 1}, "raw": {"fcf_period_end": "2026-09-30"}},
+        "B": {"valuation": {"ok": 1}, "raw": {"fcf_period_end": "2026-03-31", "warnings": ["sec_fallback"]}},
+        "C": {"raw": {"fcf_period_end": "2020-01-01"}},  # not valued: ignored
+    }
+
+    def test_summary(self):
+        fr = fe.freshness_summary(self.STOCKS, TODAY)
+        self.assertEqual(fr["valued"], 2)
+        self.assertEqual(fr["oldest_period_end"], "2026-03-31")
+        self.assertEqual(fr["older_count"], 1)
+        self.assertEqual(fr["sec_fallback_count"], 1)
+
+    def test_etf_as_of_is_weighted(self):
+        holdings = [{"ticker": "A", "weight": 0.75}, {"ticker": "B", "weight": 0.25}, {"ticker": "C", "weight": 0.5}]
+        d = datetime.date.fromisoformat(fe.etf_fundamentals_as_of(holdings, self.STOCKS))
+        self.assertTrue(datetime.date(2026, 8, 1) < d < datetime.date(2026, 9, 30))
+
+
 if __name__ == "__main__":
     unittest.main()
