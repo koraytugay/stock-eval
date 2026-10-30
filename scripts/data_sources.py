@@ -564,7 +564,9 @@ def fetch_fundamentals(ticker, fetched_at):
                                "shares_missing", "shares_mismatch"} & set(parsed["warnings"])
                 if needs_check:
                     try:
-                        yahoo = parse_yahoo_timeseries(fetch_yahoo_timeseries(ticker), fetched_at)
+                        yahoo = parse_yahoo_timeseries(
+                            fetch_yahoo_timeseries(ticker), fetched_at,
+                            as_of=parsed.get("fcf_period_end"), report_lag_days=0)
                     except Exception as e:
                         print(f"  Yahoo cross-check failed for {ticker}: {e}")
                         yahoo = None

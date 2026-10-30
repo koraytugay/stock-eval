@@ -3106,11 +3106,11 @@
         ]
       },
       "valuation": {
-        "intrinsic_dcf": 410.07,
-        "market_premium_pct": -30.24,
-        "fcf_used": 5.593,
-        "enterprise_value": 163.533,
-        "implied_growth_reverse_dcf": 0.0461,
+        "intrinsic_dcf": 375.53,
+        "market_premium_pct": -23.82,
+        "fcf_used": 5.124,
+        "enterprise_value": 149.82,
+        "implied_growth_reverse_dcf": 0.0664,
         "implied_growth_status": "ok",
         "wacc": 0.08,
         "growth_rate_assumed": 0.1311,
@@ -22329,11 +22329,11 @@
         ]
       },
       "valuation": {
-        "intrinsic_dcf": 70.79,
-        "market_premium_pct": -62.37,
-        "fcf_used": 1.433,
-        "enterprise_value": 49.433,
-        "implied_growth_reverse_dcf": -0.0418,
+        "intrinsic_dcf": 61.92,
+        "market_premium_pct": -56.98,
+        "fcf_used": 1.285,
+        "enterprise_value": 44.328,
+        "implied_growth_reverse_dcf": -0.0185,
         "implied_growth_status": "ok",
         "wacc": 0.07,
         "growth_rate_assumed": 0.1209,
@@ -25128,11 +25128,11 @@
         ]
       },
       "valuation": {
-        "intrinsic_dcf": 230.59,
-        "market_premium_pct": 495.73,
-        "fcf_used": 8.164,
-        "enterprise_value": 259.09,
-        "implied_growth_reverse_dcf": 0.5892,
+        "intrinsic_dcf": 348.7,
+        "market_premium_pct": 293.95,
+        "fcf_used": 11.666,
+        "enterprise_value": 370.229,
+        "implied_growth_reverse_dcf": 0.4763,
         "implied_growth_status": "ok",
         "wacc": 0.075,
         "growth_rate_assumed": 0.127,
@@ -25372,14 +25372,14 @@
         ]
       },
       "valuation": {
-        "intrinsic_dcf": 198.52,
-        "market_premium_pct": -64.4,
-        "fcf_used": 1.423,
-        "enterprise_value": 62.543,
-        "implied_growth_reverse_dcf": -0.0206,
+        "intrinsic_dcf": 123.62,
+        "market_premium_pct": -42.82,
+        "fcf_used": 0.996,
+        "enterprise_value": 43.22,
+        "implied_growth_reverse_dcf": 0.0579,
         "implied_growth_status": "ok",
         "wacc": 0.065,
-        "growth_rate_assumed": 0.15,
+        "growth_rate_assumed": 0.1469,
         "growth_source": "historical",
         "fx_rate": 1.0,
         "adr_ratio": null
@@ -26248,11 +26248,11 @@
         ]
       },
       "valuation": {
-        "intrinsic_dcf": 131.65,
-        "market_premium_pct": -10.17,
+        "intrinsic_dcf": 133.22,
+        "market_premium_pct": -11.23,
         "fcf_used": 0.904,
         "enterprise_value": 21.038,
-        "implied_growth_reverse_dcf": 0.0127,
+        "implied_growth_reverse_dcf": 0.0107,
         "implied_growth_status": "ok",
         "wacc": 0.07,
         "growth_rate_assumed": 0.0298,
@@ -28949,7 +28949,7 @@
       "indices": [
         "SP500"
       ],
-      "valuation_status": "no_capex",
+      "valuation_status": "ok",
       "raw": {
         "balance_sheet_date": "2026-03-31",
         "capex": 0.0,
@@ -28995,6 +28995,19 @@
         "warnings": [
           "capex_missing"
         ]
+      },
+      "valuation": {
+        "intrinsic_dcf": 31.34,
+        "market_premium_pct": 162.09,
+        "fcf_used": 6.073,
+        "enterprise_value": 166.485,
+        "implied_growth_reverse_dcf": 0.155,
+        "implied_growth_status": "ok",
+        "wacc": 0.065,
+        "growth_rate_assumed": 0.04,
+        "growth_source": "default",
+        "fx_rate": 1.0,
+        "adr_ratio": null
       }
     },
     "NEM": {
@@ -36554,11 +36567,11 @@
         ]
       },
       "valuation": {
-        "intrinsic_dcf": 55.81,
-        "market_premium_pct": -29.08,
-        "fcf_used": 1.171,
-        "enterprise_value": 19.699,
-        "implied_growth_reverse_dcf": -0.0101,
+        "intrinsic_dcf": 21.95,
+        "market_premium_pct": 80.32,
+        "fcf_used": 0.692,
+        "enterprise_value": 11.641,
+        "implied_growth_reverse_dcf": 0.1136,
         "implied_growth_status": "ok",
         "wacc": 0.09,
         "growth_rate_assumed": 0.04,
@@ -40989,14 +41002,14 @@
         ]
       },
       "valuation": {
-        "intrinsic_dcf": 89.76,
-        "market_premium_pct": -60.54,
-        "fcf_used": 0.961,
-        "enterprise_value": 34.833,
-        "implied_growth_reverse_dcf": -0.028,
+        "intrinsic_dcf": 77.27,
+        "market_premium_pct": -54.16,
+        "fcf_used": 0.86,
+        "enterprise_value": 30.774,
+        "implied_growth_reverse_dcf": -0.004,
         "implied_growth_status": "ok",
         "wacc": 0.07,
-        "growth_rate_assumed": 0.1328,
+        "growth_rate_assumed": 0.1297,
         "growth_source": "historical",
         "fx_rate": 1.0,
         "adr_ratio": null
@@ -45079,10 +45092,10 @@
       "holdings_count": 10,
       "listed_weight_pct": 4.6,
       "covered_weight_pct": 4.2,
-      "intrinsic_per_dollar": 2.3555,
-      "market_premium_pct": -57.55,
-      "fcf_yield_pct": 11.0,
-      "implied_growth_pct": -3.1,
+      "intrinsic_per_dollar": 2.2358,
+      "market_premium_pct": -55.27,
+      "fcf_yield_pct": 10.29,
+      "implied_growth_pct": -1.4,
       "holdings": [
         {
           "ticker": "SM",
@@ -45148,10 +45161,10 @@
       "holdings_count": 10,
       "listed_weight_pct": 29.6,
       "covered_weight_pct": 28.3,
-      "intrinsic_per_dollar": 0.3786,
-      "market_premium_pct": 164.16,
-      "fcf_yield_pct": 1.9,
-      "implied_growth_pct": 35.8,
+      "intrinsic_per_dollar": 0.3834,
+      "market_premium_pct": 160.85,
+      "fcf_yield_pct": 1.91,
+      "implied_growth_pct": 35.2,
       "holdings": [
         {
           "ticker": "NVDA",
@@ -45217,10 +45230,10 @@
       "holdings_count": 10,
       "listed_weight_pct": 9.0,
       "covered_weight_pct": 7.3,
-      "intrinsic_per_dollar": 1.4524,
-      "market_premium_pct": -31.15,
-      "fcf_yield_pct": 6.61,
-      "implied_growth_pct": 5.0,
+      "intrinsic_per_dollar": 1.3218,
+      "market_premium_pct": -24.35,
+      "fcf_yield_pct": 5.84,
+      "implied_growth_pct": 6.9,
       "holdings": [
         {
           "ticker": "SM",
@@ -45887,10 +45900,10 @@
       "holdings_count": 106,
       "listed_weight_pct": 44.4,
       "covered_weight_pct": 32.1,
-      "intrinsic_per_dollar": 0.5333,
-      "market_premium_pct": 87.52,
-      "fcf_yield_pct": 2.83,
-      "implied_growth_pct": 29.5,
+      "intrinsic_per_dollar": 0.535,
+      "market_premium_pct": 86.93,
+      "fcf_yield_pct": 2.84,
+      "implied_growth_pct": 29.3,
       "holdings": [
         {
           "ticker": "NVDA",
@@ -46583,10 +46596,10 @@
       "holdings_count": 24,
       "listed_weight_pct": 11.2,
       "covered_weight_pct": 7.8,
-      "intrinsic_per_dollar": 1.1399,
-      "market_premium_pct": -12.28,
-      "fcf_yield_pct": 6.33,
-      "implied_growth_pct": 6.7,
+      "intrinsic_per_dollar": 1.0817,
+      "market_premium_pct": -7.56,
+      "fcf_yield_pct": 5.98,
+      "implied_growth_pct": 7.5,
       "holdings": [
         {
           "ticker": "GKOS",
@@ -46724,10 +46737,10 @@
       "holdings_count": 92,
       "listed_weight_pct": 48.5,
       "covered_weight_pct": 43.4,
-      "intrinsic_per_dollar": 0.407,
-      "market_premium_pct": 145.73,
-      "fcf_yield_pct": 2.05,
-      "implied_growth_pct": 35.8,
+      "intrinsic_per_dollar": 0.4096,
+      "market_premium_pct": 144.16,
+      "fcf_yield_pct": 2.06,
+      "implied_growth_pct": 35.5,
       "holdings": [
         {
           "ticker": "NVDA",
