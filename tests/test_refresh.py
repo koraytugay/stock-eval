@@ -69,17 +69,20 @@ class FilingWindowTest(unittest.TestCase):
 
 class MarketClosedTest(unittest.TestCase):
     def test_open_day(self):
-        self.assertFalse(fe.is_market_closed_today(TODAY, TODAY))  # Friday, traded today
+        self.assertFalse(fe.is_market_closed_today(TODAY, TODAY, TODAY))  # Friday, both traded today
 
-    def test_holiday(self):
-        self.assertTrue(fe.is_market_closed_today(TODAY, TODAY - datetime.timedelta(days=1)))
+    def test_us_holiday(self):
+        self.assertTrue(fe.is_market_closed_today(TODAY, TODAY - datetime.timedelta(days=1), TODAY))
+
+    def test_ca_holiday(self):
+        self.assertTrue(fe.is_market_closed_today(TODAY, TODAY, TODAY - datetime.timedelta(days=1)))
 
     def test_weekend(self):
         sat = datetime.date(2026, 10, 31)
-        self.assertTrue(fe.is_market_closed_today(sat, TODAY))
+        self.assertTrue(fe.is_market_closed_today(sat, TODAY, TODAY))
 
     def test_unknown_is_not_closed(self):
-        self.assertFalse(fe.is_market_closed_today(TODAY, None))
+        self.assertFalse(fe.is_market_closed_today(TODAY, None, None))
 
 
 class SecFallbackTest(unittest.TestCase):

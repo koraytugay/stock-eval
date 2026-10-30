@@ -264,12 +264,16 @@ def etf_fundamentals_as_of(holdings, stocks):
     return datetime.date.fromordinal(round(acc / total)).isoformat() if total else None
 
 
-def is_market_closed_today(today, last_trade_date):
-    """True on weekends, or when the reference market's latest trade is not from today (a holiday).
+def is_market_closed_today(today, us_trade_date=None, ca_trade_date=None):
+    """True on weekends, or when either reference market (US via SPY or TSX via XIU.TO) is closed today.
     An unknown trade date (fetch failure) is not treated as closed."""
     if today.weekday() >= 5:
         return True
-    return last_trade_date is not None and last_trade_date < today
+    if us_trade_date is not None and us_trade_date < today:
+        return True
+    if ca_trade_date is not None and ca_trade_date < today:
+        return True
+    return False
 
 
 def run_daily_evaluation():
@@ -283,8 +287,11 @@ def run_daily_evaluation():
         sys.exit(f"Missing {PARAMS_FILE}")
 
     # Holidays would repeat the previous close as a new day and skew the history percentiles
-    if not os.environ.get("FORCE_RUN") and is_market_closed_today(today, fetch_last_trade_date("SPY")):
-        print("US market closed today (weekend or holiday); not writing a snapshot. Set FORCE_RUN=1 to override.")
+    us_trade_date = fetch_last_trade_date("SPY")
+    ca_trade_date = fetch_last_trade_date("XIU.TO")
+    if not os.environ.get("FORCE_RUN") and is_market_closed_today(today, us_trade_date, ca_trade_date):
+        print(f"Market closed today (US: {us_trade_date}, TSX: {ca_trade_date}, today: {today}); "
+              "not writing a snapshot. Set FORCE_RUN=1 to override.")
         return
 
     if not UNIVERSE_FILE.exists():
