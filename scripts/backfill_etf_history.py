@@ -41,7 +41,13 @@ def value_on_or_before(series, day):
 
 def main():
     today = datetime.datetime.now(datetime.timezone.utc).date()
-    start = today - datetime.timedelta(days=365)
+    history = load_json(ETF_HISTORY_FILE, {"backfilled_until": None, "etfs": {}})
+    # If an existing history exists, backfill from its earliest date so all rows are consistently populated
+    earliest_existing = None
+    for rows in history.get("etfs", {}).values():
+        if rows:
+            earliest_existing = min(filter(None, [earliest_existing, rows[0][0]]))
+    start = datetime.date.fromisoformat(earliest_existing) if earliest_existing else (today - datetime.timedelta(days=365))
     params = load_json(PARAMS_FILE, None)
     universe = load_json(UNIVERSE_FILE, {})
     latest = load_json(DATA_DIR / "latest.json", {})
@@ -51,7 +57,7 @@ def main():
     print(f"Backfilling {len(etfs)} ETFs over {len(tickers)} holdings from {start} to {today}")
 
     with ThreadPoolExecutor(max_workers=8) as pool:
-        prices = dict(zip(tickers, pool.map(fetch_price_history, tickers)))
+        prices = dict(zip(tickers, pool.map(lambda t: fetch_price_history(t, range_="2y"), tickers)))
 
     # Raw fundamentals once per ticker; parsed as of each month start below
     sec_map = get_sec_ticker_map()
@@ -73,7 +79,7 @@ def main():
     # The ETFs' own prices feed the dashboard's trend signal and price overlay
     etf_tickers = {etf_id: etf_id.replace("TSE:", "") + (".TO" if etf_id.startswith("TSE:") else "") for etf_id in etfs}
     with ThreadPoolExecutor(max_workers=8) as pool:
-        etf_prices = dict(zip(etf_tickers, pool.map(lambda e: fetch_price_history(etf_tickers[e])[1], etf_tickers)))
+        etf_prices = dict(zip(etf_tickers, pool.map(lambda e: fetch_price_history(etf_tickers[e], range_="2y")[1], etf_tickers)))
 
     checkpoints = [d.isoformat() for d in month_starts(start, today)]
     adr_ratios = {t: (s.get("valuation") or {}).get("adr_ratio") for t, s in latest.get("stocks", {}).items()}
@@ -107,7 +113,7 @@ def main():
 
     pairs = {(ccy, prices[t][0]) for t in tickers for _, ccy in intrinsic[t].values()
              if prices[t][0] and ccy != prices[t][0]}
-    fx = {pair: fetch_price_history(f"{pair[0]}{pair[1]}=X")[1] for pair in pairs}
+    fx = {pair: fetch_price_history(f"{pair[0]}{pair[1]}=X", range_="2y")[1] for pair in pairs}
     print(f"FX pairs: {sorted(pairs)}")
 
     history = load_json(ETF_HISTORY_FILE, {"backfilled_until": None, "etfs": {}})
