@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: "valuation-run"
@@ -45,4 +46,29 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Automated daily valuation snapshot: $(date -u +'%Y-%m-%d')" && git push)
+          if git diff --staged --quiet; then
+            echo "Nothing to commit"
+            exit 0
+          fi
+          git commit -m "Automated daily valuation snapshot: $(date -u +'%Y-%m-%d')"
+          # Retry with a rebase in case another push landed while the run was in progress
+          for attempt in 1 2 3; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push && exit 0
+            sleep $((attempt * 5))
+          done
+          echo "Could not push after 3 attempts" >&2
+          exit 1
+
+      - name: Report failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Daily valuation run failed"
+          url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          existing=$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Failed again: $url"
+          else
+            gh issue create --title "$title" --body "The scheduled run failed: $url"
+          fi
