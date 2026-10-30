@@ -163,6 +163,7 @@ function computeAllocation(candidates, cash, strategy, fxRates = {}) {
 
   // 4. Compute weighted metrics of this purchase
   let sumFcf = 0;
+  let costWithFcf = 0;
   let sumPrem = 0;
   let costWithStats = 0;
 
@@ -170,6 +171,7 @@ function computeAllocation(candidates, cash, strategy, fxRates = {}) {
     if (o.costCad > 0) {
       if (o.etf.dec && typeof o.etf.dec.fcfYield === "number") {
         sumFcf += o.costCad * o.etf.dec.fcfYield;
+        costWithFcf += o.costCad;
       }
       if (o.etf.data && typeof o.etf.data.market_premium_pct === "number") {
         sumPrem += o.costCad * o.etf.data.market_premium_pct;
@@ -178,7 +180,7 @@ function computeAllocation(candidates, cash, strategy, fxRates = {}) {
     }
   }
 
-  const weightedFcf = totalInvestedCad > 0 ? (sumFcf / totalInvestedCad) : null;
+  const weightedFcf = costWithFcf > 0 ? (sumFcf / costWithFcf) : null;
   const weightedPrem = costWithStats > 0 ? (sumPrem / costWithStats) : null;
 
   return {

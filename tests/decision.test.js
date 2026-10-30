@@ -115,4 +115,9 @@ test("computeAllocation deduplicates candidates to prevent duplicate orders in b
   assert.strictEqual(alloc.orders.length, 2);
   const ids = alloc.orders.map(o => o.etf.id);
   assert.deepStrictEqual(ids, ["TSE:XEQT", "TSE:CAEM"]);
+
+  // If one candidate lacks fcfYield, weightedFcf is weighted only across candidates with numeric fcfYield
+  const noFcfOther = { ...fakeOther, dec: { ...fakeOther.dec, fcfYield: null } };
+  const allocMissingFcf = computeAllocation([fakeXeqt, noFcfOther], 1000, "buy_and_core");
+  assert.strictEqual(allocMissingFcf.weightedFcf, 3.5);
 });
