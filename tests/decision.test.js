@@ -17,6 +17,10 @@ test("percentile of the latest premium", () => {
   assert.strictEqual(upStats.percentile, 100);
   assert.strictEqual(upStats.p20, 20);
   assert.strictEqual(upStats.p25, 25);
+
+  // Evaluates explicit currentPremium when passed
+  const customStats = historyStats(rows(ramp(100)), DECISION_CONFIG, 15);
+  assert.strictEqual(customStats.percentile, 16);
 });
 
 test("uptrend flag compares price to its moving average", () => {

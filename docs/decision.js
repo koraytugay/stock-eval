@@ -16,10 +16,10 @@ function median(values) {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
-function historyStats(rows, cfg = DECISION_CONFIG) {
+function historyStats(rows, cfg = DECISION_CONFIG, currentPremium = undefined) {
   if (!rows || rows.length < cfg.minHistoryRows) return null;
   const premiums = rows.map(r => r[2]);
-  const current = premiums[premiums.length - 1];
+  const current = typeof currentPremium === "number" ? currentPremium : premiums[premiums.length - 1];
   const sorted = premiums.slice().sort((a, b) => a - b);
   const percentile = (premiums.filter(p => p <= current).length / premiums.length) * 100;
   const p20 = sorted[Math.floor(sorted.length * 0.20)];

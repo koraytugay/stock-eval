@@ -231,7 +231,7 @@ function updateKPIs() {
   if (!currentSnapshot || !currentSnapshot.etfs) return;
   const etfs = Object.entries(currentSnapshot.etfs);
   const etfRows = etfs.map(([id, data]) => {
-    const stats = historyStats(etfHistoryRows(id));
+    const stats = historyStats(etfHistoryRows(id), DECISION_CONFIG, data.market_premium_pct);
     return {
       id,
       data,
@@ -298,7 +298,7 @@ function getFilteredAndSortedEtfs() {
   const sortBy = document.getElementById("etf-sort-by").value;
 
   let list = Object.entries(currentSnapshot.etfs).map(([id, data]) => {
-    const stats = historyStats(etfHistoryRows(id));
+    const stats = historyStats(etfHistoryRows(id), DECISION_CONFIG, data.market_premium_pct);
     return {
       id,
       data,
@@ -381,18 +381,9 @@ function renderEtfSummary(list) {
 
     let buyBelowHtml = "-";
     if (dec.buyBelowPrice !== null && dec.buyBelowPrice !== undefined) {
-      const inZone = dec.distancePct <= 0;
-      let tagCls = "distance-above";
-      let tagText = `+${fmtNum(dec.distancePct, 1)}%`;
-      if (inZone) {
-        if (dec.stance.code === "BUY") {
-          tagCls = "distance-in-zone";
-          tagText = "In Buy Zone!";
-        } else {
-          tagCls = "distance-above";
-          tagText = "Below target";
-        }
-      }
+      const inZone = dec.stance.code === "BUY";
+      const tagCls = inZone ? "distance-in-zone" : "distance-above";
+      const tagText = inZone ? "In Buy Zone!" : `+${fmtNum(dec.distancePct, 1)}%`;
       buyBelowHtml = `
         <strong>&le; $${fmtNum(dec.buyBelowPrice, 2)}</strong>
         <div><span class="distance-tag ${tagCls}">${tagText}</span></div>
@@ -517,9 +508,9 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
   const data = currentSnapshot.etfs[etfId];
   if (!data) return "";
   const rows = etfHistoryRows(etfId);
-  const stats = historyStats(rows);
+  const stats = historyStats(rows, DECISION_CONFIG, data.market_premium_pct);
   const dec = computeEtfDecision(data, stats);
-  const inZone = dec.distancePct !== null && dec.distancePct <= 0;
+  const inZone = dec.stance.code === "BUY";
   const backfilledUntil = etfHistory && etfHistory.backfilled_until;
 
   const basePrice = (rows.find(r => typeof r[4] === "number" && r[4] > 0) || [])[4];
@@ -658,12 +649,8 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
       <div class="chart-card-row">
         <span>Buy-Below Target:</span>
         <span><strong>${buyTargetText}</strong> ${dec.distancePct !== null ? (() => {
-          let cCls = "distance-above";
-          let cTxt = `+${fmtNum(dec.distancePct, 1)}%`;
-          if (inZone) {
-            if (dec.stance.code === "BUY") { cCls = "distance-in-zone"; cTxt = "In Buy Zone!"; }
-            else { cTxt = "Below target"; }
-          }
+          const cCls = inZone ? "distance-in-zone" : "distance-above";
+          const cTxt = inZone ? "In Buy Zone!" : `+${fmtNum(dec.distancePct, 1)}%`;
           return `<span class="distance-tag ${cCls}" style="font-size:0.7rem; padding:1px 5px;">${cTxt}</span>`;
         })() : ''}</span>
       </div>
@@ -827,7 +814,7 @@ function setupAllocatorChips() {
 
   container.innerHTML = etfs.map(([id, data]) => {
     const isSelected = allocatorState.customSelected.has(id);
-    const stats = historyStats(etfHistoryRows(id));
+    const stats = historyStats(etfHistoryRows(id), DECISION_CONFIG, data.market_premium_pct);
     const dec = computeEtfDecision(data, stats);
     return `
       <div class="allocator-chip ${isSelected ? "selected" : "unselected"}" data-etf="${escapeHtml(id)}">
@@ -860,7 +847,7 @@ function renderAllocator() {
 
   const etfs = Object.entries(currentSnapshot.etfs);
   const etfRows = etfs.map(([id, data]) => {
-    const stats = historyStats(etfHistoryRows(id));
+    const stats = historyStats(etfHistoryRows(id), DECISION_CONFIG, data.market_premium_pct);
     return {
       id,
       data,
