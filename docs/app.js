@@ -436,20 +436,12 @@ function computeHistoricalZoneWindows(rows) {
     if (typeof prem !== "number") return;
     const pctile = (premiums.filter(p => p <= prem).length / n) * 100;
 
-    // 1. Strict Buy Signal: True historical bargain (<=20th percentile)
-    // or <=25th percentile with deep intrinsic discount (IV >= 1.25)
-    // Prevents buying at local swing tops like XSMC at $42.42
-    const isBuy = (pctile <= 20) || (typeof iv === "number" && iv >= 1.25 && pctile <= 25);
-
-    // 2. Trend-aware Wait Signal:
-    // If valuation is extended (> 65th percentile), but price is strongly trending above 20-day SMA,
-    // do not flag Wait (ride the trend). Only flag Wait when valuation is extended AND trend has cooled (px <= SMA20).
     const isTrendUp = (typeof px === "number" && typeof sm === "number" && px > sm);
-    const isWait = (!isBuy) && (pctile > 65) && (!isTrendUp);
+    const stance = chooseStance(pctile, iv, { priceTrendUp: isTrendUp }, r[3]);
 
-    if (isBuy) {
+    if (stance.code === "BUY") {
       buyIndices.push(i);
-    } else if (isWait) {
+    } else if (stance.code === "WAIT") {
       waitIndices.push(i);
     }
   });
@@ -518,15 +510,7 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
     const histSma20 = histWindow.length >= 3 ? (histWindow.reduce((a, b) => a + b, 0) / histWindow.length) : null;
     const isHistTrendUp = typeof histPrice === "number" && typeof histSma20 === "number" && histPrice > histSma20;
 
-    let histStance = { code: "WAIT", label: "Wait / Extended", cls: "stance-wait", icon: "⏸" };
-    const isHistBuy = (histPctile <= 20) || (typeof intrinsic === "number" && intrinsic >= 1.25 && histPctile <= 25);
-    if (isHistBuy) {
-      histStance = { code: "BUY", label: "Strong Value / Buy", cls: "stance-buy", icon: "✓" };
-    } else if (histPctile <= 65) {
-      histStance = { code: "ACCUMULATE", label: "Fair / Accumulate", cls: "stance-accumulate", icon: "◈" };
-    } else if (isHistTrendUp) {
-      histStance = { code: "ACCUMULATE", label: "Uptrend / Accumulate", cls: "stance-accumulate", icon: "▲" };
-    }
+    const histStance = chooseStance(histPctile, intrinsic, { priceTrendUp: isHistTrendUp }, covered);
 
     const isReconstructed = backfilledUntil && dateStr <= backfilledUntil;
     const premColor = premium < 0 ? "#16a34a" : "#cf222e";
@@ -1243,8 +1227,16 @@ function drawEtfChart(container, rows) {
     }
 
     const clampedX = Math.max(m.left, Math.min(m.left + w, svgX));
-    const frac = (clampedX - m.left) / w;
-    const idx = Math.max(0, Math.min(rows.length - 1, Math.round(frac * (rows.length - 1))));
+    let closestIdx = 0;
+    let minDiff = Infinity;
+    for (let i = 0; i < points.length; i++) {
+      const diff = Math.abs(points[i][0] - clampedX);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = i;
+      }
+    }
+    const idx = closestIdx;
 
     const [cx, cy] = points[idx];
     cursorLine.setAttribute("x1", cx.toFixed(1));
