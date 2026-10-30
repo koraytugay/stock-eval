@@ -117,7 +117,10 @@ async function loadSnapshot(dateOrLatest) {
 }
 
 function etfHistoryRows(etfId) {
-  return ((etfHistory && etfHistory.etfs && etfHistory.etfs[etfId]) || []).filter(r => typeof r[2] === "number");
+  const allRows = ((etfHistory && etfHistory.etfs && etfHistory.etfs[etfId]) || []).filter(r => typeof r[2] === "number");
+  // When inspecting a past snapshot, filter history rows up to that date to prevent look-ahead bias
+  const maxDate = currentSnapshot && currentSnapshot.date ? currentSnapshot.date : null;
+  return maxDate ? allRows.filter(r => r[0] <= maxDate) : allRows;
 }
 
 function getEtfFundamentals(etfObj) {
