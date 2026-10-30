@@ -21,12 +21,18 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleW
 # stockanalysis.com exchange codes -> Yahoo Finance ticker suffixes
 EXCHANGE_SUFFIX = {
     "TSX": ".TO", "TSXV": ".V", "NEO": ".NE", "OTC": "",
-    "LON": ".L", "AMS": ".AS", "EPA": ".PA", "ETR": ".DE", "FRA": ".DE", "SWX": ".SW", "BIT": ".MI",
+    "LON": ".L", "AMS": ".AS", "EPA": ".PA", "ETR": ".DE", "FRA": ".F", "SWX": ".SW", "BIT": ".MI",
     "BME": ".MC", "EBR": ".BR", "ELI": ".LS", "ISE": ".IR", "VIE": ".VI", "STO": ".ST", "CPH": ".CO",
     "HEL": ".HE", "OSL": ".OL", "WSE": ".WA",
     "TYO": ".T", "HKG": ".HK", "ASX": ".AX", "NZE": ".NZ", "SGX": ".SI", "KRX": ".KS", "KOSDAQ": ".KQ",
     "TPE": ".TW", "TPEX": ".TWO", "NSE": ".NS", "BOM": ".BO", "SHA": ".SS", "SHE": ".SZ", "IDX": ".JK",
     "SET": ".BK", "KLSE": ".KL", "JSE": ".JO", "BVMF": ".SA", "BMV": ".MX", "TADAWUL": ".SR", "TLV": ".TA",
+}
+
+# Secondary GDR/cross-listings mapped to primary home-exchange tickers
+SYMBOL_ALIASES = {
+    "@FRA-SSU": "005930.KS",
+    "@FRA-HBC2": "HSBA.L",
 }
 
 # Yahoo sector names -> GICS sector names used in config/model_params.json
@@ -59,6 +65,8 @@ def fetch_page_holdings(page):
 
 def to_yahoo(symbol):
     """'$BRK.B' -> 'BRK-B', '@TYO-7203' -> '7203.T', '@HKG-700' -> '0700.HK'; None for cash/unknown."""
+    if symbol in SYMBOL_ALIASES:
+        return SYMBOL_ALIASES[symbol]
     if symbol.startswith(("$", "#")):
         return symbol[1:].replace(".", "-")
     if symbol.startswith("@") and "-" in symbol:

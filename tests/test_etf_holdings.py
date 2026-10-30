@@ -18,6 +18,9 @@ class ToYahooTest(unittest.TestCase):
         self.assertEqual(to_yahoo("@HKG-700"), "0700.HK")
         self.assertEqual(to_yahoo("@LON-BT.A"), "BT-A.L")
         self.assertEqual(to_yahoo("@OTC-CICHF"), "CICHF")
+        self.assertEqual(to_yahoo("@FRA-SSU"), "005930.KS")
+        self.assertEqual(to_yahoo("@FRA-HBC2"), "HSBA.L")
+        self.assertEqual(to_yahoo("@FRA-XYZ"), "XYZ.F")
         self.assertIsNone(to_yahoo("=n/a"))
         self.assertIsNone(to_yahoo("@XYZ-ABC"))
 

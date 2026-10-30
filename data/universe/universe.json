@@ -747,7 +747,7 @@
           "name": "Banco Bilbao Vizcaya Argentaria, S.A."
         },
         {
-          "ticker": "HBC2.DE",
+          "ticker": "HSBA.L",
           "weight": 0.0072,
           "name": "HSBC Holdings plc"
         },
@@ -784,7 +784,7 @@
       "holdings_page": "quote/tsx/CAEM",
       "holdings": [
         {
-          "ticker": "SSU.DE",
+          "ticker": "005930.KS",
           "weight": 0.0602,
           "name": "Samsung Electronics Co., Ltd."
         },
