@@ -183,13 +183,8 @@ function computeEtfDecision(data, stats) {
   // Target premium threshold for a bargain entry:
   // If the ETF is at a deep discount (intrinsic >= 1.25), its buy stance triggers up to p25.
   // Otherwise, the buy threshold is p20.
-  // If intrinsic >= 1.0, the target is capped at fair value (0% premium).
   const isDeepDiscount = typeof intrinsicPerDollar === "number" && intrinsicPerDollar >= (DECISION_CONFIG.deepIntrinsicPerDollar || 1.25);
-  const targetThreshold = isDeepDiscount ? p25 : p20;
-  let targetPremium = targetThreshold;
-  if (typeof intrinsicPerDollar === "number" && intrinsicPerDollar >= 1.0 && typeof targetThreshold === "number") {
-    targetPremium = Math.min(0, targetThreshold);
-  }
+  const targetPremium = isDeepDiscount ? p25 : p20;
 
   let fairValuePrice = null;
   let buyBelowPrice = null;

@@ -15,8 +15,11 @@ test("percentile of the latest premium", () => {
   assert.ok(stats.percentile <= 2);
   const upStats = historyStats(rows(ramp(100)));
   assert.strictEqual(upStats.percentile, 100);
-  assert.strictEqual(upStats.p20, 20);
-  assert.strictEqual(upStats.p25, 25);
+  assert.strictEqual(upStats.p20, 19);
+  assert.strictEqual(upStats.p25, 24);
+  // A premium equal to p20 must evaluate to exactly the 20th percentile (not 21st)
+  assert.strictEqual(historyStats(rows(ramp(100)), DECISION_CONFIG, upStats.p20).percentile, 20);
+  assert.strictEqual(historyStats(rows(ramp(100)), DECISION_CONFIG, upStats.p25).percentile, 25);
 
   // Evaluates explicit currentPremium when passed
   const customStats = historyStats(rows(ramp(100)), DECISION_CONFIG, 15);

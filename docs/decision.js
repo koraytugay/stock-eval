@@ -22,8 +22,8 @@ function historyStats(rows, cfg = DECISION_CONFIG, currentPremium = undefined) {
   const current = typeof currentPremium === "number" ? currentPremium : premiums[premiums.length - 1];
   const sorted = premiums.slice().sort((a, b) => a - b);
   const percentile = (premiums.filter(p => p <= current).length / premiums.length) * 100;
-  const p20 = sorted[Math.floor(sorted.length * 0.20)];
-  const p25 = sorted[Math.floor(sorted.length * 0.25)];
+  const p20 = sorted[Math.max(0, Math.floor(sorted.length * 0.20) - 1)];
+  const p25 = sorted[Math.max(0, Math.floor(sorted.length * 0.25) - 1)];
 
   // Short moving average of price, when price history is available
   const prices = rows.map(r => r[4]).filter(p => typeof p === "number");
