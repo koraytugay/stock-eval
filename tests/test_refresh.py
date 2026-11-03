@@ -101,12 +101,18 @@ class MarketClosedTest(unittest.TestCase):
 
 class SecFallbackTest(unittest.TestCase):
     def test_yahoo_fallback_for_sec_filer_is_flagged(self):
-        with mock.patch.object(ds, "get_sec_ticker_map", return_value={"AAA": "1"}), \
-             mock.patch.object(ds, "fetch_sec_companyfacts", side_effect=RuntimeError("boom")), \
+        with mock.patch.object(ds, "get_sec_ticker_map", return_value={"AAA": "1", "FPI": "2"}), \
+             mock.patch.object(ds, "fetch_sec_companyfacts", side_effect=[RuntimeError("boom"), {"facts": {"ifrs-full": {}}}, None]), \
              mock.patch.object(ds, "fetch_yahoo_timeseries", return_value={}), \
              mock.patch.object(ds, "parse_yahoo_timeseries", side_effect=lambda *a, **k: {"source": "Yahoo Finance", "warnings": []}):
             self.assertIn("sec_fallback", ds.fetch_fundamentals("AAA", "2026-10-30")["warnings"])
+            # A foreign 20-F/IFRS filer with no 10-K US-GAAP facts uses Yahoo normally without a false fallback alarm
+            self.assertNotIn("sec_fallback", ds.fetch_fundamentals("FPI", "2026-10-30")["warnings"])
             self.assertNotIn("sec_fallback", ds.fetch_fundamentals("ZZZ.TO", "2026-10-30")["warnings"])
+
+    def test_sec_fallback_entries_recheck_promptly(self):
+        fb = entry("2026-10-26", fcf_period_end="2026-06-30", warnings=["sec_fallback"])
+        self.assertTrue(fe.is_stale(fb, TODAY, 30, FILING, "AAA"))
 
 
 class FreshnessTest(unittest.TestCase):

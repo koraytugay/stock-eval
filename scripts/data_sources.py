@@ -160,14 +160,21 @@ def get_sec_ticker_map():
 
 
 def fetch_sec_companyfacts(ticker):
-    """Returns the raw companyfacts JSON, or None if the ticker is not an SEC filer."""
+    """Returns the raw companyfacts JSON, or None if the ticker is not an SEC filer. Retries once on transient errors."""
     cik = get_sec_ticker_map().get(ticker.upper())
     if not cik:
         return None
-    try:
-        return _http_json(f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json", SEC_HEADERS, timeout=20)
-    finally:
-        time.sleep(0.12)  # Respect SEC 10 requests/sec limit
+    url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
+    for attempt in range(2):
+        try:
+            return _http_json(url, SEC_HEADERS, timeout=20)
+        except Exception:
+            if attempt == 0:
+                time.sleep(0.5)
+                continue
+            raise
+        finally:
+            time.sleep(0.12)  # Respect SEC 10 requests/sec limit
 
 
 def _units(facts, taxonomy, concept, unit="USD"):
@@ -562,10 +569,20 @@ def repair_with_yahoo(record, yahoo, tolerance=3.0):
     return repaired
 
 
+def _has_10k_facts(data):
+    """True if the SEC payload contains any 10-K US-GAAP facts (false for 20-F/40-F foreign filers)."""
+    for body in (data.get("facts", {}).get("us-gaap") or {}).values():
+        for entries in (body.get("units") or {}).values():
+            if any(str(e.get("form", "")).startswith("10-K") for e in entries):
+                return True
+    return False
+
+
 def fetch_fundamentals(ticker, fetched_at):
     """SEC for US filers, Yahoo timeseries otherwise. Returns a parsed record or None."""
     sec_map = get_sec_ticker_map()  # raises if the SEC is unreachable or rejects our User-Agent
     is_sec_filer = ticker.upper() in sec_map
+    sec_expected = False
     try:
         facts = fetch_sec_companyfacts(ticker)
         if facts:
@@ -583,14 +600,16 @@ def fetch_fundamentals(ticker, fetched_at):
                         yahoo = None
                     repair_with_yahoo(parsed, yahoo)
                 return parsed
+            sec_expected = _has_10k_facts(facts)
     except Exception as e:
         print(f"  SEC fetch failed for {ticker}: {e}")
+        sec_expected = is_sec_filer
     try:
         record = parse_yahoo_timeseries(fetch_yahoo_timeseries(ticker), fetched_at)
     except Exception as e:
         print(f"  Yahoo fundamentals failed for {ticker}: {e}")
         return None
-    if record and is_sec_filer:
+    if record and sec_expected:
         # FCF definition and TTM/FY basis can differ from the SEC figures; make the substitution visible
         record["warnings"] = record.get("warnings", []) + ["sec_fallback"]
     return record

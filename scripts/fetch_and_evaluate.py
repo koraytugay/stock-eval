@@ -85,6 +85,8 @@ def is_stale(entry, today, stale_after_days, filing=None, ticker=""):
     if entry.get("last_attempt") == today.isoformat():
         return False
     age = (today - datetime.date.fromisoformat(entry["fetched_at"])).days
+    if "sec_fallback" in (entry.get("warnings") or []):
+        return age >= (filing["recheck_days"] if filing else 3)
     period_end = entry.get("fcf_period_end")
     if filing and period_end and entry.get("source"):
         days_since_period = (today - datetime.date.fromisoformat(period_end)).days
