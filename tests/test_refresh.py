@@ -321,6 +321,13 @@ class GrowerBaseTest(unittest.TestCase):
         inputs, _ = fe.model_inputs(self.fund(hist, 11.0), "Information Technology", self.PARAMS)
         self.assertLess(inputs["fcf"], 11.0)
 
+    def test_cyclical_below_prior_peak_stays_normalized(self):
+        # High 6-year slope from a 2021 trough, but latest FY (1.057) is well below the 2022 peak (2.358)
+        hist = [["2021-01-30", 0.311], ["2022-01-29", 2.358], ["2023-01-28", 0.727],
+                ["2024-02-03", 0.674], ["2025-02-01", 0.76], ["2026-01-31", 1.057]]
+        inputs, _ = fe.model_inputs(self.fund(hist, 1.414), "Consumer Discretionary", self.PARAMS)
+        self.assertLess(inputs["fcf"], 1.1)
+
     def test_grower_fcf_is_monotonic_across_spike_boundary(self):
         # Increasing latest FCF across the 1.5x spike threshold must never cause used FCF to drop
         hist = [["2022-12-31", 6.0], ["2023-12-31", 7.2], ["2024-12-31", 8.6], ["2025-12-31", 10.4]]

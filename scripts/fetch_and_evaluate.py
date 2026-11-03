@@ -175,13 +175,17 @@ def model_inputs(fund, sector, params, as_of=None):
                                             basis=fund.get("fcf_basis", "FY"))
 
     # Averaging past years understates a business that is genuinely growing: the base then lags the growth
-    # rate applied to it. Growers start from the latest cash flow, capped at the continuous spike ceiling L*
-    # (where L* = max_spike * normalized_fcf(L*)) so a one-year surge is dampened without a step-down cliff.
+    # rate applied to it. Growers whose latest fiscal year reached a new multi-year high start from the latest
+    # cash flow, capped at the continuous spike ceiling L* (where L* = max_spike * normalized_fcf(L*)) so a
+    # one-year surge is dampened without a step-down cliff. Cyclicals recovering from an earlier trough while
+    # still below a prior peak keep the multi-year normalized average.
     latest = fund.get("free_cash_flow")
     max_spike = g_cfg.get("latest_base_max_spike", 1.5)
     norm_years = params.get("fcf_normalization_years", 1)
+    hist_vals = [v for _, v in (fund.get("fcf_history") or [])[-6:] if v is not None]
+    at_new_fy_high = len(hist_vals) >= 2 and hist_vals[-1] >= max(hist_vals) and hist_vals[-1] > hist_vals[-2]
     if (growth_source == "historical" and growth >= g_cfg.get("latest_base_min_growth", 1.0)
-            and latest and latest + addback > fcf):
+            and at_new_fy_high and latest and latest + addback > fcf):
         latest_firm = latest + addback
         if norm_years > max_spike:
             spike_cap = max(max_spike * (norm_years * raw_firm_norm - latest_firm) / (norm_years - max_spike), raw_firm_norm)

@@ -87,6 +87,14 @@ class EstimateGrowthTest(unittest.TestCase):
         self.assertGreater(g_fy, g_q2)
         self.assertGreater(g_q2, g_next_fy)
 
+    def test_old_trough_does_not_project_rapid_growth_when_recent_years_contract(self):
+        # 2020-2021 trough followed by a 2023 peak and 2 years of contraction (0.623 -> 0.561 -> 0.527)
+        hist = [["2020-12-31", 0.211], ["2021-12-31", 0.085], ["2022-12-31", 0.383],
+                ["2023-12-31", 0.623], ["2024-12-31", 0.561], ["2025-12-31", 0.527]]
+        g, src = estimate_growth(hist, cap=0.15)
+        self.assertEqual(src, "historical")
+        self.assertLess(g, 0.03)
+
 
 class NormalizedFcfTest(unittest.TestCase):
     HIST = [["2021-12-31", 3.0], ["2022-12-31", 6.0], ["2023-12-31", 9.0]]

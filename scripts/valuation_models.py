@@ -87,6 +87,13 @@ def compute_reverse_dcf(market_price, fcf, shares, net_debt, wacc=0.08, terminal
     return {"growth": round((low_g + high_g) / 2.0, 4), "status": "ok"}
 
 
+def _median_slope(xs, ys):
+    slopes = sorted((ys[j] - ys[i]) / (xs[j] - xs[i])
+                    for i in range(len(xs)) for j in range(i + 1, len(xs)) if xs[j] > xs[i])
+    mid = len(slopes) // 2
+    return slopes[mid] if len(slopes) % 2 else (slopes[mid - 1] + slopes[mid]) / 2
+
+
 def _estimate_growth_points(fcf_history, default=0.04, floor=0.0, cap=0.15, min_years=3):
     points = (fcf_history or [])[-6:]
     if len(points) < max(min_years, 2) or any(v is None or v <= 0 for _, v in points):
@@ -97,10 +104,12 @@ def _estimate_growth_points(fcf_history, default=0.04, floor=0.0, cap=0.15, min_
     if xs[-1] < max(min_years - 1, 1) - 0.1:
         return default, "default"
     ys = [math.log(v) for _, v in points]
-    slopes = sorted((ys[j] - ys[i]) / (xs[j] - xs[i])
-                    for i in range(len(xs)) for j in range(i + 1, len(xs)) if xs[j] > xs[i])
-    mid = len(slopes) // 2
-    slope = slopes[mid] if len(slopes) % 2 else (slopes[mid - 1] + slopes[mid]) / 2
+    slope = _median_slope(xs, ys)
+    # In a 5-6 year window, pairs starting at years 1-2 outnumber pairs within the last 4 years (9 vs 6).
+    # When FCF has contracted over the most recent 3 fiscal years, cap at the recent 4-year slope so an old
+    # trough (e.g. 2020-2021) cannot project rapid growth into a currently shrinking business.
+    if len(points) >= 5 and ys[-1] < ys[-3]:
+        slope = min(slope, _median_slope(xs[-4:], ys[-4:]))
     growth = math.exp(slope) - 1.0
     return round(min(max(growth, floor), cap), 4), "historical"
 
