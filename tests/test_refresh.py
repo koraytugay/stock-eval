@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
 import fetch_and_evaluate as fe
+import backfill_etf_history as bf
 import data_sources as ds
 from data_sources import SCHEMA_VERSION
 
@@ -347,6 +348,25 @@ class FxRetryTest(unittest.TestCase):
         with mock.patch.object(ds, "fetch_market_price", return_value=(None, None)):
             self.assertIsNone(ds.fetch_fx_rate("EUR", "CAD"))
         self.assertNotIn(("EUR", "CAD"), ds._fx_cache)
+
+
+class BackfillCausalityTest(unittest.TestCase):
+    def test_bounds_never_advance_past_existing_backfilled_until(self):
+        history = {"backfilled_until": "2026-10-20",
+                   "etfs": {"X": [["2025-10-24", 1, 0, 50, 10], ["2026-10-29", 1, 0, 50, 10]]}}
+        start, end = bf.backfill_bounds(datetime.date(2026, 11, 3), history)
+        self.assertEqual(start, datetime.date(2025, 10, 24))
+        self.assertEqual(end, datetime.date(2026, 10, 20))
+
+    def test_checkpoints_and_causal_lookup_have_no_lookahead(self):
+        sec = {"facts": {"us-gaap": {"NetCashProvidedByUsedInOperatingActivities": {
+            "units": {"USD": [{"filed": "2025-05-01"}, {"filed": "2026-02-15"}, {"filed": "2026-05-10"}, {"filed": "2026-11-20"}]}}}}}
+        self.assertEqual(bf.sec_checkpoints(sec, "2025-10-01", "2026-10-30"),
+                         ["2025-10-01", "2026-02-15", "2026-05-10"])
+        by_cp = {"2025-10-01": (10.0, "USD"), "2026-02-15": (20.0, "USD")}
+        # On 2026-02-14 the 2026-02-15 filing has not arrived yet: must use 10.0, not blend toward 20.0
+        self.assertEqual(bf.latest_checkpoint_value(by_cp, "2026-02-14"), (10.0, "USD"))
+        self.assertEqual(bf.latest_checkpoint_value(by_cp, "2026-02-15"), (20.0, "USD"))
 
 
 if __name__ == "__main__":

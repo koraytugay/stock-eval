@@ -2,14 +2,17 @@
 One-off backfill of daily ETF look-through valuations for the past year (data/etf_history.json).
 
 Approximations, shown as such on the dashboard:
-- Today's ETF holdings and weights are assumed for the whole period.
-- Fundamentals are re-read as of the first day of each month: SEC facts filed by then, or Yahoo periods
-  that ended at least 60 days before (Yahoo has no filing dates).
+- Today's ETF holdings and weights are assumed for the backfilled period.
+- Each stock's fundamentals are re-read on its actual point-in-time information arrival dates (SEC filing
+  dates, or 60 days after Yahoo period ends since Yahoo has no filing dates) and held until the next filing,
+  with no forward interpolation toward future filings.
 - ADR share ratios are taken from today's snapshot.
 
-Daily runs append exact, point-in-time rows from then on.
+Daily runs append exact, point-in-time rows after `backfilled_until`; re-running this script refreshes only
+the backfilled window through `backfilled_until` and never overwrites live daily rows after it.
 """
 
+import os
 import sys
 import json
 import datetime
@@ -24,11 +27,60 @@ from fetch_and_evaluate import (model_inputs, holdings_hash, load_json, save_jso
 MAX_FILL_DAYS = 14  # carry a price or FX rate over exchange holidays (Lunar New Year closes Asian markets ~9 days)
 
 
-def month_starts(start, end):
-    d = start.replace(day=1)
-    while d <= end:
-        yield d
-        d = (d.replace(day=28) + datetime.timedelta(days=4)).replace(day=1)
+def sec_checkpoints(facts_data, start_iso, end_iso):
+    """Sorted point-in-time dates in [start_iso, end_iso] on which any SEC fact was filed for this company."""
+    dates = {start_iso}
+    for concepts in (facts_data.get("facts") or {}).values():
+        for body in concepts.values():
+            for entries in (body.get("units") or {}).values():
+                for e in entries:
+                    filed = e.get("filed")
+                    if filed and start_iso < filed <= end_iso:
+                        dates.add(filed)
+    return sorted(dates)
+
+
+def yahoo_checkpoints(ts_data, start_iso, end_iso, report_lag_days=60):
+    """Sorted point-in-time dates in [start_iso, end_iso] on which a lagged Yahoo period becomes available."""
+    dates = {start_iso}
+    lag = datetime.timedelta(days=report_lag_days)
+    for res in (ts_data.get("timeseries", {}).get("result") or []):
+        t = (res.get("meta", {}).get("type") or [None])[0]
+        if not t or t == "trailingMarketCap":
+            continue
+        for p in (res.get(t) or []):
+            d = p.get("asOfDate") if p else None
+            if d:
+                avail = (datetime.date.fromisoformat(d) + lag).isoformat()
+                if start_iso < avail <= end_iso:
+                    dates.add(avail)
+    return sorted(dates)
+
+
+def latest_checkpoint_value(by_checkpoint, day_iso):
+    """Causal lookup: returns the value at the latest checkpoint on or before `day_iso` (never future)."""
+    cp = max((c for c in by_checkpoint if c <= day_iso), default=None)
+    return by_checkpoint[cp] if cp is not None else None
+
+
+def backfill_bounds(today, history, force_through_yesterday=False):
+    """
+    Returns (start_date, end_date) inclusive for the backfill window.
+    When `history["backfilled_until"]` is already set, `end_date` is capped at `backfilled_until` so re-running
+    the backfill refreshes only the reconstructed window and never overwrites live daily rows after it.
+    """
+    earliest_existing = None
+    for rows in (history.get("etfs") or {}).values():
+        if rows:
+            earliest_existing = min(filter(None, [earliest_existing, rows[0][0]]))
+    start = datetime.date.fromisoformat(earliest_existing) if earliest_existing else (today - datetime.timedelta(days=365))
+    yesterday = today - datetime.timedelta(days=1)
+    existing_end = history.get("backfilled_until")
+    if existing_end and not force_through_yesterday:
+        end = min(datetime.date.fromisoformat(existing_end), yesterday)
+    else:
+        end = yesterday
+    return start, end
 
 
 def value_on_or_before(series, day):
@@ -42,19 +94,14 @@ def value_on_or_before(series, day):
 def main():
     today = datetime.datetime.now(datetime.timezone.utc).date()
     history = load_json(ETF_HISTORY_FILE, {"backfilled_until": None, "etfs": {}})
-    # If an existing history exists, backfill from its earliest date so all rows are consistently populated
-    earliest_existing = None
-    for rows in history.get("etfs", {}).values():
-        if rows:
-            earliest_existing = min(filter(None, [earliest_existing, rows[0][0]]))
-    start = datetime.date.fromisoformat(earliest_existing) if earliest_existing else (today - datetime.timedelta(days=365))
+    start, end = backfill_bounds(today, history, force_through_yesterday=bool(os.environ.get("FORCE_BACKFILL_END")))
     params = load_json(PARAMS_FILE, None)
     universe = load_json(UNIVERSE_FILE, {})
     latest = load_json(DATA_DIR / "latest.json", {})
     etfs = universe.get("CUSTOM", {})
     sectors = universe.get("SECTORS", {})
     tickers = sorted({h["ticker"] for e in etfs.values() for h in e.get("holdings", [])})
-    print(f"Backfilling {len(etfs)} ETFs over {len(tickers)} holdings from {start} to {today}")
+    print(f"Backfilling {len(etfs)} ETFs over {len(tickers)} holdings from {start} through {end}")
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         prices = dict(zip(tickers, pool.map(lambda t: fetch_price_history(t, range_="2y"), tickers)))
@@ -81,17 +128,20 @@ def main():
     with ThreadPoolExecutor(max_workers=8) as pool:
         etf_prices = dict(zip(etf_tickers, pool.map(lambda e: fetch_price_history(etf_tickers[e], range_="2y")[1], etf_tickers)))
 
-    end_day = (today - datetime.timedelta(days=1)).isoformat()
-    checkpoints = [d.isoformat() for d in month_starts(start, today)]
-    if checkpoints[-1] < end_day:
-        checkpoints.append(end_day)
+    start_iso, end_iso = start.isoformat(), end.isoformat()
     adr_ratios = {t: (s.get("valuation") or {}).get("adr_ratio") for t, s in latest.get("stocks", {}).items()}
 
     # intrinsic[ticker][checkpoint] = (per-share value in reporting currency, reporting currency)
     intrinsic = {}
     for t in tickers:
         intrinsic[t] = {}
-        for cp in checkpoints:
+        if t in raw_sec:
+            cps = sec_checkpoints(raw_sec[t], start_iso, end_iso)
+        elif raw_yahoo.get(t):
+            cps = yahoo_checkpoints(raw_yahoo[t], start_iso, end_iso)
+        else:
+            cps = []
+        for cp in cps:
             if t in raw_sec:
                 fund = parse_sec_companyfacts(facts_as_of(raw_sec[t], cp))
                 if fund and {"capex_missing", "capex_secondary", "debt_missing",
@@ -102,10 +152,8 @@ def main():
                     if raw_yahoo[t]:
                         repair_with_yahoo(fund, parse_yahoo_timeseries(
                             raw_yahoo[t], as_of=fund.get("fcf_period_end") or cp, report_lag_days=0))
-            elif raw_yahoo.get(t):
-                fund = parse_yahoo_timeseries(raw_yahoo[t], as_of=cp)
             else:
-                fund = None
+                fund = parse_yahoo_timeseries(raw_yahoo[t], as_of=cp)
             inputs, _ = model_inputs(fund, sectors.get(t), params, as_of=cp)
             if not inputs:
                 continue
@@ -123,15 +171,9 @@ def main():
 
     history = load_json(ETF_HISTORY_FILE, {"backfilled_until": None, "etfs": {}})
     day, last_day = start, None
-    while day < today:
+    while day <= end:
         if day.weekday() < 5:
             day_iso = day.isoformat()
-            cp0 = max((c for c in checkpoints if c <= day_iso), default=None)
-            cp1 = min((c for c in checkpoints if c > day_iso), default=None)
-            w = 0.0
-            if cp0 and cp1:
-                d0, d1 = datetime.date.fromisoformat(cp0), datetime.date.fromisoformat(cp1)
-                w = (day - d0).days / max((d1 - d0).days, 1)
             stocks = {}
             for t in tickers:
                 price_ccy, series = prices[t]
@@ -139,12 +181,7 @@ def main():
                 if price is None:
                     continue
                 stocks[t] = {"market_price": price}
-                iv0 = intrinsic[t].get(cp0) if cp0 else None
-                iv1 = intrinsic[t].get(cp1) if cp1 else None
-                if iv0 and iv1 and iv0[1] == iv1[1]:
-                    iv = ((1.0 - w) * iv0[0] + w * iv1[0], iv0[1])
-                else:
-                    iv = iv0
+                iv = latest_checkpoint_value(intrinsic[t], day_iso)
                 if iv:
                     rate = 1.0 if iv[1] == price_ccy else value_on_or_before(fx.get((iv[1], price_ccy), {}), day)
                     if rate:
@@ -154,13 +191,14 @@ def main():
                                      "holdings_hash": holdings_hash(e.get("holdings", [])),
                                      "market_price": value_on_or_before(etf_prices.get(etf_id, {}), day)}
                             for etf_id, e in etfs.items()}
-                history = update_etf_history(day.isoformat(), day_etfs, history)
-                last_day = day.isoformat()
+                history = update_etf_history(day_iso, day_etfs, history)
+                last_day = day_iso
         day += datetime.timedelta(days=1)
 
-    history["backfilled_until"] = last_day
+    if last_day and (not history.get("backfilled_until") or bool(os.environ.get("FORCE_BACKFILL_END"))):
+        history["backfilled_until"] = last_day
     save_json(ETF_HISTORY_FILE, history, compact=True)
-    print(f"Wrote {ETF_HISTORY_FILE} (backfilled through {last_day})")
+    print(f"Wrote {ETF_HISTORY_FILE} (backfilled through {history.get('backfilled_until')})")
 
 
 def _safe(fn, *args):
