@@ -2,6 +2,7 @@
 
 const DECISION_CONFIG = {
   minHistoryRows: 60,        // fewer rows make a percentile meaningless
+  minCoveragePct: 10,        // below this valued weight %, a look-through sample is too small for a BUY trigger
   buyPercentile: 20,         // premium at or below this historical percentile is a bargain
   deepBuyPercentile: 25,     // ... or this one when the intrinsic discount is deep
   deepIntrinsicPerDollar: 1.25,
@@ -61,7 +62,11 @@ function chooseStance(percentile, intrinsicPerDollar, stats, coveragePct, cfg = 
 
   const deepDiscount = typeof intrinsicPerDollar === "number" && intrinsicPerDollar >= cfg.deepIntrinsicPerDollar;
   const isBuy = percentile <= cfg.buyPercentile || (deepDiscount && percentile <= cfg.deepBuyPercentile);
+  const lowCoverage = typeof coveragePct === "number" && coveragePct < cfg.minCoveragePct;
   if (isBuy) {
+    if (lowCoverage) {
+      return { code: "ACCUMULATE", label: "Low Coverage / Accumulate", cls: "stance-accumulate", icon: "\u25c8", rank: 2 };
+    }
     return { code: "BUY", label: "Strong Value / Buy", cls: "stance-buy", icon: "\u2713", rank: 1 };
   }
   if (percentile <= cfg.accumulatePercentile) {
@@ -96,7 +101,8 @@ function computeAllocation(candidates, cash, strategy, fxRates = {}) {
   }
   candidates = uniqueCandidates;
 
-  // 1. Compute candidate scores / target weights
+  // 1. Compute candidate scores / target weights from each ETF's own historical percentile
+  // (never cross-comparing raw intrinsic_per_dollar across funds, which is skewed by sector/style)
   let weights = [];
   if (strategy === "buy_and_core" && candidates.some(c => c.id === "TSE:XEQT")) {
     const coreShare = 0.50;
@@ -105,25 +111,26 @@ function computeAllocation(candidates, cash, strategy, fxRates = {}) {
     weights = candidates.map(c => c.id === "TSE:XEQT" ? coreShare : otherShareEach);
   } else if (strategy === "buy_and_accumulate") {
     weights = candidates.map(c => {
-      const base = (100.0 - (c.stats ? c.stats.percentile : 50)) * Math.max(c.data.intrinsic_per_dollar || 1.0, 0.4);
+      const base = Math.max(100.0 - (c.stats ? c.stats.percentile : 50), 1.0);
       return (c.dec && c.dec.stance && c.dec.stance.code === "BUY") ? base * 2.5 : base;
     });
   } else {
     weights = candidates.map(c => {
       const pctile = c.stats ? c.stats.percentile : 50;
-      return (100.0 - pctile) * Math.max(c.data.intrinsic_per_dollar || 1.0, 0.5);
+      return Math.max(100.0 - pctile, 1.0);
     });
   }
   const totWeight = weights.reduce((s, w) => s + w, 0) || 1;
 
-  // 2. Initial whole share allocation converted to CAD
+  // 2. Initial whole share allocation converted to CAD (skipping non-CAD funds when FX rate is unavailable)
   let orders = candidates.map((c, i) => {
     const w = weights[i] / totWeight;
     const targetDollars = cash * w;
     const ccy = (c.dec && c.dec.currency) || (c.data && c.data.currency) || "CAD";
-    const fxRate = ccy === "CAD" ? 1.0 : (fxRates[`${ccy}CAD`] || 1.38);
+    const rawFx = ccy === "CAD" ? 1.0 : fxRates[`${ccy}CAD`];
+    const fxRate = (typeof rawFx === "number" && rawFx > 0) ? rawFx : null;
     const priceNative = (c.dec && typeof c.dec.marketPrice === "number") ? c.dec.marketPrice : ((c.data && c.data.market_price) || 0);
-    const priceCad = priceNative * fxRate;
+    const priceCad = fxRate !== null ? priceNative * fxRate : 0;
     const shares = priceCad > 0 ? Math.floor(targetDollars / priceCad) : 0;
     const costNative = shares * priceNative;
     const costCad = shares * priceCad;

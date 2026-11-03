@@ -43,10 +43,13 @@ test("stances by percentile", () => {
   assert.strictEqual(chooseStance(null, 0.8, null, 50).code, "WAIT");
 });
 
-test("buy stance triggers on historical percentile bargain", () => {
-  assert.strictEqual(chooseStance(5, 1.5, null, 4.2).code, "BUY");
-  assert.strictEqual(chooseStance(5, 1.5, null, null).code, "BUY");
+test("buy stance triggers on historical percentile bargain and respects minimum coverage", () => {
   assert.strictEqual(chooseStance(5, 1.5, null, 25).code, "BUY");
+  assert.strictEqual(chooseStance(5, 1.5, null, null).code, "BUY");
+  // Below minCoveragePct (10%), a bargain percentile is capped at ACCUMULATE so tiny samples do not trigger BUY
+  const lowCov = chooseStance(5, 1.5, null, 4.2);
+  assert.strictEqual(lowCov.code, "ACCUMULATE");
+  assert.strictEqual(lowCov.label, "Low Coverage / Accumulate");
 });
 
 test("detects the latest holdings change", () => {
@@ -120,4 +123,33 @@ test("computeAllocation deduplicates candidates to prevent duplicate orders in b
   const noFcfOther = { ...fakeOther, dec: { ...fakeOther.dec, fcfYield: null } };
   const allocMissingFcf = computeAllocation([fakeXeqt, noFcfOther], 1000, "buy_and_core");
   assert.strictEqual(allocMissingFcf.weightedFcf, 3.5);
+});
+
+test("computeAllocation is style-neutral across intrinsic_per_dollar and skips foreign orders without FX", () => {
+  const growthFund = {
+    id: "TSE:CAUS",
+    data: { currency: "CAD", intrinsic_per_dollar: 0.4, market_premium_pct: 150 },
+    dec: { currency: "CAD", marketPrice: 25.0, stance: { code: "BUY" }, fcfYield: 2.0 },
+    stats: { percentile: 10 }
+  };
+  const valueFund = {
+    id: "TSE:CASV",
+    data: { currency: "CAD", intrinsic_per_dollar: 2.2, market_premium_pct: -55 },
+    dec: { currency: "CAD", marketPrice: 25.0, stance: { code: "BUY" }, fcfYield: 9.0 },
+    stats: { percentile: 10 }
+  };
+  const alloc = computeAllocation([growthFund, valueFund], 1000, "buy_zone");
+  assert.strictEqual(alloc.orders[0].targetDollars, 500);
+  assert.strictEqual(alloc.orders[1].targetDollars, 500);
+
+  // Without USDCAD in fxRates, a USD candidate must not guess 1.38 and size shares
+  const usdFund = {
+    id: "VXUS",
+    data: { currency: "USD", intrinsic_per_dollar: 1.0, market_premium_pct: 0 },
+    dec: { currency: "USD", marketPrice: 50.0, stance: { code: "BUY" }, fcfYield: 4.0 },
+    stats: { percentile: 10 }
+  };
+  const noFxAlloc = computeAllocation([usdFund], 1000, "buy_zone", {});
+  assert.strictEqual(noFxAlloc.orders[0].shares, 0);
+  assert.strictEqual(noFxAlloc.totalInvestedCad, 0);
 });
