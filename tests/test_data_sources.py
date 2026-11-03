@@ -118,6 +118,19 @@ class ParseSecTest(unittest.TestCase):
         # Interest from a tag last used in 2015 must not be applied to 2023 cash flow
         self.assertIsNone(r["interest_paid"])
 
+    def test_deducts_noncontrolling_interest_from_consolidated_fcf(self):
+        data = {"facts": {"us-gaap": {
+            "NetCashProvidedByUsedInOperatingActivities": usd(
+                fact(4 * B, "2023-12-31", "10-K", "2024-02-01", "2023-01-01")),
+            "PaymentsToAcquirePropertyPlantAndEquipment": usd(
+                fact(1 * B, "2023-12-31", "10-K", "2024-02-01", "2023-01-01")),
+            "NetIncomeLossAttributableToNoncontrollingInterest": usd(
+                fact(0.8 * B, "2023-12-31", "10-K", "2024-02-01", "2023-01-01")),
+        }}}
+        r = parse_sec_companyfacts(data)
+        self.assertEqual(r["free_cash_flow"], 2.2)
+        self.assertEqual(r["fcf_history"], [["2023-12-31", 2.2]])
+
 
 def ts(type_, *points):
     return {"meta": {"type": [type_]},

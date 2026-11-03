@@ -44,6 +44,10 @@ FCF_FLOW_CONCEPTS = {
 }
 PRIMARY_CAPEX_CONCEPTS = 2
 INTEREST_PAID_CONCEPTS = ["InterestPaidNet", "InterestPaid"]
+# Consolidated OCF includes 100% of majority-owned subsidiaries' cash flow; deduct the noncontrolling partners'
+# share so FCF matches parent common shares outstanding
+NCI_FLOW_CONCEPTS = ["NetIncomeLossAttributableToNoncontrollingInterest",
+                     "PaymentsOfDividendsMinorityInterest"]
 CASH_CONCEPTS = ["CashAndCashEquivalentsAtCarryingValue",
                  "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents",
                  "Cash"]
@@ -315,6 +319,14 @@ def parse_sec_companyfacts(data, fetched_at=None):
             capex = capex_ttm[0] if capex_ttm else 0.0
             fcf_end, basis, filed = ocf_ttm[1], "TTM", ocf_ttm[2]
 
+    nci_entries = _merged_flow_entries(facts, NCI_FLOW_CONCEPTS)
+    nci_annual = _annual_flows(nci_entries)
+    nci = max(nci_annual[fy_end]["val"], 0.0) if fy_end in nci_annual else 0.0
+    if basis == "TTM" and fy_end in nci_annual:
+        nci_ttm = _ttm_flow(nci_entries, nci_annual)
+        if nci_ttm and nci_ttm[1] == fcf_end:
+            nci = max(nci_ttm[0], 0.0)
+
     # Operating cash flow is after interest paid; the DCF needs it back (see model_inputs)
     interest = None
     int_entries = _merged_flow_entries(facts, INTEREST_PAID_CONCEPTS)
@@ -330,7 +342,8 @@ def parse_sec_companyfacts(data, fetched_at=None):
         if capex_annual and end not in capex_annual:
             continue
         cx = capex_annual[end]["val"] if capex_annual else 0.0
-        fcf_history.append([end, _b(ocf_annual[end]["val"] - cx)])
+        nci_y = max(nci_annual[end]["val"], 0.0) if end in nci_annual else 0.0
+        fcf_history.append([end, _b(ocf_annual[end]["val"] - cx - nci_y)])
 
     # --- Balance sheet: cash and debt as of the same date ---
     cash_cands = [e for e in (_latest_instant(_units(facts, "us-gaap", c)) for c in CASH_CONCEPTS) if e]
@@ -387,7 +400,7 @@ def parse_sec_companyfacts(data, fetched_at=None):
         "balance_sheet_date": bs_date,
         "operating_cash_flow": _b(ocf),
         "capex": _b(capex),
-        "free_cash_flow": _b(ocf - capex),
+        "free_cash_flow": _b(ocf - capex - nci),
         "interest_paid": _b(interest) if interest is not None else None,
         "total_cash": _b(cash),
         "total_debt": _b(debt),
