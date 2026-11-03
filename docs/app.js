@@ -183,11 +183,8 @@ function computeEtfDecision(data, stats) {
   const p25 = stats ? stats.p25 : null;
   const funds = getEtfFundamentals(data);
 
-  // Target premium threshold for a bargain entry:
-  // If the ETF is at a deep discount (intrinsic >= 1.25), its buy stance triggers up to p25.
-  // Otherwise, the buy threshold is p20.
-  const isDeepDiscount = typeof intrinsicPerDollar === "number" && intrinsicPerDollar >= (DECISION_CONFIG.deepIntrinsicPerDollar || 1.25);
-  const targetPremium = isDeepDiscount ? p25 : p20;
+  // Target premium threshold for a bargain entry (20th percentile of the ETF's own history)
+  const targetPremium = p20;
 
   let fairValuePrice = null;
   let buyBelowPrice = null;
@@ -460,7 +457,8 @@ function computeHistoricalZoneWindows(rows) {
     const px = r[4];
     const sm = sma20[i];
     if (typeof prem !== "number") return;
-    const pctile = (premiums.filter(p => p <= prem).length / n) * 100;
+    const pctile = pointInTimePercentile(rows, i);
+    if (typeof pctile !== "number") return;
 
     const isTrendUp = (typeof px === "number" && typeof sm === "number" && px > sm);
     const stance = chooseStance(pctile, iv, { priceTrendUp: isTrendUp }, r[3]);
@@ -530,8 +528,7 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
     const histReturnColor = histReturn === null ? "#64748b" : (histReturn < 0 ? "#cf222e" : "#16a34a");
     const histReturnBadge = histReturn !== null ? ` <span style="color:${histReturnColor}; font-weight:700;">(${histReturnStr})</span>` : "";
 
-    const allPrems = rows.map(row => row[2]).filter(p => typeof p === "number");
-    const histPctile = (allPrems.filter(p => p <= premium).length / allPrems.length) * 100;
+    const histPctile = pointInTimePercentile(rows, idx);
 
     const histWindow = [];
     for (let k = Math.max(0, idx - 19); k <= idx; k++) {

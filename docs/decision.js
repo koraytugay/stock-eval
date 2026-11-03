@@ -4,8 +4,6 @@ const DECISION_CONFIG = {
   minHistoryRows: 60,        // fewer rows make a percentile meaningless
   minCoveragePct: 10,        // below this valued weight %, a look-through sample is too small for a BUY trigger
   buyPercentile: 20,         // premium at or below this historical percentile is a bargain
-  deepBuyPercentile: 25,     // ... or this one when the intrinsic discount is deep
-  deepIntrinsicPerDollar: 1.25,
   accumulatePercentile: 65,  // above this the ETF is "extended"
   smaWindow: 20,
 };
@@ -56,12 +54,24 @@ function historyStats(rows, cfg = DECISION_CONFIG, currentPremium = undefined) {
   };
 }
 
+function pointInTimePercentile(rows, idx, cfg = DECISION_CONFIG) {
+  if (!rows || !rows[idx] || typeof rows[idx][2] !== "number") return null;
+  const prem = rows[idx][2];
+  // Use causal history up to idx once the minimum warm-up window is reached; never look beyond minHistoryRows
+  const end = Math.min(rows.length, Math.max(idx + 1, cfg.minHistoryRows));
+  const windowPrems = [];
+  for (let k = 0; k < end; k++) {
+    if (typeof rows[k][2] === "number") windowPrems.push(rows[k][2]);
+  }
+  if (!windowPrems.length) return null;
+  return (windowPrems.filter(p => p <= prem).length / windowPrems.length) * 100;
+}
+
 function chooseStance(percentile, intrinsicPerDollar, stats, coveragePct, cfg = DECISION_CONFIG) {
   const wait = { code: "WAIT", label: "Wait / Extended", cls: "stance-wait", icon: "\u23f8", rank: 3 };
   if (typeof percentile !== "number") return wait;
 
-  const deepDiscount = typeof intrinsicPerDollar === "number" && intrinsicPerDollar >= cfg.deepIntrinsicPerDollar;
-  const isBuy = percentile <= cfg.buyPercentile || (deepDiscount && percentile <= cfg.deepBuyPercentile);
+  const isBuy = percentile <= cfg.buyPercentile;
   const lowCoverage = typeof coveragePct === "number" && coveragePct < cfg.minCoveragePct;
   if (isBuy) {
     if (lowCoverage) {
@@ -200,6 +210,6 @@ function computeAllocation(candidates, cash, strategy, fxRates = {}) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { DECISION_CONFIG, median, historyStats, chooseStance, computeAllocation };
+  module.exports = { DECISION_CONFIG, median, historyStats, pointInTimePercentile, chooseStance, computeAllocation };
 }
 

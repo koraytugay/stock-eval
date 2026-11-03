@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert");
-const { historyStats, chooseStance, computeAllocation, DECISION_CONFIG } = require("../docs/decision.js");
+const { historyStats, pointInTimePercentile, chooseStance, computeAllocation, DECISION_CONFIG } = require("../docs/decision.js");
 
 const rows = (premiums, prices) => premiums.map((p, i) => ["d" + i, 1, p, 50, prices ? prices[i] : 10]);
 const ramp = n => Array.from({ length: n }, (_, i) => i);  // premiums 0..n-1, current is the highest
@@ -33,14 +33,25 @@ test("uptrend flag compares price to its moving average", () => {
   assert.strictEqual(down.priceTrendUp, false);
 });
 
-test("stances by percentile", () => {
-  assert.strictEqual(chooseStance(10, 0.8, null, 50).code, "BUY");
+test("stances by percentile are uniform across intrinsic_per_dollar", () => {
+  assert.strictEqual(chooseStance(20, 0.8, null, 50).code, "BUY");
   assert.strictEqual(chooseStance(23, 0.8, null, 50).code, "ACCUMULATE");   // 21-65: fair
-  assert.strictEqual(chooseStance(23, 1.3, null, 50).code, "BUY");          // deep discount widens to 25
+  assert.strictEqual(chooseStance(23, 1.5, null, 50).code, "ACCUMULATE");   // no cross-ETF style bias at 23rd pctile
   assert.strictEqual(chooseStance(50, 0.8, null, 50).label, "Fair / Accumulate");
   assert.strictEqual(chooseStance(90, 0.8, { priceTrendUp: false }, 50).code, "WAIT");
   assert.strictEqual(chooseStance(90, 0.8, { priceTrendUp: true }, 50).label, "Uptrend / Accumulate");
   assert.strictEqual(chooseStance(null, 0.8, null, 50).code, "WAIT");
+});
+
+test("pointInTimePercentile does not leak future rows after warm-up", () => {
+  // First 80 days have premiums 100..179; days 80..99 crash to 0..19.
+  // On day 70 (premium 170), future crash days 80..99 must not affect its point-in-time percentile.
+  const prems = [...Array.from({ length: 80 }, (_, i) => 100 + i), ...Array.from({ length: 20 }, (_, i) => i)];
+  const rs = rows(prems);
+  assert.strictEqual(pointInTimePercentile(rs, 60), 100);
+  // At day 79, 100 is the minimum of days 0..79 (1/80 = 1.25%), even though days 80..99 are lower
+  const rsWithLowAt79 = rows([...Array.from({ length: 79 }, (_, i) => 101 + i), 100, ...Array.from({ length: 20 }, (_, i) => i)]);
+  assert.strictEqual(pointInTimePercentile(rsWithLowAt79, 79), (1 / 80) * 100);
 });
 
 test("buy stance triggers on historical percentile bargain and respects minimum coverage", () => {
