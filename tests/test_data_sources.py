@@ -97,6 +97,27 @@ class ParseSecTest(unittest.TestCase):
     def test_no_cash_flow_data(self):
         self.assertIsNone(parse_sec_companyfacts({"facts": {"us-gaap": {}}}))
 
+    def test_tag_switch_uses_newest_periods(self):
+        # The company stopped using the generic OCF tag after FY2021 and switched to ContinuingOperations;
+        # the latest period must come from the new tag, with the old one still filling older history
+        data = {"facts": {"us-gaap": {
+            "NetCashProvidedByUsedInOperatingActivities": usd(
+                fact(4 * B, "2020-12-31", "10-K", "2021-02-01", "2020-01-01"),
+                fact(5 * B, "2021-12-31", "10-K", "2022-02-01", "2021-01-01")),
+            "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations": usd(
+                fact(6 * B, "2022-12-31", "10-K", "2023-02-01", "2022-01-01"),
+                fact(7 * B, "2023-12-31", "10-K", "2024-02-01", "2023-01-01")),
+            "PaymentsToAcquirePropertyPlantAndEquipment": usd(
+                *[fact(1 * B, f"{y}-12-31", "10-K", f"{y + 1}-02-01", f"{y}-01-01") for y in range(2020, 2024)]),
+            "InterestPaidNet": usd(fact(0.3 * B, "2015-12-31", "10-K", "2016-02-01", "2015-01-01")),
+        }}}
+        r = parse_sec_companyfacts(data)
+        self.assertEqual(r["fcf_period_end"], "2023-12-31")
+        self.assertEqual(r["free_cash_flow"], 6.0)
+        self.assertEqual([d for d, _ in r["fcf_history"]], ["2020-12-31", "2021-12-31", "2022-12-31", "2023-12-31"])
+        # Interest from a tag last used in 2015 must not be applied to 2023 cash flow
+        self.assertIsNone(r["interest_paid"])
+
 
 def ts(type_, *points):
     return {"meta": {"type": [type_]},

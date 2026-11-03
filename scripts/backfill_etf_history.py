@@ -106,7 +106,7 @@ def main():
                 fund = parse_yahoo_timeseries(raw_yahoo[t], as_of=cp)
             else:
                 fund = None
-            inputs, _ = model_inputs(fund, sectors.get(t), params)
+            inputs, _ = model_inputs(fund, sectors.get(t), params, as_of=cp)
             if not inputs:
                 continue
             shares = inputs["shares"] / (adr_ratios.get(t) or 1)

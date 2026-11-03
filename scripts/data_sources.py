@@ -22,7 +22,7 @@ SEC_USER_AGENT_SET = bool(os.environ.get("SEC_USER_AGENT"))
 SEC_HEADERS = {"User-Agent": os.environ.get("SEC_USER_AGENT") or "StockEvalApp admin@stockeval-research.org"}
 YAHOO_HEADERS = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"}
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 FCF_FLOW_CONCEPTS = {
     "ocf": ["NetCashProvidedByUsedInOperatingActivities",
@@ -184,6 +184,22 @@ def _dedupe_latest_filed(entries):
     return list(best.values())
 
 
+def _merged_flow_entries(facts, concepts):
+    """
+    Entries for a flow that companies report under alternative tags over the years (e.g. a switch from
+    NetCashProvidedByUsedInOperatingActivities to ...ContinuingOperations). Each (start, end) period is taken
+    from the highest-priority concept that reports it, so a tag that stopped being used years ago neither hides
+    the newer tag nor pins the latest period to the old one.
+    """
+    merged, seen = [], set()
+    for c in concepts:
+        entries = _units(facts, "us-gaap", c)
+        keys = {(e.get("start"), e.get("end")) for e in entries}
+        merged.extend(e for e in entries if (e.get("start"), e.get("end")) not in seen)
+        seen |= keys
+    return merged
+
+
 def _annual_flows(entries):
     """{period_end: entry} for full-year durations reported in 10-K filings."""
     annual = [e for e in entries
@@ -262,13 +278,8 @@ def parse_sec_companyfacts(data, fetched_at=None):
     warnings = []
 
     # --- Free cash flow: OCF and CapEx from the same period ---
-    ocf_entries = ocf_annual = None
-    for c in FCF_FLOW_CONCEPTS["ocf"]:
-        entries = _units(facts, "us-gaap", c)
-        annual = _annual_flows(entries)
-        if annual:
-            ocf_entries, ocf_annual = entries, annual
-            break
+    ocf_entries = _merged_flow_entries(facts, FCF_FLOW_CONCEPTS["ocf"])
+    ocf_annual = _annual_flows(ocf_entries)
     if not ocf_annual:
         return None
     fy_end = max(ocf_annual)
@@ -299,13 +310,13 @@ def parse_sec_companyfacts(data, fetched_at=None):
 
     # Operating cash flow is after interest paid; the DCF needs it back (see model_inputs)
     interest = None
-    for c in INTEREST_PAID_CONCEPTS:
-        entries = _units(facts, "us-gaap", c)
-        annual = _annual_flows(entries)
-        if annual:
-            ttm = _ttm_flow(entries, annual) if basis == "TTM" else None
-            interest = ttm[0] if ttm else annual[max(annual)]["val"]
-            break
+    int_entries = _merged_flow_entries(facts, INTEREST_PAID_CONCEPTS)
+    int_annual = _annual_flows(int_entries)
+    # Interest for (about) the fiscal year the cash flow describes; a figure from a long-dead tag would be stale
+    int_years = [e for e in int_annual if e <= fy_end and _days(e, fy_end) <= 400]
+    if int_years:
+        ttm = _ttm_flow(int_entries, int_annual) if basis == "TTM" and max(int_years) == fy_end else None
+        interest = ttm[0] if ttm and ttm[1] == fcf_end else int_annual[max(int_years)]["val"]
 
     fcf_history = []
     for end in sorted(ocf_annual):

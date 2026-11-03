@@ -127,12 +127,22 @@ def interest_addback(fund, params):
     return round(max(interest, 0.0) * (1.0 - cfg.get("tax_rate", 0.0)), 3)
 
 
-def model_inputs(fund, sector, params):
-    """DCF inputs for a stock in its reporting currency. Returns (inputs dict or None, status string)."""
+def model_inputs(fund, sector, params, as_of=None):
+    """
+    DCF inputs for a stock in its reporting currency. Returns (inputs dict or None, status string).
+    With `as_of` (ISO date or date), fundamentals describing a period that ended more than
+    `max_fundamentals_age_days` earlier are rejected: an old period means the parser lost track of the
+    company's filings, and valuing it on that data would be silently wrong.
+    """
     if sector in params.get("excluded_sectors", []):
         return None, "sector_excluded"
     if not fund or not fund.get("source"):
         return None, "no_fundamentals"
+    max_age = params.get("max_fundamentals_age_days")
+    if as_of and max_age and fund.get("fcf_period_end"):
+        as_of_date = datetime.date.fromisoformat(as_of) if isinstance(as_of, str) else as_of
+        if (as_of_date - datetime.date.fromisoformat(fund["fcf_period_end"])).days > max_age:
+            return None, "stale_fundamentals"
     if not fund.get("shares_outstanding"):
         return None, "no_shares"
     if "capex_missing" in (fund.get("warnings") or []):
@@ -186,9 +196,9 @@ def model_inputs(fund, sector, params):
     }, "ok"
 
 
-def value_stock(ticker, price, price_ccy, fund, sector, params):
+def value_stock(ticker, price, price_ccy, fund, sector, params, as_of=None):
     """Returns (valuation dict or None, status string)."""
-    inputs, status = model_inputs(fund, sector, params)
+    inputs, status = model_inputs(fund, sector, params, as_of)
     if not inputs:
         return None, status
 
@@ -375,7 +385,7 @@ def run_daily_evaluation():
     for ticker, (price, currency) in prices.items():
         fund = cache.get(ticker) or {}
         has_data = bool(fund.get("source"))
-        valuation, status = value_stock(ticker, price, currency, fund, sectors.get(ticker), params)
+        valuation, status = value_stock(ticker, price, currency, fund, sectors.get(ticker), params, today)
         status_counts[status] = status_counts.get(status, 0) + 1
 
         entry = {

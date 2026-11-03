@@ -246,6 +246,14 @@ class CoverageDropTest(unittest.TestCase):
 
 
 class InterestAddbackTest(unittest.TestCase):
+    def test_stale_fundamentals_are_not_valued(self):
+        params = {**VALUE_PARAMS, "max_fundamentals_age_days": 550}
+        fund = {**FUND, "fcf_period_end": "2021-09-30"}
+        self.assertEqual(fe.model_inputs(fund, "Utilities", params, as_of=TODAY), (None, "stale_fundamentals"))
+        self.assertEqual(fe.model_inputs(fund, "Utilities", params, as_of="2022-06-30")[1], "ok")
+        # Without a reference date (or limit) the check is skipped
+        self.assertEqual(fe.model_inputs(fund, "Utilities", params)[1], "ok")
+
     def test_reported_interest_is_added_back_after_tax(self):
         inputs, _ = fe.model_inputs({**FUND, "interest_paid": 2.0}, "Utilities", VALUE_PARAMS)
         self.assertEqual(inputs["interest_addback"], 1.5)

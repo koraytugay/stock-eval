@@ -32,5 +32,6 @@
     "max_refresh_per_run": 600,
     "filing_window": { "lag_days": 116, "window_days": 60, "recheck_days": 3 }
   },
-  "min_priced_fraction": 0.8
+  "min_priced_fraction": 0.8,
+  "max_fundamentals_age_days": 550
 }
