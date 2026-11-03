@@ -354,7 +354,7 @@ def run_daily_evaluation():
     today_str = today.isoformat()
     print(f"Recording session {today_str}")
 
-    if not UNIVERSE_FILE.exists():
+    if not os.environ.get("SKIP_UNIVERSE_UPDATE"):
         import update_universe
         update_universe.update_all_universes()
     universe_data = load_json(UNIVERSE_FILE, {})

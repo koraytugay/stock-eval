@@ -98,7 +98,10 @@ def main():
     params = load_json(PARAMS_FILE, None)
     universe = load_json(UNIVERSE_FILE, {})
     latest = load_json(DATA_DIR / "latest.json", {})
-    etfs = universe.get("CUSTOM", {})
+    etfs = {
+        etf_id: {**etf_obj, "holdings": (latest.get("etfs", {}).get(etf_id) or {}).get("holdings") or etf_obj.get("holdings", [])}
+        for etf_id, etf_obj in universe.get("CUSTOM", {}).items()
+    }
     sectors = universe.get("SECTORS", {})
     tickers = sorted({h["ticker"] for e in etfs.values() for h in e.get("holdings", [])})
     print(f"Backfilling {len(etfs)} ETFs over {len(tickers)} holdings from {start} through {end}")

@@ -34,10 +34,6 @@ jobs:
       - name: Run Dashboard Logic Tests
         run: node --test tests/decision.test.js
 
-      - name: Update Universe (SP500, QQQ, XIC, Custom ETFs)
-        run: |
-          python scripts/update_universe.py
-
       - name: Run Daily Valuation & Save Snapshots
         env:
           # Set a repository variable SEC_USER_AGENT like "Your Name your@email.com" (SEC fair-access policy)
