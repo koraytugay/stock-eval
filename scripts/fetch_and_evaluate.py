@@ -16,6 +16,7 @@ import json
 import zlib
 import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 from concurrent.futures import ThreadPoolExecutor
 
 from data_sources import SCHEMA_VERSION, fetch_market_price, fetch_fx_rate, fetch_fundamentals, fetch_last_trade_date
@@ -289,6 +290,9 @@ def etf_fundamentals_as_of(holdings, stocks):
     return datetime.date.fromordinal(round(acc / total)).isoformat() if total else None
 
 
+MARKET_TZ = ZoneInfo("America/New_York")
+
+
 def is_market_closed_today(today, us_trade_date=None, ca_trade_date=None):
     """True on weekends, or when either reference market (US via SPY or TSX via XIU.TO) is closed today.
     An unknown trade date (fetch failure) is not treated as closed."""
@@ -301,10 +305,27 @@ def is_market_closed_today(today, us_trade_date=None, ca_trade_date=None):
     return False
 
 
+def resolve_session_date(now_utc, us_trade_date=None, ca_trade_date=None, recorded_dates=()):
+    """
+    Returns the exchange-local session date (America/New_York) to record, or None if the market was closed.
+
+    GitHub Actions frequently starts the 21:30 UTC weekday cron after 00:00 UTC (which is still 19:00-23:59 ET
+    of the same trading day). Using the UTC date both mislabels the snapshot as the next calendar day and
+    trips `us_trade_date < today` so the run is skipped. If a run is delayed past midnight ET as well, the
+    just-closed session is still recovered as long as both markets traded on it and it has not been recorded.
+    """
+    today = now_utc.astimezone(MARKET_TZ).date()
+    if not is_market_closed_today(today, us_trade_date, ca_trade_date):
+        return today
+    if (us_trade_date and ca_trade_date and us_trade_date == ca_trade_date
+            and 0 < (today - us_trade_date).days <= 3
+            and us_trade_date.isoformat() not in recorded_dates):
+        return us_trade_date
+    return None
+
+
 def run_daily_evaluation():
     now = datetime.datetime.now(datetime.timezone.utc)
-    today = now.date()
-    today_str = today.isoformat()
     print(f"[{now.isoformat()}] Starting daily evaluation...")
 
     params = load_json(PARAMS_FILE, None)
@@ -312,12 +333,20 @@ def run_daily_evaluation():
         sys.exit(f"Missing {PARAMS_FILE}")
 
     # Holidays would repeat the previous close as a new day and skew the history percentiles
+    index_path = DATA_DIR / "history_index.json"
+    recorded_dates = set(load_json(index_path, []))
     us_trade_date = fetch_last_trade_date("SPY")
     ca_trade_date = fetch_last_trade_date("XIU.TO")
-    if not os.environ.get("FORCE_RUN") and is_market_closed_today(today, us_trade_date, ca_trade_date):
-        print(f"Market closed today (US: {us_trade_date}, TSX: {ca_trade_date}, today: {today}); "
-              "not writing a snapshot. Set FORCE_RUN=1 to override.")
-        return
+    today = resolve_session_date(now, us_trade_date, ca_trade_date, recorded_dates)
+    if today is None:
+        if not os.environ.get("FORCE_RUN"):
+            print(f"Market closed today (US: {us_trade_date}, TSX: {ca_trade_date}, "
+                  f"ET date: {now.astimezone(MARKET_TZ).date()}); "
+                  "not writing a snapshot. Set FORCE_RUN=1 to override.")
+            return
+        today = us_trade_date or now.astimezone(MARKET_TZ).date()
+    today_str = today.isoformat()
+    print(f"Recording session {today_str}")
 
     if not UNIVERSE_FILE.exists():
         import update_universe

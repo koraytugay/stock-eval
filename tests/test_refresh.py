@@ -84,6 +84,19 @@ class MarketClosedTest(unittest.TestCase):
     def test_unknown_is_not_closed(self):
         self.assertFalse(fe.is_market_closed_today(TODAY, None, None))
 
+    def test_session_date_uses_exchange_timezone_after_midnight_utc(self):
+        # 00:57 UTC on Saturday Oct 31 is 20:57 EDT on Friday Oct 30: must record Friday, not skip as Saturday
+        late_utc = datetime.datetime(2026, 10, 31, 0, 57, tzinfo=datetime.timezone.utc)
+        fri = datetime.date(2026, 10, 30)
+        self.assertEqual(fe.resolve_session_date(late_utc, fri, fri), fri)
+
+    def test_session_date_recovers_unrecorded_session_after_midnight_et(self):
+        # Delayed past midnight ET as well: recover the session once, then skip on subsequent holidays
+        very_late_utc = datetime.datetime(2026, 10, 31, 5, 30, tzinfo=datetime.timezone.utc)
+        fri = datetime.date(2026, 10, 30)
+        self.assertEqual(fe.resolve_session_date(very_late_utc, fri, fri, recorded_dates=set()), fri)
+        self.assertIsNone(fe.resolve_session_date(very_late_utc, fri, fri, recorded_dates={"2026-10-30"}))
+
 
 class SecFallbackTest(unittest.TestCase):
     def test_yahoo_fallback_for_sec_filer_is_flagged(self):

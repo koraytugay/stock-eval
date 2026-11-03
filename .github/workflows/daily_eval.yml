@@ -54,7 +54,7 @@ jobs:
             echo "Nothing to commit"
             exit 0
           fi
-          git commit -m "Automated daily valuation snapshot: $(date -u +'%Y-%m-%d')"
+          git commit -m "Automated daily valuation snapshot: $(TZ=America/New_York date +'%Y-%m-%d')"
           # Retry with a rebase in case another push landed while the run was in progress
           for attempt in 1 2 3; do
             git pull --rebase origin "${GITHUB_REF_NAME}" && git push && exit 0
