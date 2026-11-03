@@ -2,9 +2,10 @@
 
 const DECISION_CONFIG = {
   minHistoryRows: 60,        // fewer rows make a percentile meaningless
-  minCoveragePct: 10,        // below this valued weight %, a look-through sample is too small for a BUY trigger
+  minCoveragePct: 20,        // below this valued weight %, a look-through sample is too small for a BUY trigger
   buyPercentile: 20,         // premium at or below this historical percentile is a bargain
   accumulatePercentile: 65,  // above this the ETF is "extended"
+  waitPercentile: 85,        // above this the ETF is too extended to chase even in a short-term uptrend
   smaWindow: 20,
 };
 
@@ -82,8 +83,9 @@ function chooseStance(percentile, intrinsicPerDollar, stats, coveragePct, cfg = 
   if (percentile <= cfg.accumulatePercentile) {
     return { code: "ACCUMULATE", label: "Fair / Accumulate", cls: "stance-accumulate", icon: "\u25c8", rank: 2 };
   }
-  // Extended valuation: ride an active uptrend (above its moving average) rather than wait
-  if (stats && stats.priceTrendUp) {
+  // Moderately extended valuation (65th-85th percentile): ride an active uptrend rather than wait;
+  // above waitPercentile, the valuation is too extended to chase regardless of short-term momentum
+  if (percentile <= cfg.waitPercentile && stats && stats.priceTrendUp) {
     return { code: "ACCUMULATE", label: "Uptrend / Accumulate", cls: "stance-accumulate", icon: "\u25b2", rank: 2 };
   }
   return wait;

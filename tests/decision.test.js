@@ -38,8 +38,10 @@ test("stances by percentile are uniform across intrinsic_per_dollar", () => {
   assert.strictEqual(chooseStance(23, 0.8, null, 50).code, "ACCUMULATE");   // 21-65: fair
   assert.strictEqual(chooseStance(23, 1.5, null, 50).code, "ACCUMULATE");   // no cross-ETF style bias at 23rd pctile
   assert.strictEqual(chooseStance(50, 0.8, null, 50).label, "Fair / Accumulate");
-  assert.strictEqual(chooseStance(90, 0.8, { priceTrendUp: false }, 50).code, "WAIT");
-  assert.strictEqual(chooseStance(90, 0.8, { priceTrendUp: true }, 50).label, "Uptrend / Accumulate");
+  assert.strictEqual(chooseStance(75, 0.8, { priceTrendUp: false }, 50).code, "WAIT");
+  assert.strictEqual(chooseStance(75, 0.8, { priceTrendUp: true }, 50).label, "Uptrend / Accumulate");
+  // Above waitPercentile (85), WAIT is enforced even when price is above its 20-day moving average
+  assert.strictEqual(chooseStance(90, 0.8, { priceTrendUp: true }, 50).code, "WAIT");
   assert.strictEqual(chooseStance(null, 0.8, null, 50).code, "WAIT");
 });
 
@@ -57,8 +59,8 @@ test("pointInTimePercentile does not leak future rows after warm-up", () => {
 test("buy stance triggers on historical percentile bargain and respects minimum coverage", () => {
   assert.strictEqual(chooseStance(5, 1.5, null, 25).code, "BUY");
   assert.strictEqual(chooseStance(5, 1.5, null, null).code, "BUY");
-  // Below minCoveragePct (10%), a bargain percentile is capped at ACCUMULATE so tiny samples do not trigger BUY
-  const lowCov = chooseStance(5, 1.5, null, 4.2);
+  // Below minCoveragePct (20%), a bargain percentile is capped at ACCUMULATE so small samples do not trigger BUY
+  const lowCov = chooseStance(5, 1.5, null, 14.0);
   assert.strictEqual(lowCov.code, "ACCUMULATE");
   assert.strictEqual(lowCov.label, "Low Coverage / Accumulate");
 });
