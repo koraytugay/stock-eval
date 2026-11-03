@@ -142,6 +142,9 @@ def main():
         else:
             cps = []
         for cp in cps:
+            # Record every checkpoint (defaulting to None) so a filing that turns FCF negative or pushes debt
+            # above enterprise value clears the prior positive valuation instead of carrying it forward
+            intrinsic[t][cp] = None
             if t in raw_sec:
                 fund = parse_sec_companyfacts(facts_as_of(raw_sec[t], cp))
                 if fund and {"capex_missing", "capex_secondary", "debt_missing",

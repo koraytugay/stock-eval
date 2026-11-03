@@ -380,6 +380,9 @@ class BackfillCausalityTest(unittest.TestCase):
         # On 2026-02-14 the 2026-02-15 filing has not arrived yet: must use 10.0, not blend toward 20.0
         self.assertEqual(bf.latest_checkpoint_value(by_cp, "2026-02-14"), (10.0, "USD"))
         self.assertEqual(bf.latest_checkpoint_value(by_cp, "2026-02-15"), (20.0, "USD"))
+        # A subsequent filing with negative FCF records None at its checkpoint and clears the prior valuation
+        by_cp["2026-05-10"] = None
+        self.assertIsNone(bf.latest_checkpoint_value(by_cp, "2026-05-15"))
 
 
 if __name__ == "__main__":
