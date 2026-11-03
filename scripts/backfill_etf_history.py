@@ -102,7 +102,10 @@ def main():
         etf_id: {**etf_obj, "holdings": (latest.get("etfs", {}).get(etf_id) or {}).get("holdings") or etf_obj.get("holdings", [])}
         for etf_id, etf_obj in universe.get("CUSTOM", {}).items()
     }
-    sectors = universe.get("SECTORS", {})
+    sectors = {
+        **{t: s.get("sector") for t, s in latest.get("stocks", {}).items() if s.get("sector")},
+        **universe.get("SECTORS", {})
+    }
     tickers = sorted({h["ticker"] for e in etfs.values() for h in e.get("holdings", [])})
     print(f"Backfilling {len(etfs)} ETFs over {len(tickers)} holdings from {start} through {end}")
 
@@ -170,8 +173,8 @@ def main():
             if dcf and dcf["intrinsic_value"] > 0:
                 intrinsic[t][cp] = (dcf["intrinsic_value"], fund.get("currency", "USD"))
 
-    pairs = {(ccy, prices[t][0]) for t in tickers for _, ccy in intrinsic[t].values()
-             if prices[t][0] and ccy != prices[t][0]}
+    pairs = {(v[1], prices[t][0]) for t in tickers for v in intrinsic[t].values()
+             if v and prices[t][0] and v[1] != prices[t][0]}
     fx = {pair: fetch_price_history(f"{pair[0]}{pair[1]}=X", range_="2y")[1] for pair in pairs}
     print(f"FX pairs: {sorted(pairs)}")
 

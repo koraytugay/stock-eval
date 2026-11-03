@@ -136,7 +136,7 @@ def update_all_universes():
     custom_etfs = build_custom_etfs(load_custom_etf_config(), previous.get("CUSTOM", {}))
 
     # S&P dataset uses true GICS sectors; QQQ dataset labels are often industries, so they rank last
-    sectors = {}
+    sectors = {t: s for t, s in prev_sectors.items() if s in GICS_SECTORS}
     for mapping in (qqq_sectors, XIC_TICKERS, sp500_sectors):
         sectors.update({t: s for t, s in mapping.items() if s})
 
