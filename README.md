@@ -12,10 +12,10 @@ An automated, serverless equity valuation and look-through ETF engine powered by
   * Reverse DCF (solving for the market-implied growth rate).
   * Look-through valuation for custom ETFs (intrinsic value per $1 invested).
 * **Storage:** Flat historical JSON snapshots (`data/snapshots/YYYY-MM-DD.json`). No external databases or servers needed.
-* **Frontend:** Static HTML/JS/CSS hosted on GitHub Pages:
-  * **Summary Table:** Tracked ETF comparison with decision stances, DCF fair value, buy-below entry targets, FCF yields, and % valued coverage. Click any row to jump directly to its chart and metrics.
-  * **Interactive ETF Cards:** Dual-axis charts showing valuation premium vs DCF alongside ETF market price return %, historical Buy (green) and Wait (yellow) shaded zones, and 20-day trend SMA.
-  * **Next Contribution Allocator:** Automated whole-share order sizing for new cash deposits (CAD/USD multi-currency aware), remainder optimization, and 1-click clipboard brokerage orders.
+* **Frontend:** Static HTML/JS/CSS hosted on GitHub Pages, focused on buy signals:
+  * **Summary Table:** Each tracked ETF with its decision stance, buy-below price, premium vs DCF, 1-year premium range and percentile, buy signals first. Click any row to jump to its chart.
+  * **ETF Cards:** Dual-axis charts of the valuation premium vs DCF and the ETF's price return, with historical Buy (green) and Wait (yellow) zones; hover to see the stance on any past day.
+  * **Next Contribution Allocator:** Whole-share CAD order sizing for new cash across today's buy signals (optionally plus Accumulate funds), with 1-click clipboard brokerage orders.
 
 Stocks that cannot be valued (negative FCF, missing share count, no fundamentals) are shown with a reason instead of a number. When debt exceeds the modelled enterprise value, the equity value is floored at zero. In an ETF's look-through, holdings with negative FCF or debt exceeding value count at zero value rather than dropping out, so a holding turning cash-negative cannot make its fund look cheaper; only holdings with no verdict (excluded sector, missing data) are left out of the average. An FCFF DCF is not meaningful for banks and insurers, so the Financials sector is excluded by default (`excluded_sectors`).
 

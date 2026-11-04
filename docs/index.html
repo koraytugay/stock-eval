@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>StockEval - ETF Fundamental Valuation Engine</title>
+  <title>StockEval - ETF Buy Signals</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,47 +11,23 @@
     <div class="header-container">
       <div class="brand">
         <h1>StockEval</h1>
-        <p class="subtitle">ETF Fundamental Look-Through Valuation &amp; Decision Engine</p>
+        <p class="subtitle">ETF Look-Through Valuation &amp; Buy Signals</p>
       </div>
       <div class="header-controls">
-        <label for="snapshot-select">Snapshot Date:</label>
-        <select id="snapshot-select"></select>
         <span id="last-updated" class="badge">Loading...</span>
       </div>
     </div>
   </header>
 
   <main class="main-container">
-    <!-- Top KPI Cards -->
-    <section class="kpi-grid">
-      <div class="kpi-card">
-        <h3>Active Buy Triggers</h3>
-        <p id="kpi-etf-count" class="kpi-value">-</p>
-        <span id="kpi-etf-sub" class="kpi-sub">ETFs in target buy zone</span>
-      </div>
-      <div class="kpi-card">
-        <h3>Median FCF Yield</h3>
-        <p id="kpi-median-fcf" class="kpi-value">-</p>
-        <span id="kpi-median-fcf-sub" class="kpi-sub">Look-through cash return</span>
-      </div>
-      <div class="kpi-card">
-        <h3>Top Value Opportunity</h3>
-        <p id="kpi-best-relative" class="kpi-value">-</p>
-        <span id="kpi-best-relative-sub" class="kpi-sub">Lowest vs 1-year history</span>
-      </div>
-      <div class="kpi-card">
-        <h3>Deepest DCF Discount</h3>
-        <p id="kpi-deepest-discount" class="kpi-value">-</p>
-        <span id="kpi-deepest-discount-sub" class="kpi-sub">Highest intrinsic value per $1</span>
-      </div>
-    </section>
+    <p id="buy-summary" class="buy-summary">Loading...</p>
 
     <!-- Next Contribution Allocator -->
     <section class="allocator-card" id="allocator-card">
       <div class="allocator-header" id="allocator-header">
         <div>
           <h3>💰 Next Contribution Allocator</h3>
-          <p class="allocator-sub">Deploy new cash into the ETFs offering the highest margin of safety and cash flow backing today.</p>
+          <p class="allocator-sub">Splits new cash into whole shares of the funds with a buy signal today.</p>
         </div>
         <button type="button" id="allocator-toggle-btn" class="btn-toggle-subtle">Collapse</button>
       </div>
@@ -75,89 +51,45 @@
           <div class="allocator-strategy-group">
             <label for="allocator-strategy-select">Allocation Strategy:</label>
             <select id="allocator-strategy-select">
-              <option value="buy_zone" selected>Active Buy Zone Only (Recommended)</option>
-              <option value="buy_and_accumulate">Buy Zone + Fair Value Accumulate</option>
-              <option value="buy_and_core">Buy Zone + Core (XEQT)</option>
-              <option value="custom">Custom ETF Selection</option>
+              <option value="buy_zone" selected>Buy Signals Only (Recommended)</option>
+              <option value="buy_and_accumulate">Buy Signals + Accumulate</option>
             </select>
           </div>
         </div>
 
-        <!-- Custom Selection Chips (Hidden unless custom strategy selected) -->
-        <div id="allocator-custom-chips" class="allocator-chips-wrap" style="display: none;">
-          <span class="control-label">Select ETFs to Include:</span>
-          <div id="allocator-chips-container" class="allocator-chips-grid"></div>
-        </div>
-
-        <!-- Allocator Results Summary & Orders -->
         <div id="allocator-results" class="allocator-results">
           <!-- Populated by app.js -->
         </div>
       </div>
     </section>
 
-    <!-- Main ETF Dashboard -->
     <section class="etf-dashboard-section">
       <div class="etf-intro">
-        <h2>ETF Look-Through Valuations &amp; Fundamental Safety</h2>
-        <p>Each ETF is valued by look-through of its underlying holdings to compute its intrinsic DCF value, portfolio Free Cash Flow (FCF) yield, and market-implied growth hurdle. <strong>Buy</strong> triggers indicate funds trading at historical bargain percentiles or backed by strong cash flow yields.</p>
+        <h2>Buy Signals</h2>
+        <p>Each ETF's premium over the DCF value of its holdings is ranked against its own past year. <strong>Buy</strong> means the premium is in the cheapest 20% of that year, on at least 30% of the fund valued, and not just after a jump in the fundamentals.</p>
       </div>
 
-      <div class="table-controls">
-        <input type="text" id="etf-search-input" placeholder="Search ETF name or ticker (e.g. XEQT, ZLU)..." />
-        <div class="filter-group">
-          <label for="filter-category">Category:</label>
-          <select id="filter-category">
-            <option value="ALL">All Categories</option>
-            <option value="GLOBAL">All-in-One Global</option>
-            <option value="US">US Equities</option>
-            <option value="INTL">International Developed</option>
-            <option value="EM">Emerging Markets</option>
-            <option value="FACTOR">Low Volatility</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label for="etf-sort-by">Sort By:</label>
-          <select id="etf-sort-by">
-            <option value="stance_asc">Buying Stance (Buys First)</option>
-            <option value="distance_asc">Closest to Buy Target</option>
-            <option value="fcf_yield_desc">Highest FCF Yield (Cash Generation)</option>
-            <option value="growth_asc">Lowest Implied Growth Hurdle</option>
-            <option value="percentile_asc">Best Relative Value (Lowest %ile)</option>
-            <option value="premium_asc">Deepest DCF Discount (Lowest Premium)</option>
-            <option value="intrinsic_desc">Highest Intrinsic per $1</option>
-            <option value="name_asc">Name / Ticker (A-Z)</option>
-          </select>
-        </div>
-      </div>
+      <p class="table-hint">History before <span id="etf-backfill-date">-</span> is a reconstruction using today's holdings. Click a row to jump to its chart.</p>
 
-      <p class="table-hint"><span id="etf-result-count"></span> History before <span id="etf-backfill-date">-</span> is a reconstruction using today's holdings.</p>
-
-      <!-- ETF Summary Table -->
       <div class="table-wrapper etf-summary">
         <table id="etf-summary-table">
           <thead>
             <tr>
               <th>ETF</th>
-              <th>Category</th>
               <th>Decision Stance</th>
               <th>Market Price</th>
-              <th>DCF Fair Value</th>
               <th>Buy-Below Target</th>
               <th>Premium vs DCF</th>
-              <th>FCF Yield</th>
-              <th>Implied Growth</th>
               <th>1-Year Range</th>
               <th>Percentile</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td colspan="11" class="loading">Loading valuation history...</td></tr>
+            <tr><td colspan="7" class="loading">Loading valuation history...</td></tr>
           </tbody>
         </table>
       </div>
 
-      <!-- ETF Cards Grid -->
       <div id="etf-cards-container" class="etf-grid"></div>
     </section>
   </main>

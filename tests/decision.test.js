@@ -16,10 +16,8 @@ test("percentile of the latest premium", () => {
   const upStats = historyStats(rows(ramp(100)));
   assert.strictEqual(upStats.percentile, 100);
   assert.strictEqual(upStats.p20, 19);
-  assert.strictEqual(upStats.p25, 24);
   // A premium equal to p20 must evaluate to exactly the 20th percentile (not 21st)
   assert.strictEqual(historyStats(rows(ramp(100)), DECISION_CONFIG, upStats.p20).percentile, 20);
-  assert.strictEqual(historyStats(rows(ramp(100)), DECISION_CONFIG, upStats.p25).percentile, 25);
 
   // Evaluates explicit currentPremium when passed
   const customStats = historyStats(rows(ramp(100)), DECISION_CONFIG, 15);
@@ -104,97 +102,45 @@ test("buy-zone tag says why a fund below its target is not a BUY", () => {
   assert.strictEqual(buyZoneTag(chooseStance(50, 1, null, 50), null), null);
 });
 
+const fund = (id, price, percentile, code = "BUY", intrinsicPerDollar = 1.0) => ({
+  id,
+  data: { currency: "CAD", intrinsic_per_dollar: intrinsicPerDollar },
+  dec: { marketPrice: price, stance: { code } },
+  stats: { percentile }
+});
+
 test("computeAllocation with empty or zero cash", () => {
   assert.strictEqual(computeAllocation([], 1000, "buy_zone").orders.length, 0);
   assert.strictEqual(computeAllocation([{ id: "A" }], 0, "buy_zone").orders.length, 0);
 });
 
-test("computeAllocation handles multi-currency (USD and CAD) accurately", () => {
-  const candidates = [
-    {
-      id: "TSE:XEQT",
-      data: { currency: "CAD", intrinsic_per_dollar: 1.0, market_premium_pct: 0 },
-      dec: { currency: "CAD", marketPrice: 40.0, stance: { code: "BUY" }, fcfYield: 3.5 },
-      stats: { percentile: 10 }
-    },
-    {
-      id: "VXUS",
-      data: { currency: "USD", intrinsic_per_dollar: 1.0, market_premium_pct: 0 },
-      dec: { currency: "USD", marketPrice: 50.0, stance: { code: "BUY" }, fcfYield: 4.0 },
-      stats: { percentile: 10 }
-    }
-  ];
-
-  // USDCAD rate = 1.40 -> VXUS price in CAD = $50.0 * 1.40 = $70.0 CAD
-  const fxRates = { USDCAD: 1.40 };
-  const alloc = computeAllocation(candidates, 1000, "buy_zone", fxRates);
-
+test("computeAllocation buys whole shares and accounts for every dollar", () => {
+  const alloc = computeAllocation([fund("TSE:ZLU", 52.3, 12), fund("TSE:XEC", 31.7, 5)], 1000, "buy_zone");
   assert.strictEqual(alloc.orders.length, 2);
-  const xeqt = alloc.orders.find(o => o.etf.id === "TSE:XEQT");
-  const vxus = alloc.orders.find(o => o.etf.id === "VXUS");
-
-  assert.strictEqual(xeqt.priceCad, 40.0);
-  assert.strictEqual(vxus.priceNative, 50.0);
-  assert.strictEqual(vxus.priceCad, 70.0);
-
-  // Check that total invested + unused cash equals exactly 1000 CAD
-  assert.strictEqual(alloc.totalInvestedCad + alloc.unusedCashCad, 1000);
-  assert.ok(vxus.shares > 0);
-  assert.strictEqual(vxus.costCad, vxus.shares * 70.0);
-  assert.strictEqual(vxus.costNative, vxus.shares * 50.0);
+  for (const o of alloc.orders) {
+    assert.ok(Number.isInteger(o.shares));
+    assert.strictEqual(o.cost, o.shares * o.price);
+  }
+  assert.ok(Math.abs(alloc.totalInvested + alloc.unusedCash - 1000) < 1e-9);
+  // The remainder pass leaves less than the cheapest share unspent
+  assert.ok(alloc.unusedCash < 31.7);
 });
 
-test("computeAllocation deduplicates candidates to prevent duplicate orders in buy_and_core", () => {
-  const fakeXeqt = {
-    id: "TSE:XEQT",
-    data: { currency: "CAD", intrinsic_per_dollar: 1.0, market_premium_pct: 0 },
-    dec: { currency: "CAD", marketPrice: 40.0, stance: { code: "BUY" }, fcfYield: 3.5 },
-    stats: { percentile: 10 }
-  };
-  const fakeOther = {
-    id: "TSE:CAEM",
-    data: { currency: "CAD", intrinsic_per_dollar: 1.0, market_premium_pct: 0 },
-    dec: { currency: "CAD", marketPrice: 20.0, stance: { code: "BUY" }, fcfYield: 4.0 },
-    stats: { percentile: 5 }
-  };
-
-  // Even if caller passed XEQT twice (as core and as buy zone fund):
-  const alloc = computeAllocation([fakeXeqt, fakeXeqt, fakeOther], 1000, "buy_and_core");
-  assert.strictEqual(alloc.orders.length, 2);
-  const ids = alloc.orders.map(o => o.etf.id);
-  assert.deepStrictEqual(ids, ["TSE:XEQT", "TSE:CAEM"]);
-
-  // If one candidate lacks fcfYield, weightedFcf is weighted only across candidates with numeric fcfYield
-  const noFcfOther = { ...fakeOther, dec: { ...fakeOther.dec, fcfYield: null } };
-  const allocMissingFcf = computeAllocation([fakeXeqt, noFcfOther], 1000, "buy_and_core");
-  assert.strictEqual(allocMissingFcf.weightedFcf, 3.5);
+test("computeAllocation deduplicates candidates to prevent duplicate orders", () => {
+  const xeqt = fund("TSE:XEQT", 40, 10);
+  const alloc = computeAllocation([xeqt, xeqt, fund("TSE:ZLI", 20, 5)], 1000, "buy_zone");
+  assert.deepStrictEqual(alloc.orders.map(o => o.etf.id), ["TSE:XEQT", "TSE:ZLI"]);
 });
 
-test("computeAllocation is style-neutral across intrinsic_per_dollar and skips foreign orders without FX", () => {
-  const growthFund = {
-    id: "TSE:CAUS",
-    data: { currency: "CAD", intrinsic_per_dollar: 0.4, market_premium_pct: 150 },
-    dec: { currency: "CAD", marketPrice: 25.0, stance: { code: "BUY" }, fcfYield: 2.0 },
-    stats: { percentile: 10 }
-  };
-  const valueFund = {
-    id: "TSE:CASV",
-    data: { currency: "CAD", intrinsic_per_dollar: 2.2, market_premium_pct: -55 },
-    dec: { currency: "CAD", marketPrice: 25.0, stance: { code: "BUY" }, fcfYield: 9.0 },
-    stats: { percentile: 10 }
-  };
-  const alloc = computeAllocation([growthFund, valueFund], 1000, "buy_zone");
-  assert.strictEqual(alloc.orders[0].targetDollars, 500);
-  assert.strictEqual(alloc.orders[1].targetDollars, 500);
+test("computeAllocation is style-neutral across intrinsic_per_dollar", () => {
+  const alloc = computeAllocation([fund("TSE:XUU", 25, 10, "BUY", 0.4), fund("TSE:XEF", 25, 10, "BUY", 2.2)], 1000, "buy_zone");
+  assert.strictEqual(alloc.orders[0].shares, alloc.orders[1].shares);
+});
 
-  // Without USDCAD in fxRates, a USD candidate must not guess 1.38 and size shares
-  const usdFund = {
-    id: "VXUS",
-    data: { currency: "USD", intrinsic_per_dollar: 1.0, market_premium_pct: 0 },
-    dec: { currency: "USD", marketPrice: 50.0, stance: { code: "BUY" }, fcfYield: 4.0 },
-    stats: { percentile: 10 }
-  };
-  const noFxAlloc = computeAllocation([usdFund], 1000, "buy_zone", {});
-  assert.strictEqual(noFxAlloc.orders[0].shares, 0);
-  assert.strictEqual(noFxAlloc.totalInvestedCad, 0);
+test("buy_and_accumulate weights BUY funds 2.5x over ACCUMULATE at the same percentile", () => {
+  const alloc = computeAllocation([fund("TSE:ZLU", 10, 50, "BUY"), fund("TSE:XEQT", 10, 50, "ACCUMULATE")],
+                                  350, "buy_and_accumulate");
+  assert.strictEqual(alloc.orders[0].score, alloc.orders[1].score * 2.5);
+  assert.strictEqual(alloc.orders[0].shares, 25);
+  assert.strictEqual(alloc.orders[1].shares, 10);
 });

@@ -40,7 +40,6 @@ function historyStats(rows, cfg = DECISION_CONFIG, currentPremium = undefined) {
   const sorted = premiums.slice().sort((a, b) => a - b);
   const percentile = (premiums.filter(p => p <= current).length / premiums.length) * 100;
   const p20 = sorted[Math.max(0, Math.floor(sorted.length * 0.20) - 1)];
-  const p25 = sorted[Math.max(0, Math.floor(sorted.length * 0.25) - 1)];
 
   // Short moving average of price, when price history is available
   const prices = rows.map(r => r[4]).filter(p => typeof p === "number");
@@ -64,7 +63,6 @@ function historyStats(rows, cfg = DECISION_CONFIG, currentPremium = undefined) {
     current,
     percentile,
     p20,
-    p25,
     min: Math.min(...premiums),
     max: Math.max(...premiums),
     median: median(premiums),
@@ -125,124 +123,44 @@ function buyZoneTag(stance, distancePct) {
   return { cls: "distance-above", text: `+${distancePct.toFixed(1)}% to target` };
 }
 
-function computeAllocation(candidates, cash, strategy, fxRates = {}) {
+// Splits cash into whole shares of the candidates. Cash and prices are in the same currency (every tracked fund
+// trades in CAD). Each fund's weight comes from its own historical percentile (never cross-comparing raw intrinsic
+// per $1 across funds, which is skewed by sector and style); "buy_and_accumulate" boosts BUY funds 2.5x.
+function computeAllocation(candidates, cash, strategy) {
   if (!candidates || candidates.length === 0 || !cash || cash <= 0) {
-    return {
-      orders: [],
-      totalInvestedCad: 0,
-      unusedCashCad: cash || 0,
-      weightedFcf: null,
-      weightedPrem: null
-    };
+    return { orders: [], totalInvested: 0, unusedCash: cash || 0 };
   }
 
   // Deduplicate candidates by ID to protect against duplicate purchase orders
   const seenIds = new Set();
-  const uniqueCandidates = [];
-  for (const c of candidates) {
-    if (!seenIds.has(c.id)) {
-      seenIds.add(c.id);
-      uniqueCandidates.push(c);
-    }
-  }
-  candidates = uniqueCandidates;
+  candidates = candidates.filter(c => !seenIds.has(c.id) && seenIds.add(c.id));
 
-  // 1. Compute candidate scores / target weights from each ETF's own historical percentile
-  // (never cross-comparing raw intrinsic_per_dollar across funds, which is skewed by sector/style)
-  let weights = [];
-  if (strategy === "buy_and_core" && candidates.some(c => c.id === "TSE:XEQT")) {
-    const coreShare = 0.50;
-    const otherCount = Math.max(candidates.length - 1, 1);
-    const otherShareEach = (1.0 - coreShare) / otherCount;
-    weights = candidates.map(c => c.id === "TSE:XEQT" ? coreShare : otherShareEach);
-  } else if (strategy === "buy_and_accumulate") {
-    weights = candidates.map(c => {
-      const base = Math.max(100.0 - (c.stats ? c.stats.percentile : 50), 1.0);
-      return (c.dec && c.dec.stance && c.dec.stance.code === "BUY") ? base * 2.5 : base;
-    });
-  } else {
-    weights = candidates.map(c => {
-      const pctile = c.stats ? c.stats.percentile : 50;
-      return Math.max(100.0 - pctile, 1.0);
-    });
-  }
+  const weights = candidates.map(c => {
+    const base = Math.max(100.0 - (c.stats ? c.stats.percentile : 50), 1.0);
+    return strategy === "buy_and_accumulate" && c.dec && c.dec.stance && c.dec.stance.code === "BUY" ? base * 2.5 : base;
+  });
   const totWeight = weights.reduce((s, w) => s + w, 0) || 1;
 
-  // 2. Initial whole share allocation converted to CAD (skipping non-CAD funds when FX rate is unavailable)
-  let orders = candidates.map((c, i) => {
-    const w = weights[i] / totWeight;
-    const targetDollars = cash * w;
-    const ccy = (c.dec && c.dec.currency) || (c.data && c.data.currency) || "CAD";
-    const rawFx = ccy === "CAD" ? 1.0 : fxRates[`${ccy}CAD`];
-    const fxRate = (typeof rawFx === "number" && rawFx > 0) ? rawFx : null;
-    const priceNative = (c.dec && typeof c.dec.marketPrice === "number") ? c.dec.marketPrice : ((c.data && c.data.market_price) || 0);
-    const priceCad = fxRate !== null ? priceNative * fxRate : 0;
-    const shares = priceCad > 0 ? Math.floor(targetDollars / priceCad) : 0;
-    const costNative = shares * priceNative;
-    const costCad = shares * priceCad;
-
-    return {
-      etf: c,
-      currency: ccy,
-      fxRate,
-      priceNative,
-      priceCad,
-      shares,
-      costNative,
-      costCad,
-      targetDollars,
-      score: weights[i]
-    };
+  // Initial whole-share allocation
+  const orders = candidates.map((c, i) => {
+    const price = (c.dec && typeof c.dec.marketPrice === "number") ? c.dec.marketPrice : ((c.data && c.data.market_price) || 0);
+    const shares = price > 0 ? Math.floor((cash * weights[i] / totWeight) / price) : 0;
+    return { etf: c, price, shares, cost: shares * price, score: weights[i] };
   });
 
-  // 3. Remainder pass: allocate unspent dollars to candidate with highest value score if price fits
-  let spentCad = orders.reduce((s, o) => s + o.costCad, 0);
-  let remCad = cash - spentCad;
-  const sortedOrdersByScore = orders.slice().sort((a, b) => b.score - a.score);
-
-  for (const o of sortedOrdersByScore) {
-    if (o.priceCad <= 0) continue;
-    while (remCad >= o.priceCad) {
+  // Remainder pass: spend what is left on the highest-scoring funds whose price still fits
+  let remaining = cash - orders.reduce((s, o) => s + o.cost, 0);
+  for (const o of orders.slice().sort((a, b) => b.score - a.score)) {
+    if (o.price <= 0) continue;
+    while (remaining >= o.price) {
       o.shares += 1;
-      o.costCad += o.priceCad;
-      o.costNative += o.priceNative;
-      remCad -= o.priceCad;
-      spentCad += o.priceCad;
+      o.cost += o.price;
+      remaining -= o.price;
     }
   }
 
-  const totalInvestedCad = spentCad;
-  const unusedCashCad = Math.max(0, cash - totalInvestedCad);
-
-  // 4. Compute weighted metrics of this purchase
-  let sumFcf = 0;
-  let costWithFcf = 0;
-  let sumPrem = 0;
-  let costWithStats = 0;
-
-  for (const o of orders) {
-    if (o.costCad > 0) {
-      if (o.etf.dec && typeof o.etf.dec.fcfYield === "number") {
-        sumFcf += o.costCad * o.etf.dec.fcfYield;
-        costWithFcf += o.costCad;
-      }
-      if (o.etf.data && typeof o.etf.data.market_premium_pct === "number") {
-        sumPrem += o.costCad * o.etf.data.market_premium_pct;
-        costWithStats += o.costCad;
-      }
-    }
-  }
-
-  const weightedFcf = costWithFcf > 0 ? (sumFcf / costWithFcf) : null;
-  const weightedPrem = costWithStats > 0 ? (sumPrem / costWithStats) : null;
-
-  return {
-    orders,
-    totalInvestedCad,
-    unusedCashCad,
-    weightedFcf,
-    weightedPrem
-  };
+  const totalInvested = orders.reduce((s, o) => s + o.cost, 0);
+  return { orders, totalInvested, unusedCash: Math.max(0, cash - totalInvested) };
 }
 
 if (typeof module !== "undefined") {

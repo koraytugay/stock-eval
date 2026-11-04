@@ -1,32 +1,16 @@
-// StockEval - ETF Fundamental Valuation & Decision Engine
+// StockEval - ETF look-through valuation and buy signals
 
 let currentSnapshot = null;
-let allHistoryDates = [];
 let etfHistory = null;
 
 // The dashboard lives in docs/ and reads data/ from the repo root; "data/" is kept as a fallback for other layouts.
 const DATA_ROOTS = ["../data/", "data/"];
 let dataRoot = null;
 
-const ETF_CATEGORIES = {
-  "TSE:XEQT": { category: "GLOBAL", label: "All-in-One Global", region: "Global" },
-  "TSE:XUU":  { category: "US",     label: "US Total Market",  region: "US" },
-  "TSE:ZLU":  { category: "FACTOR", label: "US Low Volatility",region: "US" },
-  "TSE:XEF":  { category: "INTL",   label: "Int'l Developed",  region: "Developed ex-NA" },
-  "TSE:ZLI":  { category: "FACTOR", label: "Int'l Low Volatility", region: "Developed ex-NA" },
-  "TSE:XEC":  { category: "EM",     label: "Emerging Markets", region: "Emerging" },
-};
-
-function getEtfCategory(id) {
-  return ETF_CATEGORIES[id] || { category: "OTHER", label: "Equity ETF", region: "Other" };
-}
-
 document.addEventListener("DOMContentLoaded", async () => {
-  setupEventListeners();
   setupAllocator();
-  await loadHistoryIndex();
   etfHistory = await fetchData("etf_history.json").catch(() => null);
-  await loadSnapshot("latest");
+  await loadSnapshot();
   let resizeTimer = null;
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
@@ -60,32 +44,11 @@ async function fetchData(path) {
   throw new Error(`Could not load ${path}`);
 }
 
-function setupEventListeners() {
-  document.getElementById("etf-search-input").addEventListener("input", renderEtfs);
-  document.getElementById("filter-category").addEventListener("change", renderEtfs);
-  document.getElementById("etf-sort-by").addEventListener("change", renderEtfs);
-  document.getElementById("snapshot-select").addEventListener("change", (e) => {
-    loadSnapshot(e.target.value);
-  });
-}
-
-async function loadHistoryIndex() {
+async function loadSnapshot() {
   try {
-    allHistoryDates = await fetchData("history_index.json");
-    const options = allHistoryDates.slice().reverse()
-      .map(date => `<option value="${escapeHtml(date)}">${escapeHtml(date)}</option>`).join("");
-    document.getElementById("snapshot-select").innerHTML = `<option value="latest">Latest Snapshot</option>${options}`;
-  } catch (err) {
-    console.warn("Could not load history index, fallback to latest:", err);
-  }
-}
-
-async function loadSnapshot(dateOrLatest) {
-  const path = dateOrLatest === "latest" ? "latest.json" : `snapshots/${dateOrLatest}.json`;
-  try {
-    currentSnapshot = await fetchData(path);
+    currentSnapshot = await fetchData("latest.json");
     const badge = document.getElementById("last-updated");
-    badge.textContent = `Snapshot: ${currentSnapshot.date || dateOrLatest}`;
+    badge.textContent = `Snapshot: ${currentSnapshot.date}`;
     const fr = currentSnapshot.freshness;
     if (fr && fr.median_period_end) {
       badge.textContent += ` · fundamentals as of ${fr.median_period_end} (median)`;
@@ -93,253 +56,67 @@ async function loadSnapshot(dateOrLatest) {
       badge.title = `Oldest fundamentals: ${fr.oldest_period_end}. ${fr.older_count} of ${fr.valued} valued stocks ` +
         `describe a period more than ${fr.older_than_days} days ago; ${fr.sec_fallback_count} use Yahoo data instead of SEC.`;
       badge.style.color = oldShare > 0.25 ? "#b45309" : "";
-    } else {
-      badge.title = "";
-      badge.style.color = "";
     }
-    updateKPIs();
     renderEtfs();
-    setupAllocatorChips();
     renderAllocator();
   } catch (err) {
     console.error("Failed to load snapshot:", err);
     document.getElementById("last-updated").textContent = "Error loading snapshot";
     document.querySelector("#etf-summary-table tbody").innerHTML =
-      `<tr><td colspan="11" class="loading">Could not load snapshot data.</td></tr>`;
+      `<tr><td colspan="7" class="loading">Could not load snapshot data.</td></tr>`;
   }
 }
 
 function etfHistoryRows(etfId) {
-  const allRows = ((etfHistory && etfHistory.etfs && etfHistory.etfs[etfId]) || []).filter(r => typeof r[2] === "number");
-  // When inspecting a past snapshot, filter history rows up to that date to prevent look-ahead bias
-  const maxDate = currentSnapshot && currentSnapshot.date ? currentSnapshot.date : null;
-  return maxDate ? allRows.filter(r => r[0] <= maxDate) : allRows;
-}
-
-function getEtfFundamentals(etfObj) {
-  if (typeof etfObj.fcf_yield_pct === "number" && typeof etfObj.implied_growth_pct === "number") {
-    return {
-      fcfYield: etfObj.fcf_yield_pct,
-      impliedGrowth: etfObj.implied_growth_pct
-    };
-  }
-
-  // Fallback computation from snapshot stocks
-  const stocks = (currentSnapshot && currentSnapshot.stocks) || {};
-  const holdings = etfObj.holdings || [];
-  let totWeight = 0;
-  let weightedYield = 0;
-  let gWeight = 0;
-  let weightedGrowth = 0;
-
-  for (const h of holdings) {
-    const s = stocks[h.ticker];
-    if (!s || !s.valuation || typeof s.valuation.intrinsic_dcf !== "number" || s.valuation.intrinsic_dcf <= 0) continue;
-    const val = s.valuation;
-    const raw = s.raw || {};
-    const fcf = val.fcf_used ?? raw.free_cash_flow;
-    const shares = raw.shares_outstanding;
-    const price = s.market_price;
-    const fx = val.fx_rate || 1.0;
-    const adr = val.adr_ratio || 1.0;
-    const revG = val.implied_growth_reverse_dcf;
-
-    if (fcf && shares && shares > 0 && price && price > 0) {
-      const fcfPerShare = (fcf / shares) * fx * adr;
-      const fcfYield = (fcfPerShare / price) * 100.0;
-      weightedYield += h.weight * fcfYield;
-      totWeight += h.weight;
-    }
-
-    if (typeof revG === "number") {
-      weightedGrowth += h.weight * (revG * 100.0);
-      gWeight += h.weight;
-    }
-  }
-
-  return {
-    fcfYield: totWeight > 0 ? (weightedYield / totWeight) : null,
-    impliedGrowth: gWeight > 0 ? (weightedGrowth / gWeight) : null
-  };
+  return ((etfHistory && etfHistory.etfs && etfHistory.etfs[etfId]) || []).filter(r => typeof r[2] === "number");
 }
 
 function computeEtfDecision(data, stats) {
   const premium = data.market_premium_pct;
-  const intrinsicPerDollar = data.intrinsic_per_dollar;
   const marketPrice = data.market_price;
-  const currency = data.currency || "CAD";
   const percentile = stats ? stats.percentile : null;
-  const p20 = stats ? stats.p20 : null;
-  const p25 = stats ? stats.p25 : null;
-  const funds = getEtfFundamentals(data);
 
   // Target premium threshold for a bargain entry (20th percentile of the ETF's own history)
-  const targetPremium = p20;
+  const targetPremium = stats ? stats.p20 : null;
 
-  let fairValuePrice = null;
   let buyBelowPrice = null;
   let distancePct = null;
-
-  if (typeof marketPrice === "number" && typeof premium === "number") {
+  if (typeof marketPrice === "number" && typeof premium === "number" && typeof targetPremium === "number") {
     const intrinsicPrice = marketPrice / (1.0 + premium / 100.0);
-    fairValuePrice = intrinsicPrice;
-
-    if (typeof targetPremium === "number") {
-      buyBelowPrice = intrinsicPrice * (1.0 + targetPremium / 100.0);
-      distancePct = ((marketPrice - buyBelowPrice) / buyBelowPrice) * 100.0;
-    }
+    buyBelowPrice = intrinsicPrice * (1.0 + targetPremium / 100.0);
+    distancePct = ((marketPrice - buyBelowPrice) / buyBelowPrice) * 100.0;
   }
 
-  const stance = chooseStance(percentile, intrinsicPerDollar, stats, data.covered_weight_pct);
-
   return {
-    stance,
-    fairValuePrice,
+    stance: chooseStance(percentile, data.intrinsic_per_dollar, stats, data.covered_weight_pct),
     buyBelowPrice,
     distancePct,
     targetPremium,
     marketPrice,
-    currency,
-    fcfYield: funds.fcfYield,
-    impliedGrowth: funds.impliedGrowth
+    currency: data.currency || "CAD"
   };
 }
 
-function verdict(percentile) {
-  if (typeof percentile !== "number") return null;
-  if (percentile <= 20) return { label: "Cheaper than usual", cls: "verdict-cheap", icon: "\u2193" };
-  if (percentile >= 80) return { label: "Pricier than usual", cls: "verdict-pricey", icon: "\u2191" };
-  return { label: "Typical", cls: "verdict-typical", icon: "\u2013" };
-}
-
-function updateKPIs() {
-  if (!currentSnapshot || !currentSnapshot.etfs) return;
-  const etfs = Object.entries(currentSnapshot.etfs);
-  const etfRows = etfs.map(([id, data]) => {
-    const stats = historyStats(etfHistoryRows(id), DECISION_CONFIG, data.market_premium_pct);
-    return {
-      id,
-      data,
-      stats,
-      dec: computeEtfDecision(data, stats),
-      catInfo: getEtfCategory(id)
-    };
-  });
-
-  // 1. Active Buy Triggers
-  const buyCount = etfRows.filter(e => e.dec.stance.code === "BUY").length;
-  document.getElementById("kpi-etf-count").textContent = `${buyCount} in Buy Zone`;
-  document.getElementById("kpi-etf-sub").textContent = `${buyCount} of ${etfs.length} funds meet buy triggers`;
-
-  // 2. Median FCF Yield
-  const fcfYields = etfRows.map(e => e.dec.fcfYield).filter(y => typeof y === "number");
-  const medFcf = fcfYields.length ? median(fcfYields) : null;
-  const medFcfEl = document.getElementById("kpi-median-fcf");
-  medFcfEl.textContent = typeof medFcf === "number" ? `${fmtNum(medFcf, 2)}%` : "-";
-  medFcfEl.className = "kpi-value fcf-highlight";
-  const highYield = etfRows.filter(e => typeof e.dec.fcfYield === "number").sort((a, b) => b.dec.fcfYield - a.dec.fcfYield);
-  const topFcf = highYield.length ? highYield[0] : null;
-  document.getElementById("kpi-median-fcf-sub").textContent = topFcf
-    ? `Top: ${topFcf.id.replace("TSE:", "")} (${fmtNum(topFcf.dec.fcfYield, 1)}% cash yield)`
-    : "Look-through cash return";
-
-  // 3. Top Value Opportunity (Lowest percentile vs 1-year history; tie-broken by deepest DCF discount)
-  const withStats = etfRows.filter(e => e.stats !== null);
-  if (withStats.length > 0) {
-    const bestRel = withStats.reduce((a, b) => {
-      if (b.stats.percentile < a.stats.percentile) return b;
-      if (b.stats.percentile === a.stats.percentile) {
-        return (b.data.market_premium_pct ?? Infinity) < (a.data.market_premium_pct ?? Infinity) ? b : a;
-      }
-      return a;
-    });
-    const sym = bestRel.id.replace("TSE:", "");
-    document.getElementById("kpi-best-relative").textContent = `${sym} (${Math.round(bestRel.stats.percentile)}th %)`;
-    document.getElementById("kpi-best-relative-sub").textContent = `${bestRel.data.name || sym} · ${fmtPct(bestRel.data.market_premium_pct)}`;
-  } else {
-    document.getElementById("kpi-best-relative").textContent = "-";
-    document.getElementById("kpi-best-relative-sub").textContent = "Awaiting history";
-  }
-
-  // 4. Deepest DCF Discount (Lowest premium vs DCF)
-  const valuedEtfs = etfRows.filter(e => typeof e.data.market_premium_pct === "number");
-  if (valuedEtfs.length > 0) {
-    const deepest = valuedEtfs.reduce((a, b) => (b.data.market_premium_pct < a.data.market_premium_pct ? b : a));
-    const sym = deepest.id.replace("TSE:", "");
-    const dEl = document.getElementById("kpi-deepest-discount");
-    dEl.textContent = `${sym} (${fmtPct(deepest.data.market_premium_pct)})`;
-    dEl.className = `kpi-value ${deepest.data.market_premium_pct < 0 ? "premium-discount" : "premium-expensive"}`;
-    document.getElementById("kpi-deepest-discount-sub").textContent = `$${fmtNum(deepest.data.intrinsic_per_dollar, 2)} intrinsic per $1 invested`;
-  } else {
-    document.getElementById("kpi-deepest-discount").textContent = "-";
-    document.getElementById("kpi-deepest-discount-sub").textContent = "-";
-  }
-}
-
-function getFilteredAndSortedEtfs() {
+// Every fund with its history stats and decision, buy signals first, then by cheapest percentile
+function etfRows() {
   if (!currentSnapshot || !currentSnapshot.etfs) return [];
-  const searchQuery = (document.getElementById("etf-search-input").value || "").trim().toUpperCase();
-  const categoryFilter = document.getElementById("filter-category").value;
-  const sortBy = document.getElementById("etf-sort-by").value;
-
-  let list = Object.entries(currentSnapshot.etfs).map(([id, data]) => {
+  return Object.entries(currentSnapshot.etfs).map(([id, data]) => {
     const stats = historyStats(etfHistoryRows(id), DECISION_CONFIG, data.market_premium_pct);
-    return {
-      id,
-      data,
-      stats,
-      dec: computeEtfDecision(data, stats),
-      catInfo: getEtfCategory(id)
-    };
+    return { id, data, stats, dec: computeEtfDecision(data, stats) };
+  }).sort((a, b) => {
+    if (a.dec.stance.rank !== b.dec.stance.rank) return a.dec.stance.rank - b.dec.stance.rank;
+    return (a.stats ? a.stats.percentile : 999) - (b.stats ? b.stats.percentile : 999);
   });
-
-  if (searchQuery) {
-    list = list.filter(e =>
-      e.id.toUpperCase().includes(searchQuery) ||
-      (e.data.name && e.data.name.toUpperCase().includes(searchQuery)) ||
-      e.catInfo.label.toUpperCase().includes(searchQuery)
-    );
-  }
-
-  if (categoryFilter !== "ALL") {
-    list = list.filter(e => e.catInfo.category === categoryFilter);
-  }
-
-  list.sort((a, b) => {
-    if (sortBy === "stance_asc") {
-      const rA = a.dec.stance.rank ?? 9;
-      const rB = b.dec.stance.rank ?? 9;
-      if (rA !== rB) return rA - rB;
-      return (a.stats ? a.stats.percentile : 999) - (b.stats ? b.stats.percentile : 999);
-    } else if (sortBy === "distance_asc") {
-      return (a.dec.distancePct ?? 9999) - (b.dec.distancePct ?? 9999);
-    } else if (sortBy === "fcf_yield_desc") {
-      return (b.dec.fcfYield ?? -999) - (a.dec.fcfYield ?? -999);
-    } else if (sortBy === "growth_asc") {
-      return (a.dec.impliedGrowth ?? 999) - (b.dec.impliedGrowth ?? 999);
-    } else if (sortBy === "percentile_asc") {
-      const pA = a.stats ? a.stats.percentile : 999;
-      const pB = b.stats ? b.stats.percentile : 999;
-      return pA - pB;
-    } else if (sortBy === "premium_asc") {
-      return (a.data.market_premium_pct ?? 9999) - (b.data.market_premium_pct ?? 9999);
-    } else if (sortBy === "intrinsic_desc") {
-      return (b.data.intrinsic_per_dollar ?? -9999) - (a.data.intrinsic_per_dollar ?? -9999);
-    } else if (sortBy === "name_asc") {
-      return (a.data.name || a.id).localeCompare(b.data.name || b.id);
-    }
-    return 0;
-  });
-
-  return list;
 }
 
 function renderEtfs() {
-  if (!currentSnapshot || !currentSnapshot.etfs) return;
-  const list = getFilteredAndSortedEtfs();
-  const total = Object.keys(currentSnapshot.etfs).length;
-  document.getElementById("etf-result-count").textContent = `Showing ${list.length} of ${total} tracked ETFs.`;
+  const list = etfRows();
   document.getElementById("etf-backfill-date").textContent = (etfHistory && etfHistory.backfilled_until) || "-";
+
+  const buys = list.filter(e => e.dec.stance.code === "BUY").map(e => e.id.replace("TSE:", ""));
+  document.getElementById("buy-summary").innerHTML = buys.length
+    ? `<strong>Buy signal today:</strong> ${escapeHtml(buys.join(", "))}`
+    : "<strong>No buy signals today.</strong>";
 
   renderEtfSummary(list);
   renderEtfCards(list);
@@ -347,12 +124,7 @@ function renderEtfs() {
 
 function renderEtfSummary(list) {
   const tbody = document.querySelector("#etf-summary-table tbody");
-  if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="11" class="loading">No ETFs match the selected filters.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = list.map(({ id, data, stats, dec, catInfo }) => {
+  tbody.innerHTML = list.map(({ id, data, stats, dec }) => {
     const premium = data.market_premium_pct;
     const premiumClass = typeof premium === "number" ? (premium < 0 ? "premium-discount" : "premium-expensive") : "muted";
 
@@ -360,28 +132,16 @@ function renderEtfSummary(list) {
       ? `<strong>$${fmtNum(dec.marketPrice, 2)}</strong> <span class="muted">${escapeHtml(dec.currency)}</span>`
       : "-";
 
-    const fairValueHtml = dec.fairValuePrice !== null && dec.fairValuePrice !== undefined
-      ? `<strong>$${fmtNum(dec.fairValuePrice, 2)}</strong><div class="muted" style="font-size:0.75rem;">$${fmtNum(data.intrinsic_per_dollar, 2)} / $1</div>`
-      : (data.intrinsic_per_dollar ? `$${fmtNum(data.intrinsic_per_dollar, 2)} / $1` : "-");
-
     let buyBelowHtml = "-";
-    if (dec.buyBelowPrice !== null && dec.buyBelowPrice !== undefined) {
+    if (dec.buyBelowPrice !== null) {
       const tag = buyZoneTag(dec.stance, dec.distancePct);
       buyBelowHtml = `
         <strong>&le; $${fmtNum(dec.buyBelowPrice, 2)}</strong>
         ${tag ? `<div><span class="distance-tag ${tag.cls}">${escapeHtml(tag.text)}</span></div>` : ""}
       `;
-    } else if (dec.targetPremium !== null && dec.targetPremium !== undefined) {
+    } else if (dec.targetPremium !== null) {
       buyBelowHtml = `Prem &le; ${fmtPct(dec.targetPremium)}`;
     }
-
-    const fcfCls = typeof dec.fcfYield === "number" && dec.fcfYield >= 5.0 ? "fcf-highlight" : "";
-    const fcfText = typeof dec.fcfYield === "number" ? `<strong class="${fcfCls}">${fmtNum(dec.fcfYield, 2)}%</strong>` : `<span class="muted">-</span>`;
-
-    const gCls = typeof dec.impliedGrowth === "number"
-      ? (dec.impliedGrowth <= 10.0 ? "hurdle-low" : (dec.impliedGrowth >= 25.0 ? "hurdle-high" : ""))
-      : "";
-    const gText = typeof dec.impliedGrowth === "number" ? `<strong class="${gCls}">${fmtNum(dec.impliedGrowth, 1)}%</strong>` : `<span class="muted">-</span>`;
 
     const safeId = id.replace(/[^a-zA-Z0-9]/g, "_");
     return `
@@ -393,14 +153,10 @@ function renderEtfSummary(list) {
           </div>
           <span class="status-note">${escapeHtml(data.name || "")}</span>
         </td>
-        <td><span class="category-badge">${escapeHtml(catInfo.label)}</span></td>
         <td><span class="stance-badge ${dec.stance.cls}"><span aria-hidden="true">${dec.stance.icon}</span> ${dec.stance.label}</span></td>
         <td>${priceHtml}</td>
-        <td>${fairValueHtml}</td>
         <td>${buyBelowHtml}</td>
         <td class="${premiumClass}"><strong>${fmtPct(premium)}</strong></td>
-        <td>${fcfText}</td>
-        <td>${gText}</td>
         <td>${stats ? `${fmtPct(stats.min)} to ${fmtPct(stats.max)}` : "-"}</td>
         <td><strong>${stats ? `${Math.round(stats.percentile)}th` : "-"}</strong></td>
       </tr>
@@ -524,7 +280,8 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
     const histSma20 = histWindow.length >= 3 ? (histWindow.reduce((a, b) => a + b, 0) / histWindow.length) : null;
     const isHistTrendUp = typeof histPrice === "number" && typeof histSma20 === "number" && histPrice > histSma20;
 
-    const histStance = chooseStance(histPctile, intrinsic, { priceTrendUp: isHistTrendUp }, covered);
+    const histStance = chooseStance(histPctile, intrinsic,
+                                    { priceTrendUp: isHistTrendUp, fundamentalsResetOn: fundamentalsResetOn(rows, idx) }, covered);
 
     const isReconstructed = backfilledUntil && dateStr <= backfilledUntil;
     const premColor = premium < 0 ? "#16a34a" : "#cf222e";
@@ -554,10 +311,6 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
         <div class="chart-card-row">
           <span>ETF Market Price:</span>
           <span><strong>${histPrice ? `$${fmtNum(histPrice, 2)}` : "-"}</strong>${histReturnBadge}</span>
-        </div>
-        <div class="chart-card-row">
-          <span>Intrinsic / $1 NAV:</span>
-          <strong>$${fmtNum(intrinsic, 4)}</strong>
         </div>
         <div class="chart-card-row">
           <span>Diff vs Today:</span>
@@ -599,16 +352,9 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
     ? `$${fmtNum(dec.marketPrice, 2)} ${escapeHtml(dec.currency)}`
     : "N/A";
 
-  const fairValueText = dec.fairValuePrice !== null && dec.fairValuePrice !== undefined
-    ? `$${fmtNum(dec.fairValuePrice, 2)}`
-    : (data.intrinsic_per_dollar ? `$${fmtNum(data.intrinsic_per_dollar, 4)} / $1` : "N/A");
-
-  const buyTargetText = dec.buyBelowPrice !== null && dec.buyBelowPrice !== undefined
+  const buyTargetText = dec.buyBelowPrice !== null
     ? `&le; $${fmtNum(dec.buyBelowPrice, 2)}`
     : (dec.targetPremium !== null ? `Prem &le; ${fmtPct(dec.targetPremium)}` : "N/A");
-
-  const fcfText = typeof dec.fcfYield === "number" ? `${fmtNum(dec.fcfYield, 2)}%` : "-";
-  const growthText = typeof dec.impliedGrowth === "number" ? `${fmtNum(dec.impliedGrowth, 1)}% / yr` : "-";
 
   return `
     <div class="chart-card-header">
@@ -619,18 +365,11 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
       ${fmtPct(premium)}
       <span style="font-size: 0.76rem; font-weight: 600; color: #64748b; margin-left: 4px;">Prem vs DCF</span>
     </div>
-    <div class="chart-card-sub-val">
-      DCF Fair Value: <strong>${fairValueText}</strong> <span class="muted">($${fmtNum(data.intrinsic_per_dollar, 2)} / $1)</span>
-    </div>
 
     <div class="chart-card-section-divider">
       <div class="chart-card-row">
         <span>Market Price:</span>
         <span><strong>${priceText}</strong>${totalReturnBadge}</span>
-      </div>
-      <div class="chart-card-row">
-        <span>DCF Fair Value:</span>
-        <strong>${fairValueText}</strong>
       </div>
       <div class="chart-card-row">
         <span>Buy-Below Target:</span>
@@ -646,14 +385,6 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
     </div>
 
     <div class="chart-card-section-divider">
-      <div class="chart-card-row">
-        <span>Portfolio FCF Yield:</span>
-        <strong class="${dec.fcfYield >= 5 ? 'fcf-highlight' : ''}">${fcfText}</strong>
-      </div>
-      <div class="chart-card-row">
-        <span>Implied Growth Hurdle:</span>
-        <strong class="${dec.impliedGrowth <= 10 ? 'hurdle-low' : (dec.impliedGrowth >= 25 ? 'hurdle-high' : '')}">${growthText}</strong>
-      </div>
       <div class="chart-card-row">
         <span>1-Yr Valuation Range:</span>
         <span>${stats ? `${fmtPct(stats.min)} to ${fmtPct(stats.max)}` : "-"}</span>
@@ -692,12 +423,7 @@ function unvaluedTitle(data) {
 
 function renderEtfCards(list) {
   const container = document.getElementById("etf-cards-container");
-  if (!list.length) {
-    container.innerHTML = `<p class="placeholder-text">No ETFs match the selected search or filters.</p>`;
-    return;
-  }
-
-  container.innerHTML = list.map(({ id, data, stats, dec, catInfo }) => {
+  container.innerHTML = list.map(({ id, data, stats, dec }) => {
     const safeId = id.replace(/[^a-zA-Z0-9]/g, "_");
 
     return `
@@ -706,7 +432,6 @@ function renderEtfCards(list) {
           <div>
             <div class="etf-card-title-row">
               <h3>${escapeHtml(data.name || id)}</h3>
-              <span class="category-badge">${escapeHtml(catInfo.label)}</span>
             </div>
             <div class="etf-card-sub-row">
               <span class="etf-sym">${escapeHtml(id)}</span>
@@ -749,7 +474,6 @@ function renderEtfCards(list) {
 let allocatorState = {
   cash: 1000,
   strategy: "buy_zone",
-  customSelected: new Set(["TSE:XEC", "TSE:ZLI"]),
   collapsed: false
 };
 
@@ -758,7 +482,6 @@ function setupAllocator() {
   const strategySelect = document.getElementById("allocator-strategy-select");
   const toggleBtn = document.getElementById("allocator-toggle-btn");
   const bodyEl = document.getElementById("allocator-body");
-  const chipsWrap = document.getElementById("allocator-custom-chips");
 
   if (!cashInput || !strategySelect) return;
 
@@ -786,7 +509,6 @@ function setupAllocator() {
 
   strategySelect.addEventListener("change", (e) => {
     allocatorState.strategy = e.target.value;
-    chipsWrap.style.display = allocatorState.strategy === "custom" ? "block" : "none";
     renderAllocator();
   });
 
@@ -797,128 +519,42 @@ function setupAllocator() {
   });
 }
 
-function setupAllocatorChips() {
-  const container = document.getElementById("allocator-chips-container");
-  if (!container || !currentSnapshot || !currentSnapshot.etfs) return;
-  const etfs = Object.entries(currentSnapshot.etfs);
-
-  container.innerHTML = etfs.map(([id, data]) => {
-    const isSelected = allocatorState.customSelected.has(id);
-    const stats = historyStats(etfHistoryRows(id), DECISION_CONFIG, data.market_premium_pct);
-    const dec = computeEtfDecision(data, stats);
-    return `
-      <div class="allocator-chip ${isSelected ? "selected" : "unselected"}" data-etf="${escapeHtml(id)}">
-        <strong>${escapeHtml(id.replace("TSE:", ""))}</strong>
-        <span class="stance-badge ${dec.stance.cls}" style="font-size:0.68rem; padding:1px 5px; margin-left:4px;">${dec.stance.icon} ${dec.stance.label}</span>
-      </div>
-    `;
-  }).join("");
-
-  container.querySelectorAll(".allocator-chip").forEach(chip => {
-    chip.addEventListener("click", () => {
-      const id = chip.dataset.etf;
-      if (allocatorState.customSelected.has(id)) {
-        if (allocatorState.customSelected.size > 1) {
-          allocatorState.customSelected.delete(id);
-        }
-      } else {
-        allocatorState.customSelected.add(id);
-      }
-      setupAllocatorChips();
-      renderAllocator();
-    });
-  });
-}
-
 function renderAllocator() {
   if (!currentSnapshot || !currentSnapshot.etfs) return;
   const resultsContainer = document.getElementById("allocator-results");
   if (!resultsContainer) return;
 
-  const etfs = Object.entries(currentSnapshot.etfs);
-  const etfRows = etfs.map(([id, data]) => {
-    const stats = historyStats(etfHistoryRows(id), DECISION_CONFIG, data.market_premium_pct);
-    return {
-      id,
-      data,
-      stats,
-      dec: computeEtfDecision(data, stats),
-      catInfo: getEtfCategory(id)
-    };
-  });
-
-  // Filter candidates based on strategy
-  let candidates = [];
-  const strat = allocatorState.strategy;
-
-  if (strat === "buy_zone") {
-    // Strictly Buy Zone ETFs only (Stance === BUY)
-    candidates = etfRows
-      .filter(e => e.dec.stance.code === "BUY" && typeof e.dec.marketPrice === "number")
-      .sort((a, b) => (a.stats ? a.stats.percentile : 999) - (b.stats ? b.stats.percentile : 999));
-  } else if (strat === "buy_and_accumulate") {
-    // Buy Zone + Fair Value Accumulate (strictly NO Wait ETFs)
-    candidates = etfRows
-      .filter(e => (e.dec.stance.code === "BUY" || e.dec.stance.code === "ACCUMULATE") && typeof e.dec.marketPrice === "number")
-      .sort((a, b) => {
-        if (a.dec.stance.rank !== b.dec.stance.rank) return a.dec.stance.rank - b.dec.stance.rank;
-        return (a.stats ? a.stats.percentile : 999) - (b.stats ? b.stats.percentile : 999);
-      });
-  } else if (strat === "buy_and_core") {
-    // 50% Core (XEQT) + 50% Buy Zone funds (excluding XEQT from the other candidates so it is never duplicated)
-    const buyZoneOther = etfRows
-      .filter(e => e.id !== "TSE:XEQT" && e.dec.stance.code === "BUY" && typeof e.dec.marketPrice === "number")
-      .sort((a, b) => (a.stats ? a.stats.percentile : 999) - (b.stats ? b.stats.percentile : 999));
-    const coreFund = etfRows.find(e => e.id === "TSE:XEQT" && typeof e.dec.marketPrice === "number");
-    candidates = coreFund ? [coreFund, ...buyZoneOther] : buyZoneOther;
-  } else if (strat === "custom") {
-    candidates = etfRows.filter(e => allocatorState.customSelected.has(e.id) && typeof e.dec.marketPrice === "number");
-  }
+  // Buy signals only, or buy signals plus Accumulate (never Wait); etfRows() already ranks them
+  const allowed = allocatorState.strategy === "buy_zone" ? ["BUY"] : ["BUY", "ACCUMULATE"];
+  const candidates = etfRows().filter(e => allowed.includes(e.dec.stance.code) && typeof e.dec.marketPrice === "number");
 
   if (candidates.length === 0) {
-    resultsContainer.innerHTML = `<p class="muted">No ETFs currently qualify under this strategy. Switch to 'Buy Zone + Fair Value Accumulate' or 'Custom Selection'.</p>`;
+    resultsContainer.innerHTML = `<p class="muted">No buy signals today. Switch to 'Buy Signals + Accumulate' to spread the cash over fairly valued funds instead.</p>`;
     return;
   }
 
   const cash = allocatorState.cash;
-  const fxRates = (currentSnapshot && currentSnapshot.fx_rates) || {};
-  const { orders, totalInvestedCad, unusedCashCad, weightedFcf, weightedPrem } = computeAllocation(
-    candidates, cash, strat, fxRates
-  );
+  const { orders, totalInvested, unusedCash } = computeAllocation(candidates, cash, allocatorState.strategy);
 
   // Plain-text for clipboard copy
   const clipText = [
     `StockEval Execution Orders (Cash: $${fmtNum(cash, 2)} CAD):`,
-    ...orders.filter(o => o.shares > 0).map(o => {
-      if (o.currency !== "CAD") {
-        return `- Buy ${o.shares} shares of ${o.etf.id} @ $${fmtNum(o.priceNative, 2)} ${o.currency} (~$${fmtNum(o.costCad, 2)} CAD / $${fmtNum(o.costNative, 2)} ${o.currency})`;
-      }
-      return `- Buy ${o.shares} shares of ${o.etf.id} @ $${fmtNum(o.priceNative, 2)} CAD = $${fmtNum(o.costCad, 2)} CAD`;
-    }),
-    `Total Invested: $${fmtNum(totalInvestedCad, 2)} CAD | Unused Cash: $${fmtNum(unusedCashCad, 2)} CAD`
+    ...orders.filter(o => o.shares > 0).map(o =>
+      `- Buy ${o.shares} shares of ${o.etf.id} @ $${fmtNum(o.price, 2)} CAD = $${fmtNum(o.cost, 2)} CAD`),
+    `Total Invested: $${fmtNum(totalInvested, 2)} CAD | Unused Cash: $${fmtNum(unusedCash, 2)} CAD`
   ].join("\n");
 
   resultsContainer.innerHTML = `
     <div class="allocator-summary-banner">
       <div class="allocator-stat-item">
         <span class="allocator-stat-label">Total to Deploy</span>
-        <span class="allocator-stat-val">$${fmtNum(totalInvestedCad, 2)}</span>
-        <span class="allocator-stat-sub">${fmtNum((totalInvestedCad / cash) * 100, 1)}% of $${fmtNum(cash, 0)} CAD</span>
+        <span class="allocator-stat-val">$${fmtNum(totalInvested, 2)}</span>
+        <span class="allocator-stat-sub">${fmtNum((totalInvested / cash) * 100, 1)}% of $${fmtNum(cash, 0)} CAD</span>
       </div>
       <div class="allocator-stat-item">
         <span class="allocator-stat-label">Unused Cash</span>
-        <span class="allocator-stat-val">$${fmtNum(unusedCashCad, 2)}</span>
+        <span class="allocator-stat-val">$${fmtNum(unusedCash, 2)}</span>
         <span class="allocator-stat-sub">Remainder unspent</span>
-      </div>
-      <div class="allocator-stat-item">
-        <span class="allocator-stat-label">Look-Through FCF Yield</span>
-        <span class="allocator-stat-val ${typeof weightedFcf === "number" && weightedFcf >= 5 ? "fcf-highlight" : ""}">${typeof weightedFcf === "number" ? `${fmtNum(weightedFcf, 2)}%` : "-"}</span>
-        <span class="allocator-stat-sub">Cash generation of buy</span>
-      </div>
-      <div class="allocator-stat-item">
-        <span class="allocator-stat-label">Valuation vs DCF</span>
-        <span class="allocator-stat-val ${typeof weightedPrem === "number" && weightedPrem < 0 ? "premium-discount" : "premium-expensive"}">${fmtPct(weightedPrem)}</span>
-        <span class="allocator-stat-sub">Average look-through</span>
       </div>
     </div>
 
@@ -931,23 +567,16 @@ function renderAllocator() {
             <th>Action Order</th>
             <th>Total Cost</th>
             <th>Allocation %</th>
-            <th>Value Rationale</th>
+            <th>Percentile</th>
           </tr>
         </thead>
         <tbody>
           ${orders.map(o => {
             const e = o.etf;
-            const pct = totalInvestedCad > 0 ? (o.costCad / totalInvestedCad) * 100 : 0;
+            const pct = totalInvested > 0 ? (o.cost / totalInvested) * 100 : 0;
             const sharesHtml = o.shares > 0
               ? `<strong>Buy ${o.shares} shares</strong>`
               : `<span class="muted">0 shares (price exceeds budget)</span>`;
-            const priceHtml = o.currency !== "CAD"
-              ? `<strong>$${fmtNum(o.priceNative, 2)}</strong> <span class="muted">${escapeHtml(o.currency)}</span><div class="muted" style="font-size:0.75rem;">~$${fmtNum(o.priceCad, 2)} CAD</div>`
-              : `<strong>$${fmtNum(o.priceNative, 2)}</strong> <span class="muted">CAD</span>`;
-            const costHtml = o.currency !== "CAD" && o.shares > 0
-              ? `<strong>$${fmtNum(o.costCad, 2)} CAD</strong><div class="muted" style="font-size:0.75rem;">$${fmtNum(o.costNative, 2)} ${escapeHtml(o.currency)}</div>`
-              : `<strong>$${fmtNum(o.costCad, 2)} CAD</strong>`;
-
             return `
               <tr>
                 <td>
@@ -955,15 +584,11 @@ function renderAllocator() {
                   <span class="stance-badge ${e.dec.stance.cls}" style="margin-left:6px;">${e.dec.stance.icon} ${e.dec.stance.label}</span>
                   <div class="muted" style="font-size:0.75rem;">${escapeHtml(e.data.name || "")}</div>
                 </td>
-                <td>${priceHtml}</td>
+                <td><strong>$${fmtNum(o.price, 2)}</strong> <span class="muted">CAD</span></td>
                 <td>${sharesHtml}</td>
-                <td>${costHtml}</td>
+                <td><strong>$${fmtNum(o.cost, 2)} CAD</strong></td>
                 <td>${fmtNum(pct, 1)}%</td>
-                <td>
-                  <span class="muted" style="font-size:0.8rem;">
-                    $${fmtNum(e.data.intrinsic_per_dollar, 2)}/1 · ${typeof e.dec.fcfYield === "number" ? `${fmtNum(e.dec.fcfYield, 1)}% FCF` : ""}
-                  </span>
-                </td>
+                <td>${e.stats ? `${Math.round(e.stats.percentile)}th` : "-"}</td>
               </tr>
             `;
           }).join("")}
