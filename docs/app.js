@@ -697,6 +697,10 @@ function unvaluedTitle(data) {
   if (entries.length) {
     text += " Not valued: " + entries.map(([k, v]) => `${v}% ${UNVALUED_LABELS[k] || k}`).join(", ") + ".";
   }
+  const zero = Object.entries(data.zero_value_weight_pct || {});
+  if (zero.length) {
+    text += " Counted at zero value: " + zero.map(([k, v]) => `${v}% ${UNVALUED_LABELS[k] || k}`).join(", ") + ".";
+  }
   return text;
 }
 

@@ -17,7 +17,7 @@ An automated, serverless equity valuation and look-through ETF engine powered by
   * **Interactive ETF Cards:** Dual-axis charts showing valuation premium vs DCF alongside ETF market price return %, historical Buy (green) and Wait (yellow) shaded zones, and 20-day trend SMA.
   * **Next Contribution Allocator:** Automated whole-share order sizing for new cash deposits (CAD/USD multi-currency aware), remainder optimization, and 1-click clipboard brokerage orders.
 
-Stocks that cannot be valued (negative FCF, missing share count, no fundamentals) are shown with a reason instead of a number. When debt exceeds the modelled enterprise value, the equity value is floored at zero. An FCFF DCF is not meaningful for banks and insurers, so the Financials sector is excluded by default (`excluded_sectors`).
+Stocks that cannot be valued (negative FCF, missing share count, no fundamentals) are shown with a reason instead of a number. When debt exceeds the modelled enterprise value, the equity value is floored at zero. In an ETF's look-through, holdings with negative FCF or debt exceeding value count at zero value rather than dropping out, so a holding turning cash-negative cannot make its fund look cheaper; only holdings with no verdict (excluded sector, missing data) are left out of the average. An FCFF DCF is not meaningful for banks and insurers, so the Financials sector is excluded by default (`excluded_sectors`).
 
 ## Configuration
 

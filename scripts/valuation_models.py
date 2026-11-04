@@ -12,6 +12,10 @@ import datetime
 REVERSE_DCF_LOW_G = -0.50
 REVERSE_DCF_HIGH_G = 1.50
 
+# The model has a verdict for these holdings: no positive value for shareholders. They count at zero in the
+# look-through instead of dropping out, so a holding turning cash-negative cannot make its fund look cheaper.
+ZERO_VALUE_STATUSES = ("negative_fcf", "debt_exceeds_value")
+
 
 def _dcf_enterprise_value(fcf, growth_rate, terminal_growth, wacc, forecast_years):
     cur_fcf = fcf
@@ -186,8 +190,11 @@ def etf_look_through(holdings, stocks):
     w_i * (intrinsic_i / price_i) of intrinsic value, so the ratio is currency-agnostic as long as each
     stock's intrinsic value is expressed in its own price currency.
 
-    Only holdings with a positive DCF valuation count toward coverage and the aggregate; holdings where debt
-    exceeds enterprise value (intrinsic <= 0) are reported in `unvalued_weight_pct["debt_exceeds_value"]`.
+    Holdings the model values at zero (negative FCF, or debt exceeding enterprise value) count at zero intrinsic
+    value and toward coverage, reported in `zero_value_weight_pct`. Dropping them would treat them as if they
+    were valued like the rest of the fund, so a holding turning cash-negative would make the fund look cheaper.
+    Holdings with no verdict (excluded sector, missing data or price) are left out and reported in
+    `unvalued_weight_pct`.
     """
     # Holdings may list only the fund's top positions, so coverage is measured against the whole fund
     listed_weight = sum(h.get("weight", 0) for h in holdings)
@@ -199,6 +206,7 @@ def etf_look_through(holdings, stocks):
     weighted_rev_g = 0.0
     g_weight = 0.0
     unvalued = {}  # why the rest of the fund is not in the average, as share of the fund by reason
+    zero_value = {}  # holdings in the average at zero value, by reason
 
     for h in holdings:
         w = h.get("weight", 0)
@@ -207,11 +215,14 @@ def etf_look_through(holdings, stocks):
         val = stock.get("valuation") or {}
         raw = stock.get("raw") or {}
         intrinsic = val.get("intrinsic_dcf")
-        if not price or price <= 0 or intrinsic is None or intrinsic <= 0:
-            reason = stock.get("valuation_status") or (
-                "debt_exceeds_value" if intrinsic is not None and intrinsic <= 0
-                else ("no_valuation" if price else "no_price")
-            )
+        status = stock.get("valuation_status")
+        if price and price > 0 and (status in ZERO_VALUE_STATUSES or (intrinsic is not None and intrinsic <= 0)):
+            reason = status if status in ZERO_VALUE_STATUSES else "debt_exceeds_value"
+            zero_value[reason] = zero_value.get(reason, 0.0) + w
+            valued_weight += w
+            continue
+        if not price or price <= 0 or intrinsic is None:
+            reason = status or ("no_valuation" if price else "no_price")
             unvalued[reason] = unvalued.get(reason, 0.0) + w
             continue
         intrinsic_per_dollar += w * (intrinsic / price)
@@ -243,6 +254,8 @@ def etf_look_through(holdings, stocks):
         "covered_weight_pct": round(valued_weight / total_weight * 100, 1),
         "unvalued_weight_pct": {k: round(v / total_weight * 100, 1) for k, v in sorted(unvalued.items(),
                                                                                        key=lambda kv: -kv[1])},
+        "zero_value_weight_pct": {k: round(v / total_weight * 100, 1) for k, v in sorted(zero_value.items(),
+                                                                                         key=lambda kv: -kv[1])},
         "intrinsic_per_dollar": None,
         "market_premium_pct": None,
         "fcf_yield_pct": round(weighted_fcf_yield / fcf_weight, 2) if fcf_weight > 0 else None,

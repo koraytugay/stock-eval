@@ -20,7 +20,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from data_sources import (fetch_price_history, fetch_sec_companyfacts, facts_as_of, parse_sec_companyfacts,
                           fetch_yahoo_timeseries, parse_yahoo_timeseries, get_sec_ticker_map, repair_with_yahoo)
-from valuation_models import compute_dcf, etf_look_through
+from valuation_models import compute_dcf, etf_look_through, ZERO_VALUE_STATUSES
 from fetch_and_evaluate import (model_inputs, holdings_hash, load_json, save_json, update_etf_history, UNIVERSE_FILE, PARAMS_FILE,
                                 DATA_DIR, ETF_HISTORY_FILE)
 
@@ -137,7 +137,7 @@ def main():
     start_iso, end_iso = start.isoformat(), end.isoformat()
     adr_ratios = {t: (s.get("valuation") or {}).get("adr_ratio") for t, s in latest.get("stocks", {}).items()}
 
-    # intrinsic[ticker][checkpoint] = (per-share value in reporting currency, reporting currency)
+    # intrinsic[ticker][checkpoint] = (per-share value in reporting currency, reporting currency, status)
     intrinsic = {}
     for t in tickers:
         intrinsic[t] = {}
@@ -163,18 +163,22 @@ def main():
                             raw_yahoo[t], as_of=fund.get("fcf_period_end") or cp, report_lag_days=0))
             else:
                 fund = parse_yahoo_timeseries(raw_yahoo[t], as_of=cp)
-            inputs, _ = model_inputs(fund, sectors.get(t), params, as_of=cp)
+            inputs, status = model_inputs(fund, sectors.get(t), params, as_of=cp)
             if not inputs:
+                if status in ZERO_VALUE_STATUSES:
+                    intrinsic[t][cp] = (0.0, fund.get("currency", "USD"), status)
                 continue
             shares = inputs["shares"] / (adr_ratios.get(t) or 1)
             dcf = compute_dcf(fcf=inputs["fcf"], growth_rate=inputs["growth"], terminal_growth=params["terminal_growth"],
                               wacc=inputs["wacc"], net_debt=inputs["net_debt"], shares=shares,
                               forecast_years=params["forecast_years"])
             if dcf and dcf["intrinsic_value"] > 0:
-                intrinsic[t][cp] = (dcf["intrinsic_value"], fund.get("currency", "USD"))
+                intrinsic[t][cp] = (dcf["intrinsic_value"], fund.get("currency", "USD"), "ok")
+            elif dcf:
+                intrinsic[t][cp] = (0.0, fund.get("currency", "USD"), "debt_exceeds_value")
 
     pairs = {(v[1], prices[t][0]) for t in tickers for v in intrinsic[t].values()
-             if v and prices[t][0] and v[1] != prices[t][0]}
+             if v and v[2] == "ok" and prices[t][0] and v[1] != prices[t][0]}
     fx = {pair: fetch_price_history(f"{pair[0]}{pair[1]}=X", range_="2y")[1] for pair in pairs}
     print(f"FX pairs: {sorted(pairs)}")
 
@@ -191,7 +195,9 @@ def main():
                     continue
                 stocks[t] = {"market_price": price}
                 iv = latest_checkpoint_value(intrinsic[t], day_iso)
-                if iv:
+                if iv and iv[2] in ZERO_VALUE_STATUSES:
+                    stocks[t]["valuation_status"] = iv[2]
+                elif iv:
                     rate = 1.0 if iv[1] == price_ccy else value_on_or_before(fx.get((iv[1], price_ccy), {}), day)
                     if rate:
                         stocks[t]["valuation"] = {"intrinsic_dcf": iv[0] * rate}

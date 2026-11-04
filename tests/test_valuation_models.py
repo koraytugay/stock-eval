@@ -140,15 +140,24 @@ class EtfLookThroughTest(unittest.TestCase):
         self.assertAlmostEqual(res["intrinsic_per_dollar"], 1.25)
         self.assertAlmostEqual(res["market_premium_pct"], -20.0)
 
-    def test_non_positive_value_is_excluded_as_debt_exceeds_value(self):
+    def test_non_positive_value_counts_at_zero(self):
         stocks = {"A": {"market_price": 10.0, "valuation": {"intrinsic_dcf": 20.0}},
                   "B": {"market_price": 10.0, "valuation_status": "debt_exceeds_value",
                         "valuation": {"intrinsic_dcf": 0.0}}}
         res = etf_look_through([{"ticker": "A", "weight": 0.5}, {"ticker": "B", "weight": 0.5}], stocks)
-        self.assertEqual(res["covered_weight_pct"], 50.0)
-        self.assertEqual(res["unvalued_weight_pct"], {"debt_exceeds_value": 50.0})
-        self.assertAlmostEqual(res["intrinsic_per_dollar"], 2.0)
-        self.assertAlmostEqual(res["market_premium_pct"], -50.0)
+        self.assertEqual(res["covered_weight_pct"], 100.0)
+        self.assertEqual(res["unvalued_weight_pct"], {})
+        self.assertEqual(res["zero_value_weight_pct"], {"debt_exceeds_value": 50.0})
+        self.assertAlmostEqual(res["intrinsic_per_dollar"], 1.0)
+        self.assertAlmostEqual(res["market_premium_pct"], 0.0)
+
+    def test_holding_turning_cash_negative_does_not_make_fund_cheaper(self):
+        holdings = [{"ticker": "A", "weight": 0.5}, {"ticker": "B", "weight": 0.5}]
+        before = {"A": {"market_price": 10.0, "valuation": {"intrinsic_dcf": 10.0}},
+                  "B": {"market_price": 10.0, "valuation": {"intrinsic_dcf": 1.0}}}
+        after = {**before, "B": {"market_price": 10.0, "valuation_status": "negative_fcf"}}
+        self.assertLess(etf_look_through(holdings, after)["intrinsic_per_dollar"],
+                        etf_look_through(holdings, before)["intrinsic_per_dollar"])
 
     def test_partial_holdings_list_measures_coverage_against_whole_fund(self):
         stocks = {"A": {"market_price": 10.0, "valuation": {"intrinsic_dcf": 5.0}},
@@ -200,8 +209,9 @@ class UnvaluedBreakdownTest(unittest.TestCase):
         }
         holdings = [{"ticker": t, "weight": w} for t, w in (("A", 0.4), ("B", 0.3), ("C", 0.1), ("D", 0.2))]
         r = etf_look_through(holdings, stocks)
-        self.assertEqual(r["unvalued_weight_pct"], {"sector_excluded": 30.0, "no_price": 20.0, "negative_fcf": 10.0})
-        self.assertEqual(r["covered_weight_pct"], 40.0)
+        self.assertEqual(r["unvalued_weight_pct"], {"sector_excluded": 30.0, "no_price": 20.0})
+        self.assertEqual(r["zero_value_weight_pct"], {"negative_fcf": 10.0})
+        self.assertEqual(r["covered_weight_pct"], 50.0)
 
 
 if __name__ == "__main__":
