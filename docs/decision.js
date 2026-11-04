@@ -2,7 +2,7 @@
 
 const DECISION_CONFIG = {
   minHistoryRows: 60,        // fewer rows make a percentile meaningless
-  minCoveragePct: 20,        // below this valued weight %, a look-through sample is too small for a BUY trigger
+  minCoveragePct: 30,        // below this valued weight %, a look-through sample is too small for a BUY trigger
   buyPercentile: 20,         // premium at or below this historical percentile is a bargain
   accumulatePercentile: 65,  // above this the ETF is "extended"
   waitPercentile: 85,        // above this the ETF is too extended to chase even in a short-term uptrend

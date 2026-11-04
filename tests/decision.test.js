@@ -57,9 +57,11 @@ test("pointInTimePercentile does not leak future rows after warm-up", () => {
 });
 
 test("buy stance triggers on historical percentile bargain and respects minimum coverage", () => {
-  assert.strictEqual(chooseStance(5, 1.5, null, 25).code, "BUY");
+  assert.strictEqual(chooseStance(5, 1.5, null, 35).code, "BUY");
+  assert.strictEqual(chooseStance(5, 1.5, null, 30).code, "BUY");
   assert.strictEqual(chooseStance(5, 1.5, null, null).code, "BUY");
-  // Below minCoveragePct (20%), a bargain percentile is capped at ACCUMULATE so small samples do not trigger BUY
+  // Below minCoveragePct (30%), a bargain percentile is capped at ACCUMULATE so small samples do not trigger BUY
+  assert.strictEqual(chooseStance(5, 1.5, null, 25).code, "ACCUMULATE");
   const lowCov = chooseStance(5, 1.5, null, 14.0);
   assert.strictEqual(lowCov.code, "ACCUMULATE");
   assert.strictEqual(lowCov.label, "Low Coverage / Accumulate");
