@@ -94,10 +94,12 @@ function chooseStance(percentile, intrinsicPerDollar, stats, coveragePct, cfg = 
   const lowCoverage = typeof coveragePct === "number" && coveragePct < cfg.minCoveragePct;
   if (isBuy) {
     if (lowCoverage) {
-      return { code: "ACCUMULATE", label: "Low Coverage / Accumulate", cls: "stance-accumulate", icon: "\u25c8", rank: 2 };
+      return { code: "ACCUMULATE", label: "Low Coverage / Accumulate", cls: "stance-accumulate", icon: "\u25c8", rank: 2,
+               heldBy: "low coverage" };
     }
     if (stats && stats.fundamentalsResetOn) {
-      return { code: "ACCUMULATE", label: "Fundamentals Reset / Accumulate", cls: "stance-accumulate", icon: "\u25c8", rank: 2 };
+      return { code: "ACCUMULATE", label: "Fundamentals Reset / Accumulate", cls: "stance-accumulate", icon: "\u25c8", rank: 2,
+               heldBy: "fundamentals reset" };
     }
     return { code: "BUY", label: "Strong Value / Buy", cls: "stance-buy", icon: "\u2713", rank: 1 };
   }
@@ -110,6 +112,17 @@ function chooseStance(percentile, intrinsicPerDollar, stats, coveragePct, cfg = 
     return { code: "ACCUMULATE", label: "Uptrend / Accumulate", cls: "stance-accumulate", icon: "\u25b2", rank: 2 };
   }
   return wait;
+}
+
+// Tag shown next to the buy-below price: in the zone, below the target but held back from BUY (and why), or the
+// distance still to fall
+function buyZoneTag(stance, distancePct) {
+  if (stance && stance.code === "BUY") return { cls: "distance-in-zone", text: "In Buy Zone!" };
+  if (typeof distancePct !== "number") return null;
+  if (distancePct <= 0) {
+    return { cls: "distance-low-cov", text: `Below target \u00b7 held: ${(stance && stance.heldBy) || "not confirmed"}` };
+  }
+  return { cls: "distance-above", text: `+${distancePct.toFixed(1)}% to target` };
 }
 
 function computeAllocation(candidates, cash, strategy, fxRates = {}) {
@@ -233,6 +246,6 @@ function computeAllocation(candidates, cash, strategy, fxRates = {}) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { DECISION_CONFIG, median, historyStats, fundamentalsResetOn, pointInTimePercentile, chooseStance, computeAllocation };
+  module.exports = { DECISION_CONFIG, median, historyStats, fundamentalsResetOn, pointInTimePercentile, chooseStance, buyZoneTag, computeAllocation };
 }
 

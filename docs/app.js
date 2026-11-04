@@ -376,12 +376,10 @@ function renderEtfSummary(list) {
 
     let buyBelowHtml = "-";
     if (dec.buyBelowPrice !== null && dec.buyBelowPrice !== undefined) {
-      const inZone = dec.stance.code === "BUY";
-      const tagCls = inZone ? "distance-in-zone" : "distance-above";
-      const tagText = inZone ? "In Buy Zone!" : `+${fmtNum(dec.distancePct, 1)}%`;
+      const tag = buyZoneTag(dec.stance, dec.distancePct);
       buyBelowHtml = `
         <strong>&le; $${fmtNum(dec.buyBelowPrice, 2)}</strong>
-        <div><span class="distance-tag ${tagCls}">${tagText}</span></div>
+        ${tag ? `<div><span class="distance-tag ${tag.cls}">${escapeHtml(tag.text)}</span></div>` : ""}
       `;
     } else if (dec.targetPremium !== null && dec.targetPremium !== undefined) {
       buyBelowHtml = `Prem &le; ${fmtPct(dec.targetPremium)}`;
@@ -506,7 +504,6 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
   const rows = etfHistoryRows(etfId);
   const stats = historyStats(rows, DECISION_CONFIG, data.market_premium_pct);
   const dec = computeEtfDecision(data, stats);
-  const inZone = dec.stance.code === "BUY";
   const backfilledUntil = etfHistory && etfHistory.backfilled_until;
 
   const basePrice = (rows.find(r => typeof r[4] === "number" && r[4] > 0) || [])[4];
@@ -647,11 +644,10 @@ function buildEtfInfoCardHtml(etfId, idx, isHover) {
       </div>
       <div class="chart-card-row">
         <span>Buy-Below Target:</span>
-        <span><strong>${buyTargetText}</strong> ${dec.distancePct !== null ? (() => {
-          const cCls = inZone ? "distance-in-zone" : "distance-above";
-          const cTxt = inZone ? "In Buy Zone!" : `+${fmtNum(dec.distancePct, 1)}%`;
-          return `<span class="distance-tag ${cCls}" style="font-size:0.7rem; padding:1px 5px;">${cTxt}</span>`;
-        })() : ''}</span>
+        <span><strong>${buyTargetText}</strong> ${(() => {
+          const tag = buyZoneTag(dec.stance, dec.distancePct);
+          return tag ? `<span class="distance-tag ${tag.cls}" style="font-size:0.7rem; padding:1px 5px;">${escapeHtml(tag.text)}</span>` : "";
+        })()}</span>
       </div>
       <div class="chart-card-row">
         <span>Decision Stance:</span>

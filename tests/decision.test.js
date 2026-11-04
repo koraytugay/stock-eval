@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert");
-const { historyStats, fundamentalsResetOn, pointInTimePercentile, chooseStance, computeAllocation, DECISION_CONFIG } = require("../docs/decision.js");
+const { historyStats, fundamentalsResetOn, pointInTimePercentile, chooseStance, buyZoneTag, computeAllocation, DECISION_CONFIG } = require("../docs/decision.js");
 
 const rows = (premiums, prices) => premiums.map((p, i) => ["d" + i, 1, p, 50, prices ? prices[i] : 10]);
 const ramp = n => Array.from({ length: n }, (_, i) => i);  // premiums 0..n-1, current is the highest
@@ -93,6 +93,15 @@ test("a bargain percentile right after a fundamentals reset is capped at ACCUMUL
   assert.strictEqual(reset.code, "ACCUMULATE");
   assert.strictEqual(reset.label, "Fundamentals Reset / Accumulate");
   assert.strictEqual(chooseStance(5, 1.5, { fundamentalsResetOn: null }, 50).code, "BUY");
+});
+
+test("buy-zone tag says why a fund below its target is not a BUY", () => {
+  assert.strictEqual(buyZoneTag(chooseStance(5, 1, null, 50), -3).text, "In Buy Zone!");
+  assert.strictEqual(buyZoneTag(chooseStance(5, 1, null, 14), -7.5).text, "Below target \u00b7 held: low coverage");
+  assert.strictEqual(buyZoneTag(chooseStance(5, 1, { fundamentalsResetOn: "d1" }, 50), -2).text,
+                     "Below target \u00b7 held: fundamentals reset");
+  assert.strictEqual(buyZoneTag(chooseStance(50, 1, null, 50), 4.25).text, "+4.3% to target");
+  assert.strictEqual(buyZoneTag(chooseStance(50, 1, null, 50), null), null);
 });
 
 test("computeAllocation with empty or zero cash", () => {
