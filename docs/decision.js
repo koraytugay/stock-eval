@@ -7,6 +7,8 @@ const DECISION_CONFIG = {
   accumulatePercentile: 65,  // above this the ETF is "extended"
   waitPercentile: 85,        // above this the ETF is too extended to chase even in a short-term uptrend
   smaWindow: 20,
+  resetThresholdPct: 5,      // a one-day move this large in intrinsic value per fund unit is a fundamentals reset
+  resetCooldownRows: 5,      // trading days after a reset during which a bargain percentile is not a BUY on its own
 };
 
 function median(values) {
@@ -14,6 +16,21 @@ function median(values) {
   const sorted = values.slice().sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+// Latest date within the cool-down window ending at idx on which intrinsic value per fund unit (intrinsic per $1
+// times the fund's price) moved more than resetThresholdPct in a day. Price moves largely cancel out of that
+// product, so such a step comes from new filings or holdings entering or leaving the valuation, not the market:
+// the premium jumps against a history that was measured on the old fundamentals.
+function fundamentalsResetOn(rows, idx, cfg = DECISION_CONFIG) {
+  if (!rows) return null;
+  const unit = r => (r && typeof r[1] === "number" && typeof r[4] === "number" && r[1] > 0 && r[4] > 0) ? r[1] * r[4] : null;
+  for (let i = idx; i > 0 && i > idx - cfg.resetCooldownRows; i--) {
+    const cur = unit(rows[i]);
+    const prev = unit(rows[i - 1]);
+    if (cur !== null && prev !== null && Math.abs(cur / prev - 1) * 100 > cfg.resetThresholdPct) return rows[i][0];
+  }
+  return null;
 }
 
 function historyStats(rows, cfg = DECISION_CONFIG, currentPremium = undefined) {
@@ -43,6 +60,7 @@ function historyStats(rows, cfg = DECISION_CONFIG, currentPremium = undefined) {
 
   return {
     holdingsChangedOn,
+    fundamentalsResetOn: fundamentalsResetOn(rows, rows.length - 1, cfg),
     current,
     percentile,
     p20,
@@ -77,6 +95,9 @@ function chooseStance(percentile, intrinsicPerDollar, stats, coveragePct, cfg = 
   if (isBuy) {
     if (lowCoverage) {
       return { code: "ACCUMULATE", label: "Low Coverage / Accumulate", cls: "stance-accumulate", icon: "\u25c8", rank: 2 };
+    }
+    if (stats && stats.fundamentalsResetOn) {
+      return { code: "ACCUMULATE", label: "Fundamentals Reset / Accumulate", cls: "stance-accumulate", icon: "\u25c8", rank: 2 };
     }
     return { code: "BUY", label: "Strong Value / Buy", cls: "stance-buy", icon: "\u2713", rank: 1 };
   }
@@ -212,6 +233,6 @@ function computeAllocation(candidates, cash, strategy, fxRates = {}) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { DECISION_CONFIG, median, historyStats, pointInTimePercentile, chooseStance, computeAllocation };
+  module.exports = { DECISION_CONFIG, median, historyStats, fundamentalsResetOn, pointInTimePercentile, chooseStance, computeAllocation };
 }
 

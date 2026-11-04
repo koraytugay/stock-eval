@@ -461,7 +461,7 @@ function computeHistoricalZoneWindows(rows) {
     if (typeof pctile !== "number") return;
 
     const isTrendUp = (typeof px === "number" && typeof sm === "number" && px > sm);
-    const stance = chooseStance(pctile, iv, { priceTrendUp: isTrendUp }, r[3]);
+    const stance = chooseStance(pctile, iv, { priceTrendUp: isTrendUp, fundamentalsResetOn: fundamentalsResetOn(rows, i) }, r[3]);
 
     if (stance.code === "BUY") {
       buyIndices.push(i);
@@ -731,6 +731,7 @@ function renderEtfCards(list) {
             <span class="stance-badge ${dec.stance.cls}">${dec.stance.icon} ${dec.stance.label}</span>
             <span class="badge" title="${escapeHtml(unvaluedTitle(data))}">${fmtNum(data.covered_weight_pct, 1)}% Valued</span>
             ${stats && stats.holdingsChangedOn ? `<span class="badge" title="The tickers behind this ETF's look-through changed, so earlier history is not exactly comparable">holdings changed ${escapeHtml(stats.holdingsChangedOn)}</span>` : ""}
+            ${stats && stats.fundamentalsResetOn ? `<span class="badge" title="Intrinsic value per unit stepped more than ${DECISION_CONFIG.resetThresholdPct}% in a day without a matching price move (new filings or holdings entering or leaving the valuation). A bargain percentile is held at Accumulate for ${DECISION_CONFIG.resetCooldownRows} trading days after such a reset">fundamentals reset ${escapeHtml(stats.fundamentalsResetOn)}</span>` : ""}
           </div>
         </div>
 

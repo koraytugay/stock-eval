@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert");
-const { historyStats, pointInTimePercentile, chooseStance, computeAllocation, DECISION_CONFIG } = require("../docs/decision.js");
+const { historyStats, fundamentalsResetOn, pointInTimePercentile, chooseStance, computeAllocation, DECISION_CONFIG } = require("../docs/decision.js");
 
 const rows = (premiums, prices) => premiums.map((p, i) => ["d" + i, 1, p, 50, prices ? prices[i] : 10]);
 const ramp = n => Array.from({ length: n }, (_, i) => i);  // premiums 0..n-1, current is the highest
@@ -70,6 +70,27 @@ test("detects the latest holdings change", () => {
   rs.forEach((r, i) => { r.push(i < 40 ? "aaa" : i < 80 ? "bbb" : "ccc"); });
   assert.strictEqual(historyStats(rs).holdingsChangedOn, "d80");
   assert.strictEqual(historyStats(rows(ramp(100))).holdingsChangedOn, null);   // rows without hashes
+});
+
+test("flags a fundamentals reset when intrinsic value per unit steps but price does not", () => {
+  const rs = rows(ramp(100));
+  rs[97][1] = 1.2;  // intrinsic per $1 jumps 20% at a flat price
+  for (let i = 98; i < 100; i++) rs[i][1] = 1.2;
+  assert.strictEqual(historyStats(rs).fundamentalsResetOn, "d97");
+  assert.strictEqual(fundamentalsResetOn(rs, 96), null);
+  // Outside the cool-down window the reset no longer counts
+  assert.strictEqual(fundamentalsResetOn(rs, 97 + DECISION_CONFIG.resetCooldownRows), null);
+  // A market move changes intrinsic per $1 and price in opposite directions and is not a reset
+  const mkt = rows(ramp(100));
+  mkt[99][1] = 1 / 1.1; mkt[99][4] = 11;
+  assert.strictEqual(historyStats(mkt).fundamentalsResetOn, null);
+});
+
+test("a bargain percentile right after a fundamentals reset is capped at ACCUMULATE", () => {
+  const reset = chooseStance(5, 1.5, { fundamentalsResetOn: "d97" }, 50);
+  assert.strictEqual(reset.code, "ACCUMULATE");
+  assert.strictEqual(reset.label, "Fundamentals Reset / Accumulate");
+  assert.strictEqual(chooseStance(5, 1.5, { fundamentalsResetOn: null }, 50).code, "BUY");
 });
 
 test("computeAllocation with empty or zero cash", () => {
