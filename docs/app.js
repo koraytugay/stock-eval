@@ -11,20 +11,10 @@ let dataRoot = null;
 const ETF_CATEGORIES = {
   "TSE:XEQT": { category: "GLOBAL", label: "All-in-One Global", region: "Global" },
   "TSE:XUU":  { category: "US",     label: "US Total Market",  region: "US" },
-  "TSE:XMC":  { category: "US",     label: "US Mid-Cap",       region: "US" },
-  "TSE:XSMC": { category: "US",     label: "US Small-Cap",     region: "US" },
-  "TSE:CAUS": { category: "FACTOR", label: "US All-Cap Value", region: "US" },
-  "TSE:CAUV": { category: "FACTOR", label: "US Small-Cap Value", region: "US" },
   "TSE:ZLU":  { category: "FACTOR", label: "US Low Volatility",region: "US" },
   "TSE:XEF":  { category: "INTL",   label: "Int'l Developed",  region: "Developed ex-NA" },
-  "TSE:CADE": { category: "INTL",   label: "Int'l Value Tilt", region: "Developed ex-NA" },
-  "TSE:VIDY": { category: "INTL",   label: "Int'l High Dividend", region: "Developed ex-NA" },
   "TSE:ZLI":  { category: "FACTOR", label: "Int'l Low Volatility", region: "Developed ex-NA" },
-  "VXUS":     { category: "INTL",   label: "Total World ex-US",region: "Global ex-US" },
   "TSE:XEC":  { category: "EM",     label: "Emerging Markets", region: "Emerging" },
-  "TSE:CAEM": { category: "EM",     label: "EM Value Tilt",    region: "Emerging" },
-  "TSE:CASV": { category: "FACTOR", label: "Global Small-Cap Value", region: "Global" },
-  "TSE:CACE": { category: "CANADA", label: "Canadian Value",   region: "Canada" },
 };
 
 function getEtfCategory(id) {
@@ -759,7 +749,7 @@ function renderEtfCards(list) {
 let allocatorState = {
   cash: 1000,
   strategy: "buy_zone",
-  customSelected: new Set(["TSE:CAEM", "TSE:XEC", "TSE:ZLI"]),
+  customSelected: new Set(["TSE:XEC", "TSE:ZLI"]),
   collapsed: false
 };
 
