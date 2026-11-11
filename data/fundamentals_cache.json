@@ -53340,5 +53340,43 @@
     "warnings": [
       "debt_from_yahoo"
     ]
+  },
+  "VALE3.SA": {
+    "schema": 5,
+    "source": "Yahoo Finance",
+    "currency": "USD",
+    "fetched_at": "2026-11-10",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-09-30",
+    "balance_sheet_date": "2026-09-30",
+    "operating_cash_flow": 9.509,
+    "capex": 6.065,
+    "free_cash_flow": 3.444,
+    "total_cash": 4.841,
+    "total_debt": 21.223,
+    "net_debt": 16.382,
+    "shares_outstanding": 4.256,
+    "market_cap": 281.349,
+    "market_cap_currency": "BRL",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        6.039
+      ],
+      [
+        "2023-12-31",
+        7.245
+      ],
+      [
+        "2024-12-31",
+        2.919
+      ],
+      [
+        "2025-12-31",
+        2.795
+      ]
+    ],
+    "warnings": []
   }
 }
