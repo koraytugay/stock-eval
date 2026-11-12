@@ -671,143 +671,153 @@
       "holdings": [
         {
           "ticker": "2330.TW",
-          "weight": 0.131718,
+          "weight": 0.130242,
           "name": "Taiwan Semiconductor Manufacturing Company Limited"
         },
         {
           "ticker": "005930.KS",
-          "weight": 0.059038,
+          "weight": 0.052654,
           "name": "Samsung Electronics Co., Ltd."
         },
         {
           "ticker": "000660.KS",
-          "weight": 0.044551,
+          "weight": 0.037286,
           "name": "SK hynix Inc."
         },
         {
           "ticker": "0700.HK",
-          "weight": 0.024417,
+          "weight": 0.026549,
           "name": "Tencent Holdings Limited"
         },
         {
           "ticker": "BABAF",
-          "weight": 0.0165,
+          "weight": 0.0179,
           "name": "Alibaba Group Holding Limited"
         },
         {
           "ticker": "2454.TW",
-          "weight": 0.012659,
+          "weight": 0.01213,
           "name": "MediaTek Inc."
         },
         {
           "ticker": "CICHF",
-          "weight": 0.0084,
+          "weight": 0.009,
           "name": "China Construction Bank Corporation"
         },
         {
-          "ticker": "005935.KS",
-          "weight": 0.007987,
-          "name": "Samsung Electronics Co., Ltd."
-        },
-        {
-          "ticker": "2317.TW",
-          "weight": 0.006986,
-          "name": "Hon Hai Precision Industry Co., Ltd."
-        },
-        {
           "ticker": "HDFCBANK.NS",
-          "weight": 0.006894,
+          "weight": 0.007734,
           "name": "HDFC Bank Limited"
         },
         {
+          "ticker": "005935.KS",
+          "weight": 0.00723,
+          "name": "Samsung Electronics Co., Ltd."
+        },
+        {
           "ticker": "ICICIBANK.NS",
-          "weight": 0.006187,
+          "weight": 0.007224,
           "name": "ICICI Bank Limited"
         },
         {
+          "ticker": "2317.TW",
+          "weight": 0.006824,
+          "name": "Hon Hai Precision Industry Co., Ltd."
+        },
+        {
           "ticker": "RELIANCE.NS",
-          "weight": 0.006179,
+          "weight": 0.006511,
           "name": "Reliance Industries Limited"
         },
         {
-          "ticker": "2308.TW",
-          "weight": 0.005667,
-          "name": "Delta Electronics, Inc."
-        },
-        {
-          "ticker": "IDCBF",
-          "weight": 0.005,
-          "name": "Industrial and Commercial Bank of China Limited"
-        },
-        {
-          "ticker": "3711.TW",
-          "weight": 0.004956,
-          "name": "ASE Technology Holding Co., Ltd."
-        },
-        {
           "ticker": "1810.HK",
-          "weight": 0.004863,
+          "weight": 0.00539,
           "name": "Xiaomi Corporation"
         },
         {
-          "ticker": "402340.KS",
-          "weight": 0.004848,
-          "name": "SK Square Co., Ltd."
+          "ticker": "IDCBF",
+          "weight": 0.0052,
+          "name": "Industrial and Commercial Bank of China Limited"
+        },
+        {
+          "ticker": "2308.TW",
+          "weight": 0.005103,
+          "name": "Delta Electronics, Inc."
         },
         {
           "ticker": "BHARTIARTL.NS",
-          "weight": 0.004759,
+          "weight": 0.005085,
           "name": "Bharti Airtel Limited"
         },
         {
-          "ticker": "3988.HK",
-          "weight": 0.003952,
+          "ticker": "3711.TW",
+          "weight": 0.004384,
+          "name": "ASE Technology Holding Co., Ltd."
+        },
+        {
+          "ticker": "BACHF",
+          "weight": 0.0042,
           "name": "Bank of China Limited"
         },
         {
+          "ticker": "3690.HK",
+          "weight": 0.004166,
+          "name": "Meituan"
+        },
+        {
+          "ticker": "402340.KS",
+          "weight": 0.003971,
+          "name": "SK Square Co., Ltd."
+        },
+        {
+          "ticker": "1120.SR",
+          "weight": 0.003968,
+          "name": "Al Rajhi Banking and Investment Corporation"
+        },
+        {
+          "ticker": "9999.HK",
+          "weight": 0.003663,
+          "name": "NetEase, Inc."
+        },
+        {
+          "ticker": "AU",
+          "weight": 0.0036,
+          "name": "AngloGold Ashanti plc"
+        },
+        {
+          "ticker": "NU",
+          "weight": 0.003559,
+          "name": "Nu Holdings Ltd."
+        },
+        {
           "ticker": "9988.HK",
-          "weight": 0.000217,
+          "weight": 0.000298,
           "name": "Alibaba Group Holding Limited"
         },
         {
           "ticker": "0939.HK",
-          "weight": 0.00011,
+          "weight": 0.000157,
           "name": "China Construction Bank Corporation"
         },
         {
           "ticker": "1398.HK",
-          "weight": 6.4e-05,
+          "weight": 9e-05,
           "name": "Industrial and Commercial Bank of China Limited"
         },
         {
+          "ticker": "3988.HK",
+          "weight": 7.3e-05,
+          "name": "Bank of China Limited"
+        },
+        {
           "ticker": "ANG.JO",
-          "weight": 4.7e-05,
+          "weight": 6.6e-05,
           "name": "AngloGold Ashanti plc"
         },
         {
-          "ticker": "1120.SR",
-          "weight": 4.7e-05,
-          "name": "Al Rajhi Banking and Investment Corporation"
-        },
-        {
-          "ticker": "3690.HK",
-          "weight": 4.6e-05,
-          "name": "Meituan"
-        },
-        {
-          "ticker": "9999.HK",
-          "weight": 4.4e-05,
-          "name": "NetEase, Inc."
-        },
-        {
-          "ticker": "NU",
-          "weight": 4.4e-05,
-          "name": "Nu Holdings Ltd."
-        },
-        {
-          "ticker": "VALE3.SA",
-          "weight": 4.2e-05,
-          "name": "Vale S.A."
+          "ticker": "2318.HK",
+          "weight": 5.7e-05,
+          "name": "Ping An Insurance (Group) Company of China, Ltd."
         }
       ]
     },
@@ -818,7 +828,7 @@
       "holdings": [
         {
           "ticker": "ASML.AS",
-          "weight": 0.022659,
+          "weight": 0.023265,
           "name": "ASML Holding N.V."
         },
         {
@@ -828,118 +838,118 @@
         },
         {
           "ticker": "HSBA.L",
-          "weight": 0.012241,
+          "weight": 0.012242,
           "name": "HSBC Holdings plc"
         },
         {
           "ticker": "NOVN.SW",
-          "weight": 0.012133,
+          "weight": 0.011836,
           "name": "Novartis AG"
         },
         {
-          "ticker": "SHEL.L",
-          "weight": 0.011725,
-          "name": "Shell plc"
-        },
-        {
           "ticker": "AZN.L",
-          "weight": 0.011523,
+          "weight": 0.011422,
           "name": "AstraZeneca PLC"
         },
         {
+          "ticker": "SHEL.L",
+          "weight": 0.011422,
+          "name": "Shell plc"
+        },
+        {
           "ticker": "NESN.SW",
-          "weight": 0.011012,
+          "weight": 0.010812,
           "name": "Nestl\u00e9 S.A."
         },
         {
           "ticker": "SAP.DE",
-          "weight": 0.009688,
+          "weight": 0.009588,
           "name": "SAP SE"
         },
         {
           "ticker": "8306.T",
-          "weight": 0.008878,
+          "weight": 0.009082,
           "name": "Mitsubishi UFJ Financial Group, Inc."
         },
         {
           "ticker": "SIE.DE",
-          "weight": 0.008672,
+          "weight": 0.008774,
           "name": "Siemens Aktiengesellschaft"
         },
         {
           "ticker": "7203.T",
-          "weight": 0.008165,
+          "weight": 0.00836,
           "name": "Toyota Motor Corporation"
         },
         {
           "ticker": "BHP.AX",
-          "weight": 0.008163,
+          "weight": 0.008264,
           "name": "BHP Group Limited"
         },
         {
           "ticker": "ALV.DE",
-          "weight": 0.007853,
+          "weight": 0.007754,
           "name": "Allianz SE"
         },
         {
           "ticker": "CBA.AX",
-          "weight": 0.007851,
+          "weight": 0.007652,
           "name": "Commonwealth Bank of Australia"
         },
         {
-          "ticker": "TTE.PA",
-          "weight": 0.007035,
-          "name": "TotalEnergies SE"
-        },
-        {
           "ticker": "SAN.MC",
-          "weight": 0.006939,
+          "weight": 0.007041,
           "name": "Banco Santander, S.A."
         },
         {
+          "ticker": "TTE.PA",
+          "weight": 0.006835,
+          "name": "TotalEnergies SE"
+        },
+        {
           "ticker": "IBE.MC",
-          "weight": 0.006425,
+          "weight": 0.006327,
           "name": "Iberdrola, S.A."
         },
         {
           "ticker": "6758.T",
-          "weight": 0.006223,
+          "weight": 0.006323,
           "name": "Sony Group Corporation"
         },
         {
           "ticker": "UBSG.SW",
-          "weight": 0.00612,
+          "weight": 0.006021,
           "name": "UBS Group AG"
         },
         {
           "ticker": "6098.T",
-          "weight": 0.005816,
+          "weight": 0.005919,
           "name": "Recruit Holdings Co., Ltd."
         },
         {
-          "ticker": "BBVA.MC",
-          "weight": 0.005814,
-          "name": "Banco Bilbao Vizcaya Argentaria, S.A."
-        },
-        {
-          "ticker": "ULVR.L",
-          "weight": 0.005812,
-          "name": "Unilever PLC"
-        },
-        {
           "ticker": "RR.L",
-          "weight": 0.005716,
+          "weight": 0.005917,
           "name": "Rolls-Royce Holdings plc"
         },
         {
-          "ticker": "SU.PA",
-          "weight": 0.005714,
-          "name": "Schneider Electric S.E."
+          "ticker": "BBVA.MC",
+          "weight": 0.005817,
+          "name": "Banco Bilbao Vizcaya Argentaria, S.A."
         },
         {
           "ticker": "8316.T",
-          "weight": 0.000114,
+          "weight": 0.005717,
           "name": "Sumitomo Mitsui Financial Group, Inc."
+        },
+        {
+          "ticker": "SU.PA",
+          "weight": 0.005715,
+          "name": "Schneider Electric S.E."
+        },
+        {
+          "ticker": "ULVR.L",
+          "weight": 0.000113,
+          "name": "Unilever PLC"
         }
       ]
     },
@@ -950,287 +960,287 @@
       "holdings": [
         {
           "ticker": "AAPL",
-          "weight": 0.031145,
+          "weight": 0.031062,
           "name": "Apple Inc."
         },
         {
           "ticker": "NVDA",
-          "weight": 0.026326,
+          "weight": 0.024993,
           "name": "NVIDIA Corporation"
         },
         {
           "ticker": "MSFT",
-          "weight": 0.024675,
+          "weight": 0.024234,
           "name": "Microsoft Corporation"
         },
         {
           "ticker": "RY.TO",
-          "weight": 0.020129,
+          "weight": 0.019935,
           "name": "Royal Bank of Canada"
         },
         {
           "ticker": "AMZN",
-          "weight": 0.015974,
+          "weight": 0.016245,
           "name": "Amazon.com, Inc."
         },
         {
           "ticker": "TD.TO",
-          "weight": 0.01453,
+          "weight": 0.014395,
           "name": "The Toronto-Dominion Bank"
         },
         {
           "ticker": "SHOP",
-          "weight": 0.012994,
+          "weight": 0.012945,
           "name": "Shopify Inc."
         },
         {
           "ticker": "GOOGL",
-          "weight": 0.010307,
+          "weight": 0.01031,
           "name": "Alphabet Inc."
         },
         {
           "ticker": "AVGO",
-          "weight": 0.009281,
+          "weight": 0.00964,
           "name": "Broadcom Inc."
         },
         {
-          "ticker": "BMO.TO",
-          "weight": 0.008645,
-          "name": "Bank of Montreal"
-        },
-        {
           "ticker": "META",
-          "weight": 0.008612,
+          "weight": 0.008658,
           "name": "Meta Platforms, Inc."
         },
         {
+          "ticker": "BMO.TO",
+          "weight": 0.008595,
+          "name": "Bank of Montreal"
+        },
+        {
           "ticker": "GOOG",
-          "weight": 0.008299,
+          "weight": 0.008301,
           "name": "Alphabet Inc."
         },
         {
           "ticker": "BNS.TO",
-          "weight": 0.008072,
+          "weight": 0.008,
           "name": "The Bank of Nova Scotia"
         },
         {
           "ticker": "CM.TO",
-          "weight": 0.007578,
+          "weight": 0.007508,
           "name": "Canadian Imperial Bank of Commerce"
         },
         {
           "ticker": "ENB.TO",
-          "weight": 0.0075,
+          "weight": 0.007405,
           "name": "Enbridge Inc."
         },
         {
-          "ticker": "CNQ.TO",
-          "weight": 0.007213,
-          "name": "Canadian Natural Resources Limited"
-        },
-        {
           "ticker": "AEM.TO",
-          "weight": 0.007005,
+          "weight": 0.007172,
           "name": "Agnico Eagle Mines Limited"
         },
         {
           "ticker": "LLY",
-          "weight": 0.006871,
+          "weight": 0.007007,
           "name": "Eli Lilly and Company"
         },
         {
+          "ticker": "CNQ.TO",
+          "weight": 0.00699,
+          "name": "Canadian Natural Resources Limited"
+        },
+        {
           "ticker": "BRK-B",
-          "weight": 0.006559,
+          "weight": 0.00665,
           "name": "Berkshire Hathaway Inc."
         },
         {
-          "ticker": "2330.TW",
-          "weight": 0.006494,
-          "name": "Taiwan Semiconductor Manufacturing Company Limited"
-        },
-        {
           "ticker": "TSLA",
-          "weight": 0.00647,
+          "weight": 0.006561,
           "name": "Tesla, Inc."
         },
         {
           "ticker": "BN",
-          "weight": 0.00638,
+          "weight": 0.006473,
           "name": "Brookfield Corporation"
         },
         {
+          "ticker": "2330.TW",
+          "weight": 0.00646,
+          "name": "Taiwan Semiconductor Manufacturing Company Limited"
+        },
+        {
           "ticker": "CP.TO",
-          "weight": 0.005833,
+          "weight": 0.005799,
           "name": "Canadian Pacific Kansas City Limited"
         },
         {
-          "ticker": "SU.TO",
-          "weight": 0.005807,
-          "name": "Suncor Energy Inc."
-        },
-        {
-          "ticker": "JPM",
-          "weight": 0.005533,
-          "name": "JPMorgan Chase & Co."
-        },
-        {
           "ticker": "ASML.AS",
-          "weight": 0.00549,
+          "weight": 0.00566,
           "name": "ASML Holding N.V."
         },
         {
+          "ticker": "JPM",
+          "weight": 0.005579,
+          "name": "JPMorgan Chase & Co."
+        },
+        {
+          "ticker": "SU.TO",
+          "weight": 0.00554,
+          "name": "Suncor Energy Inc."
+        },
+        {
           "ticker": "MFC.TO",
-          "weight": 0.005182,
+          "weight": 0.005178,
           "name": "Manulife Financial Corporation"
         },
         {
           "ticker": "AMD",
-          "weight": 0.005042,
+          "weight": 0.005132,
           "name": "Advanced Micro Devices, Inc."
         },
         {
           "ticker": "MU",
-          "weight": 0.005042,
+          "weight": 0.004999,
           "name": "Micron Technology, Inc."
         },
         {
           "ticker": "CNR.TO",
-          "weight": 0.004922,
+          "weight": 0.004919,
           "name": "Canadian National Railway Company"
         },
         {
           "ticker": "ABX.TO",
-          "weight": 0.004817,
+          "weight": 0.004893,
           "name": "Barrick Mining Corporation"
         },
         {
           "ticker": "TRP.TO",
-          "weight": 0.004661,
+          "weight": 0.004608,
           "name": "TC Energy Corporation"
         },
         {
           "ticker": "WPM.TO",
-          "weight": 0.004453,
+          "weight": 0.004608,
           "name": "Wheaton Precious Metals Corp."
         },
         {
           "ticker": "V",
-          "weight": 0.004373,
+          "weight": 0.004418,
           "name": "Visa Inc."
         },
         {
           "ticker": "NA.TO",
-          "weight": 0.004218,
+          "weight": 0.004168,
           "name": "National Bank of Canada"
         },
         {
-          "ticker": "JNJ",
-          "weight": 0.00415,
-          "name": "Johnson & Johnson"
-        },
-        {
           "ticker": "XOM",
-          "weight": 0.00415,
+          "weight": 0.004151,
           "name": "ExxonMobil Holdings Corporation"
         },
         {
+          "ticker": "JNJ",
+          "weight": 0.004151,
+          "name": "Johnson & Johnson"
+        },
+        {
           "ticker": "CSU.TO",
-          "weight": 0.003828,
+          "weight": 0.003573,
           "name": "Constellation Software Inc."
         },
         {
           "ticker": "FNV.TO",
-          "weight": 0.003541,
+          "weight": 0.003573,
           "name": "Franco-Nevada Corporation"
         },
         {
-          "ticker": "WCN.TO",
-          "weight": 0.003437,
-          "name": "Waste Connections, Inc."
-        },
-        {
           "ticker": "WMT",
-          "weight": 0.003436,
+          "weight": 0.003437,
           "name": "Walmart Inc."
         },
         {
+          "ticker": "WCN.TO",
+          "weight": 0.003366,
+          "name": "Waste Connections, Inc."
+        },
+        {
           "ticker": "ROP.SW",
-          "weight": 0.003312,
+          "weight": 0.003326,
           "name": "Roche Holding AG"
         },
         {
           "ticker": "MA",
-          "weight": 0.003213,
+          "weight": 0.003258,
           "name": "Mastercard Incorporated"
         },
         {
           "ticker": "ABBV",
-          "weight": 0.003168,
+          "weight": 0.003169,
           "name": "AbbVie Inc."
         },
         {
           "ticker": "ATD.TO",
-          "weight": 0.003151,
+          "weight": 0.003107,
           "name": "Alimentation Couche-Tard Inc."
         },
         {
-          "ticker": "DOL.TO",
-          "weight": 0.002969,
-          "name": "Dollarama Inc."
-        },
-        {
           "ticker": "HSBA.L",
-          "weight": 0.002966,
+          "weight": 0.002978,
           "name": "HSBC Holdings plc"
         },
         {
-          "ticker": "NOVN.SW",
-          "weight": 0.00294,
-          "name": "Novartis AG"
-        },
-        {
-          "ticker": "005930.KS",
-          "weight": 0.002911,
-          "name": "Samsung Electronics Co., Ltd."
-        },
-        {
-          "ticker": "SLF.TO",
-          "weight": 0.00289,
-          "name": "Sun Life Financial Inc."
+          "ticker": "DOL.TO",
+          "weight": 0.002926,
+          "name": "Dollarama Inc."
         },
         {
           "ticker": "COST",
-          "weight": 0.002856,
+          "weight": 0.002901,
           "name": "Costco Wholesale Corporation"
         },
         {
-          "ticker": "SHEL.L",
-          "weight": 0.002841,
-          "name": "Shell plc"
+          "ticker": "SLF.TO",
+          "weight": 0.0029,
+          "name": "Sun Life Financial Inc."
+        },
+        {
+          "ticker": "NOVN.SW",
+          "weight": 0.00288,
+          "name": "Novartis AG"
         },
         {
           "ticker": "AZN.L",
-          "weight": 0.002792,
+          "weight": 0.002779,
           "name": "AstraZeneca PLC"
         },
         {
+          "ticker": "SHEL.L",
+          "weight": 0.002779,
+          "name": "Shell plc"
+        },
+        {
           "ticker": "NESN.SW",
-          "weight": 0.002668,
+          "weight": 0.002631,
           "name": "Nestl\u00e9 S.A."
         },
         {
+          "ticker": "005930.KS",
+          "weight": 0.002612,
+          "name": "Samsung Electronics Co., Ltd."
+        },
+        {
           "ticker": "FFH.TO",
-          "weight": 0.00263,
+          "weight": 0.002589,
           "name": "Fairfax Financial Holdings Limited"
         },
         {
           "ticker": "CVX",
-          "weight": 0.002543,
+          "weight": 0.002544,
           "name": "Chevron Corporation"
         },
         {
           "ticker": "PG",
-          "weight": 0.002365,
+          "weight": 0.00241,
           "name": "The Procter & Gamble Company"
         },
         {
@@ -1245,223 +1255,233 @@
         },
         {
           "ticker": "SAP.DE",
-          "weight": 0.002347,
+          "weight": 0.002333,
           "name": "SAP SE"
         },
         {
-          "ticker": "000660.KS",
-          "weight": 0.002196,
-          "name": "SK hynix Inc."
-        },
-        {
           "ticker": "8306.T",
-          "weight": 0.002151,
+          "weight": 0.00221,
           "name": "Mitsubishi UFJ Financial Group, Inc."
         },
         {
           "ticker": "SIE.DE",
-          "weight": 0.002101,
+          "weight": 0.002135,
           "name": "Siemens Aktiengesellschaft"
         },
         {
           "ticker": "7203.T",
-          "weight": 0.001978,
+          "weight": 0.002034,
           "name": "Toyota Motor Corporation"
         },
         {
           "ticker": "BHP.AX",
-          "weight": 0.001978,
+          "weight": 0.002011,
           "name": "BHP Group Limited"
         },
         {
           "ticker": "ALV.DE",
-          "weight": 0.001903,
+          "weight": 0.001887,
           "name": "Allianz SE"
         },
         {
           "ticker": "CBA.AX",
-          "weight": 0.001902,
+          "weight": 0.001862,
           "name": "Commonwealth Bank of Australia"
         },
         {
-          "ticker": "TTE.PA",
-          "weight": 0.001705,
-          "name": "TotalEnergies SE"
+          "ticker": "000660.KS",
+          "weight": 0.001849,
+          "name": "SK hynix Inc."
         },
         {
           "ticker": "SAN.MC",
-          "weight": 0.001681,
+          "weight": 0.001713,
           "name": "Banco Santander, S.A."
         },
         {
+          "ticker": "TTE.PA",
+          "weight": 0.001663,
+          "name": "TotalEnergies SE"
+        },
+        {
           "ticker": "IBE.MC",
-          "weight": 0.001557,
+          "weight": 0.001539,
           "name": "Iberdrola, S.A."
         },
         {
           "ticker": "6758.T",
-          "weight": 0.001508,
+          "weight": 0.001538,
           "name": "Sony Group Corporation"
         },
         {
           "ticker": "UBSG.SW",
-          "weight": 0.001483,
+          "weight": 0.001465,
           "name": "UBS Group AG"
         },
         {
           "ticker": "6098.T",
-          "weight": 0.001409,
+          "weight": 0.00144,
           "name": "Recruit Holdings Co., Ltd."
         },
         {
-          "ticker": "BBVA.MC",
-          "weight": 0.001409,
-          "name": "Banco Bilbao Vizcaya Argentaria, S.A."
-        },
-        {
-          "ticker": "ULVR.L",
-          "weight": 0.001408,
-          "name": "Unilever PLC"
-        },
-        {
           "ticker": "RR.L",
-          "weight": 0.001385,
+          "weight": 0.00144,
           "name": "Rolls-Royce Holdings plc"
         },
         {
+          "ticker": "BBVA.MC",
+          "weight": 0.001415,
+          "name": "Banco Bilbao Vizcaya Argentaria, S.A."
+        },
+        {
+          "ticker": "8316.T",
+          "weight": 0.001391,
+          "name": "Sumitomo Mitsui Financial Group, Inc."
+        },
+        {
           "ticker": "SU.PA",
-          "weight": 0.001384,
+          "weight": 0.00139,
           "name": "Schneider Electric S.E."
         },
         {
           "ticker": "0700.HK",
-          "weight": 0.001204,
+          "weight": 0.001317,
           "name": "Tencent Holdings Limited"
         },
         {
           "ticker": "BABAF",
-          "weight": 0.000813,
+          "weight": 0.000888,
           "name": "Alibaba Group Holding Limited"
         },
         {
           "ticker": "2454.TW",
-          "weight": 0.000624,
+          "weight": 0.000602,
           "name": "MediaTek Inc."
         },
         {
           "ticker": "CICHF",
-          "weight": 0.000414,
+          "weight": 0.000446,
           "name": "China Construction Bank Corporation"
         },
         {
-          "ticker": "005935.KS",
-          "weight": 0.000394,
-          "name": "Samsung Electronics Co., Ltd."
-        },
-        {
-          "ticker": "2317.TW",
-          "weight": 0.000344,
-          "name": "Hon Hai Precision Industry Co., Ltd."
-        },
-        {
           "ticker": "HDFCBANK.NS",
-          "weight": 0.00034,
+          "weight": 0.000384,
           "name": "HDFC Bank Limited"
         },
         {
+          "ticker": "005935.KS",
+          "weight": 0.000359,
+          "name": "Samsung Electronics Co., Ltd."
+        },
+        {
           "ticker": "ICICIBANK.NS",
-          "weight": 0.000305,
+          "weight": 0.000358,
           "name": "ICICI Bank Limited"
         },
         {
+          "ticker": "2317.TW",
+          "weight": 0.000338,
+          "name": "Hon Hai Precision Industry Co., Ltd."
+        },
+        {
           "ticker": "RELIANCE.NS",
-          "weight": 0.000305,
+          "weight": 0.000323,
           "name": "Reliance Industries Limited"
         },
         {
-          "ticker": "2308.TW",
-          "weight": 0.000279,
-          "name": "Delta Electronics, Inc."
-        },
-        {
-          "ticker": "IDCBF",
-          "weight": 0.000246,
-          "name": "Industrial and Commercial Bank of China Limited"
-        },
-        {
-          "ticker": "3711.TW",
-          "weight": 0.000244,
-          "name": "ASE Technology Holding Co., Ltd."
-        },
-        {
           "ticker": "1810.HK",
-          "weight": 0.00024,
+          "weight": 0.000267,
           "name": "Xiaomi Corporation"
         },
         {
-          "ticker": "402340.KS",
-          "weight": 0.000239,
-          "name": "SK Square Co., Ltd."
+          "ticker": "IDCBF",
+          "weight": 0.000258,
+          "name": "Industrial and Commercial Bank of China Limited"
+        },
+        {
+          "ticker": "2308.TW",
+          "weight": 0.000253,
+          "name": "Delta Electronics, Inc."
         },
         {
           "ticker": "BHARTIARTL.NS",
-          "weight": 0.000235,
+          "weight": 0.000252,
           "name": "Bharti Airtel Limited"
         },
         {
-          "ticker": "3988.HK",
-          "weight": 0.000195,
+          "ticker": "3711.TW",
+          "weight": 0.000217,
+          "name": "ASE Technology Holding Co., Ltd."
+        },
+        {
+          "ticker": "BACHF",
+          "weight": 0.000208,
           "name": "Bank of China Limited"
         },
         {
-          "ticker": "8316.T",
-          "weight": 2.8e-05,
-          "name": "Sumitomo Mitsui Financial Group, Inc."
+          "ticker": "3690.HK",
+          "weight": 0.000207,
+          "name": "Meituan"
+        },
+        {
+          "ticker": "402340.KS",
+          "weight": 0.000197,
+          "name": "SK Square Co., Ltd."
+        },
+        {
+          "ticker": "1120.SR",
+          "weight": 0.000197,
+          "name": "Al Rajhi Banking and Investment Corporation"
+        },
+        {
+          "ticker": "9999.HK",
+          "weight": 0.000182,
+          "name": "NetEase, Inc."
+        },
+        {
+          "ticker": "AU",
+          "weight": 0.000179,
+          "name": "AngloGold Ashanti plc"
+        },
+        {
+          "ticker": "NU",
+          "weight": 0.000177,
+          "name": "Nu Holdings Ltd."
+        },
+        {
+          "ticker": "ULVR.L",
+          "weight": 2.7e-05,
+          "name": "Unilever PLC"
         },
         {
           "ticker": "9988.HK",
-          "weight": 1.1e-05,
+          "weight": 1.5e-05,
           "name": "Alibaba Group Holding Limited"
         },
         {
           "ticker": "0939.HK",
-          "weight": 5e-06,
+          "weight": 8e-06,
           "name": "China Construction Bank Corporation"
         },
         {
           "ticker": "1398.HK",
-          "weight": 3e-06,
+          "weight": 4e-06,
           "name": "Industrial and Commercial Bank of China Limited"
         },
         {
+          "ticker": "3988.HK",
+          "weight": 4e-06,
+          "name": "Bank of China Limited"
+        },
+        {
           "ticker": "ANG.JO",
-          "weight": 2e-06,
+          "weight": 3e-06,
           "name": "AngloGold Ashanti plc"
         },
         {
-          "ticker": "1120.SR",
-          "weight": 2e-06,
-          "name": "Al Rajhi Banking and Investment Corporation"
-        },
-        {
-          "ticker": "3690.HK",
-          "weight": 2e-06,
-          "name": "Meituan"
-        },
-        {
-          "ticker": "9999.HK",
-          "weight": 2e-06,
-          "name": "NetEase, Inc."
-        },
-        {
-          "ticker": "NU",
-          "weight": 2e-06,
-          "name": "Nu Holdings Ltd."
-        },
-        {
-          "ticker": "VALE3.SA",
-          "weight": 2e-06,
-          "name": "Vale S.A."
+          "ticker": "2318.HK",
+          "weight": 3e-06,
+          "name": "Ping An Insurance (Group) Company of China, Ltd."
         }
       ]
     },
@@ -1472,22 +1492,22 @@
       "holdings": [
         {
           "ticker": "AAPL",
-          "weight": 0.069928,
+          "weight": 0.069739,
           "name": "Apple Inc."
         },
         {
           "ticker": "NVDA",
-          "weight": 0.059091,
+          "weight": 0.056075,
           "name": "NVIDIA Corporation"
         },
         {
           "ticker": "MSFT",
-          "weight": 0.055368,
+          "weight": 0.054332,
           "name": "Microsoft Corporation"
         },
         {
           "ticker": "AMZN",
-          "weight": 0.035813,
+          "weight": 0.036472,
           "name": "Amazon.com, Inc."
         },
         {
@@ -1497,12 +1517,12 @@
         },
         {
           "ticker": "AVGO",
-          "weight": 0.021381,
+          "weight": 0.022275,
           "name": "Broadcom Inc."
         },
         {
           "ticker": "META",
-          "weight": 0.01932,
+          "weight": 0.019414,
           "name": "Meta Platforms, Inc."
         },
         {
@@ -1512,48 +1532,48 @@
         },
         {
           "ticker": "LLY",
-          "weight": 0.015455,
+          "weight": 0.015738,
           "name": "Eli Lilly and Company"
         },
         {
           "ticker": "BRK-B",
-          "weight": 0.014702,
+          "weight": 0.014891,
           "name": "Berkshire Hathaway Inc."
         },
         {
           "ticker": "TSLA",
-          "weight": 0.01456,
+          "weight": 0.014702,
           "name": "Tesla, Inc."
         },
         {
           "ticker": "JPM",
-          "weight": 0.01244,
+          "weight": 0.012488,
           "name": "JPMorgan Chase & Co."
         },
         {
           "ticker": "AMD",
-          "weight": 0.011356,
+          "weight": 0.011544,
           "name": "Advanced Micro Devices, Inc."
         },
         {
           "ticker": "MU",
-          "weight": 0.011309,
+          "weight": 0.011215,
           "name": "Micron Technology, Inc."
         },
         {
           "ticker": "V",
-          "weight": 0.009802,
+          "weight": 0.009896,
           "name": "Visa Inc."
-        },
-        {
-          "ticker": "JNJ",
-          "weight": 0.009283,
-          "name": "Johnson & Johnson"
         },
         {
           "ticker": "XOM",
           "weight": 0.009283,
           "name": "ExxonMobil Holdings Corporation"
+        },
+        {
+          "ticker": "JNJ",
+          "weight": 0.009283,
+          "name": "Johnson & Johnson"
         },
         {
           "ticker": "WMT",
@@ -1562,7 +1582,7 @@
         },
         {
           "ticker": "MA",
-          "weight": 0.00721,
+          "weight": 0.007304,
           "name": "Mastercard Incorporated"
         },
         {
@@ -1572,7 +1592,7 @@
         },
         {
           "ticker": "COST",
-          "weight": 0.006455,
+          "weight": 0.006503,
           "name": "Costco Wholesale Corporation"
         },
         {
@@ -1582,7 +1602,7 @@
         },
         {
           "ticker": "PG",
-          "weight": 0.005324,
+          "weight": 0.005372,
           "name": "The Procter & Gamble Company"
         },
         {
@@ -1686,24 +1706,19 @@
           "name": "Block, Inc."
         },
         {
-          "ticker": "ATI",
-          "weight": 0.000181,
-          "name": "ATI Inc."
-        },
-        {
           "ticker": "FTI",
-          "weight": 0.000181,
+          "weight": 0.000184,
           "name": "TechnipFMC plc"
         },
         {
           "ticker": "UTHR",
-          "weight": 0.000179,
+          "weight": 0.000181,
           "name": "United Therapeutics Corporation"
         },
         {
-          "ticker": "RGLD",
-          "weight": 0.000171,
-          "name": "Royal Gold, Inc."
+          "ticker": "ATI",
+          "weight": 0.000179,
+          "name": "ATI Inc."
         },
         {
           "ticker": "USFD",
@@ -1712,12 +1727,17 @@
         },
         {
           "ticker": "THC",
-          "weight": 0.000166,
+          "weight": 0.000169,
           "name": "Tenet Healthcare Corporation"
         },
         {
+          "ticker": "RGLD",
+          "weight": 0.000169,
+          "name": "Royal Gold, Inc."
+        },
+        {
           "ticker": "ROIV",
-          "weight": 0.000159,
+          "weight": 0.000161,
           "name": "Roivant Sciences Ltd."
         },
         {
@@ -1727,7 +1747,7 @@
         },
         {
           "ticker": "RS",
-          "weight": 0.000154,
+          "weight": 0.000156,
           "name": "Reliance, Inc."
         },
         {
@@ -1751,24 +1771,34 @@
           "name": "SharkNinja, Inc."
         },
         {
-          "ticker": "NVT",
-          "weight": 0.000134,
-          "name": "nVent Electric plc"
-        },
-        {
           "ticker": "SNX",
-          "weight": 0.000131,
+          "weight": 0.000134,
           "name": "TD SYNNEX Corporation"
         },
         {
+          "ticker": "NVT",
+          "weight": 0.000131,
+          "name": "nVent Electric plc"
+        },
+        {
           "ticker": "PR",
-          "weight": 0.000129,
+          "weight": 0.000131,
           "name": "Permian Resources Corporation"
         },
         {
           "ticker": "EWBC",
           "weight": 0.000129,
           "name": "East West Bancorp, Inc."
+        },
+        {
+          "ticker": "RGA",
+          "weight": 0.000129,
+          "name": "Reinsurance Group of America, Incorporated"
+        },
+        {
+          "ticker": "RBA",
+          "weight": 0.000129,
+          "name": "RB Global, Inc."
         },
         {
           "ticker": "TOST",
@@ -1786,24 +1816,14 @@
           "name": "Exelixis, Inc."
         },
         {
-          "ticker": "RBA",
-          "weight": 0.000126,
-          "name": "RB Global, Inc."
-        },
-        {
           "ticker": "PFGC",
           "weight": 0.000126,
           "name": "Performance Food Group Company"
         },
         {
           "ticker": "JLL",
-          "weight": 0.000126,
-          "name": "Jones Lang LaSalle Incorporated"
-        },
-        {
-          "ticker": "RGA",
           "weight": 0.000124,
-          "name": "Reinsurance Group of America, Incorporated"
+          "name": "Jones Lang LaSalle Incorporated"
         },
         {
           "ticker": "NBIX",
@@ -1812,13 +1832,18 @@
         },
         {
           "ticker": "VSAT",
-          "weight": 5.9e-05,
+          "weight": 6e-05,
           "name": "Viasat, Inc."
         },
         {
           "ticker": "RHP",
-          "weight": 5.3e-05,
+          "weight": 5.5e-05,
           "name": "Ryman Hospitality Properties, Inc."
+        },
+        {
+          "ticker": "MTCH",
+          "weight": 5.3e-05,
+          "name": "Match Group, Inc."
         },
         {
           "ticker": "PAYC",
@@ -1826,18 +1851,8 @@
           "name": "Paycom Software, Inc."
         },
         {
-          "ticker": "VSXY",
-          "weight": 5.2e-05,
-          "name": "Victoria's Secret & Co."
-        },
-        {
-          "ticker": "MTCH",
-          "weight": 5.2e-05,
-          "name": "Match Group, Inc."
-        },
-        {
           "ticker": "TGTX",
-          "weight": 5.2e-05,
+          "weight": 5.3e-05,
           "name": "TG Therapeutics, Inc."
         },
         {
@@ -1851,24 +1866,24 @@
           "name": "Protagonist Therapeutics, Inc."
         },
         {
+          "ticker": "VSXY",
+          "weight": 5.1e-05,
+          "name": "Victoria's Secret & Co."
+        },
+        {
           "ticker": "JXN",
-          "weight": 4.8e-05,
+          "weight": 4.9e-05,
           "name": "Jackson Financial Inc."
         },
         {
           "ticker": "EPAM",
-          "weight": 4.6e-05,
+          "weight": 4.8e-05,
           "name": "EPAM Systems, Inc."
         },
         {
           "ticker": "POOL",
-          "weight": 4.6e-05,
-          "name": "Pool Corporation"
-        },
-        {
-          "ticker": "MHK",
           "weight": 4.5e-05,
-          "name": "Mohawk Industries, Inc."
+          "name": "Pool Corporation"
         },
         {
           "ticker": "LW",
@@ -1886,14 +1901,14 @@
           "name": "Ralliant Corporation"
         },
         {
+          "ticker": "MHK",
+          "weight": 4.4e-05,
+          "name": "Mohawk Industries, Inc."
+        },
+        {
           "ticker": "KMX",
           "weight": 4.4e-05,
           "name": "CarMax, Inc."
-        },
-        {
-          "ticker": "AWI",
-          "weight": 4.3e-05,
-          "name": "Armstrong World Industries, Inc."
         },
         {
           "ticker": "ESI",
@@ -1901,14 +1916,19 @@
           "name": "Element Solutions Inc"
         },
         {
-          "ticker": "ETSY",
+          "ticker": "EMN",
           "weight": 4.3e-05,
-          "name": "Etsy, Inc."
+          "name": "Eastman Chemical Company"
         },
         {
-          "ticker": "EMN",
+          "ticker": "AWI",
+          "weight": 4.3e-05,
+          "name": "Armstrong World Industries, Inc."
+        },
+        {
+          "ticker": "ETSY",
           "weight": 4.2e-05,
-          "name": "Eastman Chemical Company"
+          "name": "Etsy, Inc."
         },
         {
           "ticker": "TRNO",
@@ -1916,18 +1936,18 @@
           "name": "Terreno Realty Corporation"
         },
         {
-          "ticker": "CAG",
-          "weight": 4.2e-05,
-          "name": "Conagra Brands, Inc."
-        },
-        {
           "ticker": "MAC",
           "weight": 4.1e-05,
           "name": "The Macerich Company"
         },
         {
-          "ticker": "FSS",
+          "ticker": "CAG",
           "weight": 4.1e-05,
+          "name": "Conagra Brands, Inc."
+        },
+        {
+          "ticker": "FSS",
+          "weight": 4e-05,
           "name": "Federal Signal Corporation"
         }
       ]
@@ -1944,98 +1964,88 @@
         },
         {
           "ticker": "ENX.PA",
-          "weight": 0.0204,
+          "weight": 0.0196,
           "name": "Euronext N.V."
         },
         {
-          "ticker": "4684.T",
-          "weight": 0.0172,
-          "name": "OBIC Co.,Ltd."
-        },
-        {
           "ticker": "DB1.DE",
-          "weight": 0.0164,
+          "weight": 0.0162,
           "name": "Deutsche B\u00f6rse AG"
         },
         {
-          "ticker": "9843.T",
-          "weight": 0.0163,
-          "name": "Nitori Holdings Co., Ltd."
-        },
-        {
-          "ticker": "LSEG.L",
-          "weight": 0.016,
-          "name": "London Stock Exchange Group plc"
-        },
-        {
           "ticker": "IAG.AX",
-          "weight": 0.0158,
+          "weight": 0.016,
           "name": "Insurance Australia Group Limited"
         },
         {
-          "ticker": "4661.T",
-          "weight": 0.0156,
-          "name": "Oriental Land Co., Ltd."
-        },
-        {
-          "ticker": "9434.T",
-          "weight": 0.0152,
-          "name": "SoftBank Corp."
+          "ticker": "LSEG.L",
+          "weight": 0.0159,
+          "name": "London Stock Exchange Group plc"
         },
         {
           "ticker": "4452.T",
-          "weight": 0.0151,
+          "weight": 0.0155,
           "name": "Kao Corporation"
         },
         {
+          "ticker": "9434.T",
+          "weight": 0.0154,
+          "name": "SoftBank Corp."
+        },
+        {
           "ticker": "9735.T",
-          "weight": 0.0149,
+          "weight": 0.0152,
           "name": "SECOM CO., LTD."
         },
         {
-          "ticker": "WKL.AS",
-          "weight": 0.0146,
-          "name": "Wolters Kluwer N.V."
+          "ticker": "9843.T",
+          "weight": 0.0152,
+          "name": "Nitori Holdings Co., Ltd."
         },
         {
           "ticker": "6178.T",
-          "weight": 0.0146,
+          "weight": 0.0151,
           "name": "Japan Post Holdings Co., Ltd."
         },
         {
           "ticker": "9022.T",
-          "weight": 0.0141,
+          "weight": 0.0147,
           "name": "Central Japan Railway Company"
         },
         {
-          "ticker": "GET.PA",
-          "weight": 0.0141,
-          "name": "Getlink SE"
-        },
-        {
           "ticker": "SHB-A.ST",
-          "weight": 0.0141,
+          "weight": 0.0146,
           "name": "Svenska Handelsbanken AB (publ)"
         },
         {
-          "ticker": "AD.AS",
-          "weight": 0.0137,
-          "name": "Koninklijke Ahold Delhaize N.V."
+          "ticker": "WKL.AS",
+          "weight": 0.0144,
+          "name": "Wolters Kluwer N.V."
+        },
+        {
+          "ticker": "GET.PA",
+          "weight": 0.0142,
+          "name": "Getlink SE"
         },
         {
           "ticker": "8725.T",
-          "weight": 0.0137,
+          "weight": 0.0141,
           "name": "MS&AD Insurance Group Holdings, Inc."
+        },
+        {
+          "ticker": "4684.T",
+          "weight": 0.0138,
+          "name": "OBIC Co.,Ltd."
+        },
+        {
+          "ticker": "AD.AS",
+          "weight": 0.0138,
+          "name": "Koninklijke Ahold Delhaize N.V."
         },
         {
           "ticker": "ZURN.SW",
           "weight": 0.0137,
           "name": "Zurich Insurance Group AG"
-        },
-        {
-          "ticker": "HNR1.DE",
-          "weight": 0.0136,
-          "name": "Hannover R\u00fcck SE"
         },
         {
           "ticker": "9433.T",
@@ -2044,13 +2054,23 @@
         },
         {
           "ticker": "RED.MC",
-          "weight": 0.0135,
+          "weight": 0.0136,
           "name": "Redeia Corporaci\u00f3n, S.A."
         },
         {
+          "ticker": "HNR1.DE",
+          "weight": 0.0135,
+          "name": "Hannover R\u00fcck SE"
+        },
+        {
           "ticker": "SCMN.SW",
-          "weight": 0.0133,
+          "weight": 0.0131,
           "name": "Swisscom AG"
+        },
+        {
+          "ticker": "8697.T",
+          "weight": 0.0131,
+          "name": "Japan Exchange Group, Inc."
         },
         {
           "ticker": "8951.T",
@@ -2058,9 +2078,9 @@
           "name": "Nippon Building Fund Inc."
         },
         {
-          "ticker": "8697.T",
-          "weight": 0.0127,
-          "name": "Japan Exchange Group, Inc."
+          "ticker": "ELISA.HE",
+          "weight": 0.0126,
+          "name": "Elisa Oyj"
         }
       ]
     },
@@ -2071,13 +2091,18 @@
       "holdings": [
         {
           "ticker": "JNJ",
-          "weight": 0.0312,
+          "weight": 0.0309,
           "name": "Johnson & Johnson"
         },
         {
           "ticker": "COR",
-          "weight": 0.0299,
+          "weight": 0.03,
           "name": "Cencora, Inc."
+        },
+        {
+          "ticker": "CBOE",
+          "weight": 0.0263,
+          "name": "Cboe Global Markets, Inc."
         },
         {
           "ticker": "TDY",
@@ -2085,14 +2110,14 @@
           "name": "Teledyne Technologies Incorporated"
         },
         {
-          "ticker": "CBOE",
-          "weight": 0.0256,
-          "name": "Cboe Global Markets, Inc."
+          "ticker": "MSI",
+          "weight": 0.0231,
+          "name": "Motorola Solutions, Inc."
         },
         {
-          "ticker": "MSI",
-          "weight": 0.0232,
-          "name": "Motorola Solutions, Inc."
+          "ticker": "CME",
+          "weight": 0.0213,
+          "name": "CME Group Inc."
         },
         {
           "ticker": "ED",
@@ -2100,14 +2125,9 @@
           "name": "Consolidated Edison, Inc."
         },
         {
-          "ticker": "CME",
-          "weight": 0.0211,
-          "name": "CME Group Inc."
-        },
-        {
-          "ticker": "CSCO",
+          "ticker": "NOC",
           "weight": 0.0198,
-          "name": "Cisco Systems, Inc."
+          "name": "Northrop Grumman Corporation"
         },
         {
           "ticker": "GEN",
@@ -2115,29 +2135,29 @@
           "name": "Gen Digital Inc."
         },
         {
-          "ticker": "NOC",
-          "weight": 0.0195,
-          "name": "Northrop Grumman Corporation"
+          "ticker": "CSCO",
+          "weight": 0.0196,
+          "name": "Cisco Systems, Inc."
         },
         {
           "ticker": "IBM",
-          "weight": 0.0194,
+          "weight": 0.0192,
           "name": "International Business Machines Corporation"
         },
         {
+          "ticker": "LMT",
+          "weight": 0.0185,
+          "name": "Lockheed Martin Corporation"
+        },
+        {
           "ticker": "DGX",
-          "weight": 0.0183,
+          "weight": 0.0182,
           "name": "Quest Diagnostics Incorporated"
         },
         {
           "ticker": "GLW",
-          "weight": 0.0182,
+          "weight": 0.0175,
           "name": "Corning Incorporated"
-        },
-        {
-          "ticker": "LMT",
-          "weight": 0.0181,
-          "name": "Lockheed Martin Corporation"
         },
         {
           "ticker": "ABBV",
@@ -2145,23 +2165,23 @@
           "name": "AbbVie Inc."
         },
         {
-          "ticker": "MRK",
-          "weight": 0.0161,
-          "name": "Merck & Co., Inc."
-        },
-        {
           "ticker": "DUK",
           "weight": 0.0161,
           "name": "Duke Energy Corporation"
         },
         {
+          "ticker": "MRK",
+          "weight": 0.0159,
+          "name": "Merck & Co., Inc."
+        },
+        {
           "ticker": "WM",
-          "weight": 0.0154,
+          "weight": 0.0153,
           "name": "Waste Management, Inc."
         },
         {
           "ticker": "VZ",
-          "weight": 0.0149,
+          "weight": 0.015,
           "name": "Verizon Communications Inc."
         },
         {
@@ -2170,28 +2190,28 @@
           "name": "AT&T Inc."
         },
         {
+          "ticker": "PGR",
+          "weight": 0.0138,
+          "name": "The Progressive Corporation"
+        },
+        {
           "ticker": "ROP",
           "weight": 0.0138,
           "name": "Roper Technologies, Inc."
         },
         {
-          "ticker": "PGR",
-          "weight": 0.0136,
-          "name": "The Progressive Corporation"
-        },
-        {
-          "ticker": "RSG",
-          "weight": 0.0133,
-          "name": "Republic Services, Inc."
-        },
-        {
           "ticker": "HUM",
-          "weight": 0.013,
+          "weight": 0.0134,
           "name": "Humana Inc."
         },
         {
+          "ticker": "RSG",
+          "weight": 0.0132,
+          "name": "Republic Services, Inc."
+        },
+        {
           "ticker": "AKAM",
-          "weight": 0.0125,
+          "weight": 0.0129,
           "name": "Akamai Technologies, Inc."
         }
       ]
@@ -2949,6 +2969,8 @@
     "ANG.JO": "Materials",
     "FFH.TO": "Financials",
     "NBIX": "Health Care",
-    "VALE3.SA": "Materials"
+    "VALE3.SA": "Materials",
+    "AU": "Materials",
+    "ELISA.HE": "Communication Services"
   }
 }

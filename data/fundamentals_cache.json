@@ -6941,10 +6941,23 @@
     ]
   },
   "BACHF": {
-    "balance_sheet_date": "2026-06-30",
-    "capex": 62.766,
+    "schema": 5,
+    "source": "Yahoo Finance",
     "currency": "CNY",
+    "fetched_at": "2026-11-11",
+    "filed": null,
     "fcf_basis": "TTM",
+    "fcf_period_end": "2026-09-30",
+    "balance_sheet_date": "2026-09-30",
+    "operating_cash_flow": 1308.642,
+    "capex": 58.549,
+    "free_cash_flow": 1250.093,
+    "total_cash": 4404.83,
+    "total_debt": 2920.897,
+    "net_debt": -1483.933,
+    "shares_outstanding": 322.212,
+    "market_cap": 315.548,
+    "market_cap_currency": "USD",
     "fcf_history": [
       [
         "2022-12-31",
@@ -6963,19 +6976,6 @@
         760.757
       ]
     ],
-    "fcf_period_end": "2026-06-30",
-    "fetched_at": "2026-10-29",
-    "filed": null,
-    "free_cash_flow": 1231.425,
-    "market_cap": 321.661,
-    "market_cap_currency": "USD",
-    "net_debt": -1554.828,
-    "operating_cash_flow": 1294.191,
-    "schema": 5,
-    "shares_outstanding": 322.212,
-    "source": "Yahoo Finance",
-    "total_cash": 4346.988,
-    "total_debt": 2792.16,
     "warnings": []
   },
   "BALL": {
@@ -53375,6 +53375,82 @@
       [
         "2025-12-31",
         2.795
+      ]
+    ],
+    "warnings": []
+  },
+  "AU": {
+    "schema": 5,
+    "source": "Yahoo Finance",
+    "currency": "USD",
+    "fetched_at": "2026-11-11",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-09-30",
+    "balance_sheet_date": "2026-09-30",
+    "operating_cash_flow": 6.143,
+    "capex": 1.866,
+    "free_cash_flow": 4.277,
+    "total_cash": 3.079,
+    "total_debt": 1.823,
+    "net_debt": -1.256,
+    "shares_outstanding": 0.506,
+    "market_cap": 47.477,
+    "market_cap_currency": "USD",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        0.776
+      ],
+      [
+        "2023-12-31",
+        -0.071
+      ],
+      [
+        "2024-12-31",
+        0.878
+      ],
+      [
+        "2025-12-31",
+        3.335
+      ]
+    ],
+    "warnings": []
+  },
+  "ELISA.HE": {
+    "schema": 5,
+    "source": "Yahoo Finance",
+    "currency": "EUR",
+    "fetched_at": "2026-11-11",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-09-30",
+    "balance_sheet_date": "2026-09-30",
+    "operating_cash_flow": 0.658,
+    "capex": 0.287,
+    "free_cash_flow": 0.371,
+    "total_cash": 0.131,
+    "total_debt": 1.65,
+    "net_debt": 1.52,
+    "shares_outstanding": 0.161,
+    "market_cap": 5.434,
+    "market_cap_currency": "EUR",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        0.321
+      ],
+      [
+        "2023-12-31",
+        0.343
+      ],
+      [
+        "2024-12-31",
+        0.344
+      ],
+      [
+        "2025-12-31",
+        0.41
       ]
     ],
     "warnings": []
