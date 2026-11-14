@@ -29549,10 +29549,22 @@
     "warnings": []
   },
   "LNC": {
-    "balance_sheet_date": "2026-06-30",
-    "capex": 0.0,
+    "schema": 5,
+    "source": "SEC EDGAR",
     "currency": "USD",
+    "fetched_at": "2026-11-13",
+    "filed": "2026-11-05",
     "fcf_basis": "TTM",
+    "fcf_period_end": "2026-09-30",
+    "balance_sheet_date": "2026-09-30",
+    "operating_cash_flow": 0.688,
+    "capex": 0.0,
+    "free_cash_flow": 0.688,
+    "interest_paid": 0.336,
+    "total_cash": 9.791,
+    "total_debt": 6.44,
+    "net_debt": -3.351,
+    "shares_outstanding": 0.19,
     "fcf_history": [
       [
         "2007-12-31",
@@ -29631,18 +29643,6 @@
         -0.167
       ]
     ],
-    "fcf_period_end": "2026-06-30",
-    "fetched_at": "2026-10-29",
-    "filed": "2026-07-30",
-    "free_cash_flow": -1.328,
-    "interest_paid": 0.336,
-    "net_debt": -3.3,
-    "operating_cash_flow": -1.328,
-    "schema": 5,
-    "shares_outstanding": 0.191,
-    "source": "SEC EDGAR",
-    "total_cash": 10.165,
-    "total_debt": 6.865,
     "warnings": [
       "capex_missing"
     ]
@@ -53460,6 +53460,44 @@
       [
         "2025-12-31",
         0.41
+      ]
+    ],
+    "warnings": []
+  },
+  "RBA.TO": {
+    "schema": 5,
+    "source": "Yahoo Finance",
+    "currency": "USD",
+    "fetched_at": "2026-11-13",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-09-30",
+    "balance_sheet_date": "2026-09-30",
+    "operating_cash_flow": 0.871,
+    "capex": 0.361,
+    "free_cash_flow": 0.51,
+    "total_cash": 0.512,
+    "total_debt": 4.763,
+    "net_debt": 4.251,
+    "shares_outstanding": 0.181,
+    "market_cap": 24.378,
+    "market_cap_currency": "CAD",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        0.391
+      ],
+      [
+        "2023-12-31",
+        0.198
+      ],
+      [
+        "2024-12-31",
+        0.655
+      ],
+      [
+        "2025-12-31",
+        0.603
       ]
     ],
     "warnings": []
