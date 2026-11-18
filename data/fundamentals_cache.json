@@ -53509,5 +53509,43 @@
       ]
     ],
     "warnings": []
+  },
+  "REP.MC": {
+    "schema": 5,
+    "source": "Yahoo Finance",
+    "currency": "EUR",
+    "fetched_at": "2026-11-17",
+    "filed": null,
+    "fcf_basis": "TTM",
+    "fcf_period_end": "2026-09-30",
+    "balance_sheet_date": "2026-09-30",
+    "operating_cash_flow": 8.015,
+    "capex": 3.297,
+    "free_cash_flow": 4.718,
+    "total_cash": 3.934,
+    "total_debt": 12.785,
+    "net_debt": 8.851,
+    "shares_outstanding": 1.063,
+    "market_cap": 32.349,
+    "market_cap_currency": "EUR",
+    "fcf_history": [
+      [
+        "2022-12-31",
+        4.297
+      ],
+      [
+        "2023-12-31",
+        2.222
+      ],
+      [
+        "2024-12-31",
+        -0.141
+      ],
+      [
+        "2025-12-31",
+        1.619
+      ]
+    ],
+    "warnings": []
   }
 }
